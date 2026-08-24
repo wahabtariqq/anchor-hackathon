@@ -24,7 +24,27 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
     --radius: 0.5rem;
+
+    /* ANCHOR semantic tokens — see .claude/skills/anchor-design/SKILL.md §2 */
+    --anchor-good: 120 86% 34%;        /* #0ca30c — covered/full, checked */
+    --anchor-critical: 0 61% 52%;      /* #d03b3b — missing core-skill badge */
+    --anchor-adjacent: 213 68% 50%;    /* #2a78d6 — adjacent-role accent */
+    --anchor-ring-fill: 213 68% 50%;   /* #2a78d6 — FitRing fill */
+    --anchor-ring-track: 213 78% 84%;  /* #b7d3f6 — FitRing unfilled track */
   }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --anchor-adjacent: 213 77% 56%;
+    --anchor-ring-fill: 213 77% 56%;
+    --anchor-ring-track: 213 40% 25%;
+  }
+}
+:root[data-theme="dark"] {
+  --anchor-adjacent: 213 77% 56%;
+  --anchor-ring-fill: 213 77% 56%;
+  --anchor-ring-track: 213 40% 25%;
 }
 
 @layer base {

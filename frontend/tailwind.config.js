@@ -43,6 +43,11 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        "anchor-good": "hsl(var(--anchor-good))",
+        "anchor-critical": "hsl(var(--anchor-critical))",
+        "anchor-adjacent": "hsl(var(--anchor-adjacent))",
+        "anchor-ring-fill": "hsl(var(--anchor-ring-fill))",
+        "anchor-ring-track": "hsl(var(--anchor-ring-track))",
       },
       borderRadius: {
         lg: "var(--radius)",
