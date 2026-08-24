@@ -1,0 +1,24 @@
+{
+  "_comment": "Shared by backend/tests/test_parity.py and frontend/src/lib/scoring.test.ts. Finish all ~15 cases together on Day 2 morning, before either fit function is done.",
+  "cases": [
+    { "name": "all core fully covered",
+      "skills": [ { "weight": "core", "coverage_depth": "full", "checked": false },
+                  { "weight": "core", "coverage_depth": "full", "checked": false } ],
+      "expected": 100 },
+    { "name": "nothing covered",
+      "skills": [ { "weight": "core", "coverage_depth": null, "checked": false },
+                  { "weight": "supporting", "coverage_depth": null, "checked": false } ],
+      "expected": 0 },
+    { "name": "partial core only",
+      "skills": [ { "weight": "core", "coverage_depth": "partial", "checked": false } ],
+      "expected": 50 },
+    { "name": "checked beats partial",
+      "skills": [ { "weight": "core", "coverage_depth": "partial", "checked": true } ],
+      "expected": 100 },
+    { "name": "core full, supporting missing",
+      "skills": [ { "weight": "core", "coverage_depth": "full", "checked": false },
+                  { "weight": "supporting", "coverage_depth": null, "checked": false } ],
+      "expected": 75 },
+    { "name": "empty role", "skills": [], "expected": 0 }
+  ]
+}

@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+sqlmodel
+psycopg[binary]
+pydantic>=2
+pydantic-settings
+anthropic>=1.0
+pytest

@@ -1,0 +1,33 @@
+# frontend/ — React + Vite
+
+Read `../docs/TDD.md` §7 before changing anything here. Types in `src/lib/types.ts` mirror
+`../docs/CONTRACT.md` — if you change one, change the other in the same PR.
+
+## Layout
+
+- `src/app/` — `App.tsx` (providers), `router.tsx` (three routes), `Resume.tsx` (localStorage → redirect logic).
+- `src/lib/api.ts` — the only `fetch`. Injects `X-Student-Id`, 240s timeout. If `VITE_USE_FIXTURE=true`, serves `contracts/fixtures/*.json` instead.
+- `src/lib/identity.ts` — the only `localStorage` access in the app.
+- `src/lib/scoring.ts` — `fitPercent`. Mirror of `backend/app/scoring.py`. Tested against `contracts/fixtures/parity_cases.json`.
+- `src/lib/types.ts` — **shared file**; mirrors `schemas.py`.
+- `src/features/setup/` — Dev A. `SetupPage`, `CourseCard`, `InterestChips`.
+- `src/features/analyzing/` — Dev B. Staged copy on a timer, decoupled from the request.
+- `src/features/roadmap/` — Dev C. `RoadmapPage` (two columns), `RoleCard`, `RoleDrawer`, `FitRing`, `SkillRow`, `WhatMoved`, `AnalysisContext`.
+- `src/components/ui/` — shadcn output. Generated; don't hand-edit.
+
+## Rules
+
+- `checkedIds` in `AnalysisContext` is the only mutable state. Everything else is `useMemo` over it.
+- The role drawer is **not a route**. It opens on the Roadmap page so the ranking stays visible while boxes are ticked.
+- Re-sort uses absolute positioning + `translateY` with stable keys. Never reorder the array of DOM nodes.
+- Ticking a box never awaits the network. `POST /api/progress` is fire-and-forget; revert + toast on failure.
+- One `fetch` after load. No refetch on tick, no polling, no React Query.
+- Tailwind core utilities and shadcn components only. No CSS files, no styled-components.
+
+## Run / test
+
+```bash
+npm run dev                      # http://localhost:5173
+npm test                         # vitest
+npx shadcn@latest add sheet      # etc.
+```

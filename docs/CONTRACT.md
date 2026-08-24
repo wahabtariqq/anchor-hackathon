@@ -1,0 +1,182 @@
+# ANCHOR — Shared Contract
+
+This file is the single source of truth for every shape that crosses a lane boundary.
+Its mirrors are `backend/app/schemas.py`, `backend/app/analysis/schema.py`,
+`frontend/src/lib/types.ts`, and the fixtures in `contracts/fixtures/`. A change here is a
+`contract:` PR that updates all of them at once.
+
+---
+
+## 1. Model output — `AnalysisOut`
+
+Produced by `backend/app/analysis/`. Guaranteed parseable by structured outputs; semantics
+enforced by validators (§1.1).
+
+```jsonc
+{
+  "skills": [                                  // 40–60
+    { "id": "sql-query-optimization",          // kebab-case, unique
+      "name": "SQL Query Optimization",
+      "real_world": "Cutting a 4-second dashboard query to 40ms is usually one missing composite index." }
+  ],
+  "coverage": [
+    { "skill_id": "sql-query-optimization",    // must exist in skills[]
+      "course_code": "CS301",                  // one of the student's codes, else dropped with warning
+      "depth": "full" }                        // "full" | "partial"
+  ],
+  "roles": [                                   // exactly 8
+    { "id": "data-engineer",
+      "title": "Data Engineer",
+      "one_liner": "Builds the pipelines that move and reshape data for analysts and models.",
+      "proximity": "core",                     // "core" (5–6) | "adjacent" (2–3)
+      "bridge": "",                            // "" for core; non-empty sentence for adjacent
+      "rank": 1,                               // 1..8, model's ordering, tiebreaker only
+      "skills": [                              // 10–14, no repeats
+        { "skill_id": "sql-query-optimization", "weight": "core" },      // "core" | "supporting"
+        { "skill_id": "python-scripting",       "weight": "supporting" }
+      ] }
+  ]
+}
+```
+
+All fields required. No nulls anywhere.
+
+### 1.1 Validation rules (hard-fail → retry once → 502)
+
+| # | Rule |
+|---|---|
+| V1 | 35 ≤ `skills.length` ≤ 70; ids unique; ids match `^[a-z0-9]+(-[a-z0-9]+)*$` |
+| V2 | `roles.length == 8`; 5 ≤ core roles ≤ 6 |
+| V3 | every `roles[].skills[].skill_id` exists in `skills[]` |
+| V4 | every `coverage[].skill_id` exists in `skills[]` |
+| V5 | no `skill_id` repeated within one role; 8 ≤ skills per role ≤ 16 |
+| V6 | adjacent roles have non-empty `bridge` |
+
+Soft (warn + skip): `coverage[].course_code` not in the student's codes; duplicate `(skill, course)` coverage pair.
+
+---
+
+## 2. Fit % formula
+
+Identical in `backend/app/scoring.py` and `frontend/src/lib/scoring.ts`. Tested against
+`contracts/fixtures/parity_cases.json` in both.
+
+```
+WEIGHT = { core: 3, supporting: 1 }
+DEPTH  = { full: 1.0, partial: 0.5 }
+
+earned = total = 0
+for each skill in role:
+    w = WEIGHT[weight]
+    total += w
+    if checked:            earned += w
+    elif coverage_depth:   earned += w * DEPTH[coverage_depth]
+fit = round(earned / total * 100)   # 0 when total == 0
+```
+
+- `coverage_depth` is the **best** depth across all courses covering that skill (full > partial > none). Collapsed once when building the roadmap payload, not inside the formula.
+- Rounding: Python `round()` and JS `Math.round()` differ on exact `.5` (banker's vs half-up). Use `Math.floor(x + 0.5)` in TS and `int(x + 0.5)` in Python so both are half-up. Include a `.5` case in the parity fixture.
+- Sort: `fit_percent` desc, then `rank` asc.
+- Below 15%: still shown, labelled "Not enough foundation yet."
+
+---
+
+## 3. HTTP API
+
+Base `/api`. JSON in and out. All routes except `GET /courses` require header `X-Student-Id: <uuid>`.
+Unknown id → `404 {"detail": "Unknown student — start over"}`.
+
+### `GET /courses` → 200
+
+```json
+{ "courses": [
+  { "id": "cs301", "code": "CS301", "name": "Database Management Systems",
+    "curriculum_text": "Relational model, ER design, normalisation…" }
+]}
+```
+
+### `POST /students` → 201
+
+Request:
+```json
+{
+  "name": "Ayesha",
+  "semester": 4,
+  "interests": ["Artificial Intelligence", "Databases", "UI/UX Design"],
+  "courses": [
+    { "course_id": "cs201", "semester_tag": "past" },
+    { "course_id": "cs301", "semester_tag": "past", "curriculum_override": "Our DBMS course also covers…" },
+    { "course_id": "cs401", "semester_tag": "current" },
+    { "custom_name": "Human-Computer Interaction", "semester_tag": "current",
+      "curriculum_text": "Heuristic evaluation, wireframing, usability testing…" }
+  ]
+}
+```
+Response: `{ "student_id": "6f1c…" }`
+
+Validation → 422: 3 ≤ courses ≤ 6 · interests ≥ 2 · every `course_id` in catalog · custom courses need `custom_name` and `curriculum_text` ≥ 50 chars.
+Server resolves `curriculum_text` as override → custom → catalog, and assigns `code` = catalog code or `CUSTOM-1`, `CUSTOM-2`…
+
+### `POST /analyze` → 200 `{ "ok": true }`
+
+Errors: `409` analysis exists · `422` no courses · `502` model failed after retry.
+Slow (1–3 min live; 6 s in demo mode). Client timeout 240 s.
+
+### `GET /roadmap` → 200
+
+```jsonc
+{
+  "student": { "name": "Ayesha", "semester": 4, "interests": ["Artificial Intelligence", "Databases", "UI/UX Design"] },
+  "skills": [                                          // flat, global — roles & courses reference by id
+    { "id": "sk_a1", "slug": "sql-query-optimization", "name": "SQL Query Optimization",
+      "real_world": "Cutting a 4-second dashboard query to 40ms is usually one missing composite index.",
+      "coverage_depth": "full",                        // "full" | "partial" | null  (already collapsed to best)
+      "covered_by": ["CS301"],                         // course codes, may be empty
+      "checked": false }
+  ],
+  "roles": [                                           // pre-sorted by (-fit_percent, rank)
+    { "id": "ro_b2", "slug": "data-engineer", "title": "Data Engineer",
+      "one_liner": "Builds the pipelines that move and reshape data.",
+      "proximity": "core", "bridge": "", "rank": 1,
+      "fit_percent": 64,
+      "skills": [ { "skill_id": "sk_a1", "weight": "core" } ] }
+  ],
+  "courses": [
+    { "id": "sc_c3", "code": "CS301", "name": "Database Management Systems",
+      "semester_tag": "past", "skill_ids": ["sk_a1"] }
+  ]
+}
+```
+
+`404` if no analysis yet. Note ids here are DB ids (`sk_…`, `ro_…`), not the model's slugs.
+
+### `POST /progress` → 200 `{ "ok": true }`
+
+Request: `{ "skill_id": "sk_a1", "checked": true }`. Idempotent both ways.
+
+---
+
+## 4. Fixtures in `contracts/fixtures/`
+
+| File | Shape | Written by | Read by |
+|---|---|---|---|
+| `demo_analysis.json` | §1 `AnalysisOut` | Dev B, `run_analysis_cli.py --demo` | `DEMO_MODE`; persistence tests |
+| `roadmap_response.json` | §3 `GET /roadmap` | Dev C hand-writes Day 1 from this doc; Dev A regenerates Day 2 via `dump_roadmap.py` | frontend with `VITE_USE_FIXTURE=true` |
+| `parity_cases.json` | list of `{ name, skills[], expected }` | all three, Day 2 morning | `test_parity.py`, `scoring.test.ts` |
+| `analysis.schema.json` | JSON Schema of §1 | Dev B, `export_schema.py` | reference; optional frontend validation of fixtures |
+
+**Integration is done when** `GET /roadmap` from the deployed backend, for the demo student, has
+the exact shape of `roadmap_response.json` and the frontend renders it with `VITE_USE_FIXTURE` removed.
+
+---
+
+## 5. Enumerations
+
+| Field | Values |
+|---|---|
+| `depth`, `coverage_depth` | `full`, `partial` (+ `null` only in the roadmap response) |
+| `weight` | `core`, `supporting` |
+| `proximity` | `core`, `adjacent` |
+| `semester_tag` | `past`, `current` |
+| `interests` | `Artificial Intelligence`, `Databases`, `UI/UX Design`, `Web Development`, `Systems & Infrastructure`, `Data Analysis`, `Security`, `Mobile` |
+| catalog `course_id` | `cs201`, `cs202`, `cs301`, `cs302`, `cs303`, `cs401`, `cs402`, `cs403`, `cs404`, `cs405` |
