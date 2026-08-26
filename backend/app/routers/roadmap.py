@@ -15,13 +15,18 @@ from app.models import (
     Analysis,
     Coverage,
     Progress,
+    Project,
     Role,
     RoleSkill,
     Skill,
     Student,
     StudentCourse,
+    Submission,
 )
+from app.persistence import verified_skill_ids
 from app.schemas import (
+    ProjectResponse,
+    ReviewResponse,
     RoadmapCourseOut,
     RoadmapResponse,
     RoadmapRoleOut,
@@ -37,6 +42,27 @@ router = APIRouter()
 # response jitters between calls and the frontend fixture stops being comparable.
 _TAG_ORDER = {"past": 0, "current": 1}
 _WEIGHT_ORDER = {"core": 0, "supporting": 1}
+
+
+def project_response(row: Project) -> ProjectResponse:
+    return ProjectResponse(
+        id=row.id,
+        role_id=row.role_id,
+        title=row.title,
+        spec=row.spec,
+        criteria=list(row.criteria),
+        verifies=list(row.verifies),
+    )
+
+
+def review_response(row: Submission) -> ReviewResponse:
+    """The stored ReviewOut plus the three numbers scoring computed at submit time."""
+    return ReviewResponse(
+        **row.review,
+        total=row.total,
+        max_total=row.max_total,
+        passed=row.passed,
+    )
 
 
 def build_roadmap(session: Session, student: Student) -> RoadmapResponse:
@@ -67,6 +93,21 @@ def build_roadmap(session: Session, student: Student) -> RoadmapResponse:
         p.skill_id
         for p in session.exec(select(Progress).where(Progress.student_id == student.id)).all()
     }
+    verified = verified_skill_ids(session, student.id)
+
+    project_of = {
+        pr.role_id: project_response(pr)
+        for pr in session.exec(select(Project).where(Project.student_id == student.id)).all()
+    }
+    # latest submission per role — ordered ascending so the last write wins, with id breaking
+    # a created_at tie so two submissions in the same tick still resolve the same way
+    review_of: dict[str, ReviewResponse] = {}
+    for sub in session.exec(
+        select(Submission)
+        .where(Submission.student_id == student.id)
+        .order_by(Submission.created_at, Submission.id)
+    ).all():
+        review_of[sub.role_id] = review_response(sub)
 
     # Collapse coverage to the best depth per skill — full beats partial — before any
     # scoring. fit_percent never sees more than one depth for a skill (CONTRACT.md §2).
@@ -95,7 +136,13 @@ def build_roadmap(session: Session, student: Student) -> RoadmapResponse:
             key=lambda rs: (_WEIGHT_ORDER.get(rs.weight, 2), skill_rank.get(rs.skill_id, last)),
         )
         scored = [
-            ScoredSkill(rs.skill_id, rs.weight, best.get(rs.skill_id), rs.skill_id in checked)
+            ScoredSkill(
+                rs.skill_id,
+                rs.weight,
+                best.get(rs.skill_id),
+                rs.skill_id in checked,
+                rs.skill_id in verified,
+            )
             for rs in members
         ]
         role_out.append(
@@ -112,6 +159,8 @@ def build_roadmap(session: Session, student: Student) -> RoadmapResponse:
                     RoadmapRoleSkillOut(skill_id=rs.skill_id, weight=rs.weight)  # type: ignore[arg-type]
                     for rs in members
                 ],
+                project=project_of.get(r.id),
+                latest_review=review_of.get(r.id),
             )
         )
     role_out.sort(key=lambda r: (-r.fit_percent, r.rank))
@@ -131,6 +180,7 @@ def build_roadmap(session: Session, student: Student) -> RoadmapResponse:
                 coverage_depth=best.get(s.id),       # type: ignore[arg-type]
                 covered_by=sorted(set(covered_by[s.id])),
                 checked=s.id in checked,
+                verified=s.id in verified,
             )
             for s in skills_sorted
         ],

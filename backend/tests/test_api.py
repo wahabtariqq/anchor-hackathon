@@ -199,6 +199,9 @@ def test_roadmap_payload(client: TestClient, session: Session) -> None:
     assert all(r["bridge"] == "" for r in body["roles"] if r["proximity"] == "core")
     assert all(r["bridge"] for r in body["roles"] if r["proximity"] == "adjacent")
     assert all(s["checked"] is False for s in body["skills"])
+    # v4: nothing is verified and no project exists until Prove It runs
+    assert all(s["verified"] is False for s in body["skills"])
+    assert all(r["project"] is None and r["latest_review"] is None for r in body["roles"])
     # roles and courses reference the flat skill table by DB id, never by slug
     skill_ids = {s["id"] for s in body["skills"]}
     assert all(rs["skill_id"] in skill_ids for r in body["roles"] for rs in r["skills"])
@@ -248,10 +251,17 @@ def test_roadmap_fit_matches_the_scoring_module(client: TestClient, session: Ses
     body = client.get("/api/roadmap", headers={"X-Student-Id": student_id}).json()
     depth = {s["id"]: s["coverage_depth"] for s in body["skills"]}
     checked = {s["id"] for s in body["skills"] if s["checked"]}
+    verified = {s["id"] for s in body["skills"] if s["verified"]}
     for role in body["roles"]:
         expected = fit_percent(
             [
-                ScoredSkill(rs["skill_id"], rs["weight"], depth[rs["skill_id"]], rs["skill_id"] in checked)
+                ScoredSkill(
+                    rs["skill_id"],
+                    rs["weight"],
+                    depth[rs["skill_id"]],
+                    rs["skill_id"] in checked,
+                    rs["skill_id"] in verified,
+                )
                 for rs in role["skills"]
             ]
         )
