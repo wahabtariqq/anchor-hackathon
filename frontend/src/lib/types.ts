@@ -69,6 +69,7 @@ export interface RoadmapSkill {
   coverage_depth: Depth | null;
   covered_by: string[];
   checked: boolean;
+  verified: boolean;
 }
 
 export interface RoadmapRoleSkill {
@@ -86,6 +87,8 @@ export interface RoadmapRole {
   rank: number;
   fit_percent: number;
   skills: RoadmapRoleSkill[];
+  project: ProjectResponse | null;
+  latest_review: ReviewResponse | null;
 }
 
 export interface RoadmapCourse {
@@ -101,6 +104,43 @@ export interface RoadmapResponse {
   skills: RoadmapSkill[];
   roles: RoadmapRole[];
   courses: RoadmapCourse[];
+}
+
+// ---- GET /api/project?role_id= ----
+
+export interface ProjectResponse {
+  id: string;
+  role_id: string;
+  title: string;
+  spec: string;
+  criteria: string[];
+  verifies: string[]; // skill ids (this role's skills)
+}
+
+// ---- POST /api/submit ----
+
+export interface SubmitRequest {
+  role_id: string;
+  repo_url: string;
+}
+
+export interface CriterionScore {
+  criterion: string;
+  score: 0 | 1 | 2;
+  note: string;
+}
+
+export interface ReviewResponse {
+  criteria_scores: CriterionScore[];
+  feedback: string;
+  total: number;
+  max_total: number;
+  passed: boolean;
+}
+
+export interface SubmitResponse {
+  review: ReviewResponse;
+  verified_skill_ids: string[]; // full verified set for the student, across all passing submissions
 }
 
 // ---- POST /api/progress ----
@@ -120,4 +160,5 @@ export interface ScoredSkillInput {
   weight: Weight;
   coverageDepth: Depth | null;
   checked: boolean;
+  verified: boolean;
 }

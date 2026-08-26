@@ -12,7 +12,7 @@ A CS student picks the courses they've taken and a few interests. One analysis r
 | `docs/TDD.md` | how it's built |
 | `docs/CONTRACT.md` | every shape that crosses a lane boundary |
 | `docs/DECISIONS.md` | one-line log of deviations |
-| `docs/DEMO.md` | the 60-second runbook |
+| `docs/DEMO.md` | the 75-second runbook |
 | `CLAUDE.md`, `.claude/skills/` | Claude Code project instructions and lane playbooks |
 
 ## Run

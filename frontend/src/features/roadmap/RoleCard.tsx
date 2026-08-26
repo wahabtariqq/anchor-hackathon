@@ -12,19 +12,17 @@ interface RoleCardProps {
   className?: string;
 }
 
-function isCovered(skill: RoadmapSkill | undefined, checked: boolean): boolean {
-  return checked || skill?.coverage_depth != null;
+function isCovered(skill: RoadmapSkill | undefined): boolean {
+  return Boolean(skill && (skill.checked || skill.verified || skill.coverage_depth != null));
 }
 
 export function RoleCard({ role, fit, skillsById, onClick, className }: RoleCardProps) {
   const total = role.skills.length;
-  const covered = role.skills.filter((rs) => {
-    const skill = skillsById.get(rs.skill_id);
-    return isCovered(skill, skill?.checked ?? false);
-  }).length;
+  const covered = role.skills.filter((rs) => isCovered(skillsById.get(rs.skill_id))).length;
+  const verifiedCount = role.skills.filter((rs) => skillsById.get(rs.skill_id)?.verified).length;
 
   const missingCore = role.skills
-    .filter((rs) => rs.weight === "core" && !isCovered(skillsById.get(rs.skill_id), skillsById.get(rs.skill_id)?.checked ?? false))
+    .filter((rs) => rs.weight === "core" && !isCovered(skillsById.get(rs.skill_id)))
     .slice(0, 2)
     .map((rs) => skillsById.get(rs.skill_id)?.name)
     .filter((n): n is string => Boolean(n));
@@ -50,6 +48,7 @@ export function RoleCard({ role, fit, skillsById, onClick, className }: RoleCard
           <p className="truncate text-sm text-muted-foreground">{role.one_liner}</p>
           <p className="mt-1 text-xs text-muted-foreground">
             {covered} of {total} skills covered
+            {verifiedCount > 0 && <span className="text-anchor-good"> · {verifiedCount} verified</span>}
           </p>
           {missingCore.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1.5">

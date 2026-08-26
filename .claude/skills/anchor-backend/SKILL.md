@@ -1,6 +1,6 @@
 ---
 name: anchor-backend
-description: How to build and change the ANCHOR FastAPI backend — routers, SQLModel tables, the X-Student-Id identity dependency, persistence of an analysis into Postgres, roadmap assembly, and the progress endpoint. Use this for any task under backend/app/ (except backend/app/analysis/), for database or Supabase connection issues, for adding or changing an endpoint, for seed scripts, or when the user mentions FastAPI, SQLModel, Postgres, the roadmap payload, or fit % on the server.
+description: How to build and change the ANCHOR FastAPI backend — routers, SQLModel tables, the X-Student-Id identity dependency, persistence, roadmap assembly, the progress endpoint, the GitHub repo fetch (app/github.py), and the /project and /submit endpoints that back Prove It. Use this for any task under backend/app/ (except backend/app/analysis/), for database or Supabase connection issues, for adding or changing an endpoint, for seed scripts, or when the user mentions FastAPI, SQLModel, Postgres, the roadmap payload, or fit % on the server.
 ---
 
 # ANCHOR backend
@@ -21,7 +21,9 @@ relevant TDD section before writing code; the snippets there are the intended im
 | `app/scoring.py` | `fit_percent`, pure | only with the anchor-contract skill |
 | `app/persistence.py` | `persist_analysis` | persistence bugs |
 | `app/routers/*.py` | one endpoint each | endpoint work |
-| `app/analysis/` | **not yours** | never — import `run_analysis` only |
+| `app/github.py` | `fetch_repo(url) -> RepoBundle`, `RepoError` | Prove It, Day 3 afternoon |
+| `app/routers/project.py`, `submit.py` | lazy project cache; fetch → review → submission row | Prove It |
+| `app/analysis/` | **not yours** | never — import `run_analysis`, `generate_project`, `review_repo` only |
 | `seed/courses.py` | 10 catalog courses + curriculum text | curriculum edits |
 | `scripts/` | `seed_db`, `dump_roadmap` | tooling |
 
@@ -39,6 +41,14 @@ relevant TDD section before writing code; the snippets there are the intended im
 - Unknown `course_code` in coverage → `log.warning` and skip. Duplicate `(skill, course)` pair → skip.
 - `analyze.py` stays thin: 409/422 checks, call `run_analysis` (or the demo loader), call
   `persist_analysis`, return. All model logic lives in `app/analysis/`.
+
+## Prove It rules (Day 3 afternoon onward, only after the core is deployed)
+
+- `fetch_repo`: parse `github.com/{owner}/{repo}`; `GET /repos/{o}/{r}` for `default_branch`; `GET /repos/{o}/{r}/git/trees/{branch}?recursive=1`; raw fetches for README first then ≤ 10 shallowest source files, ≤ 20 KB each, ≤ 60 KB total. Skip lockfiles, `node_modules/`, `vendor/`, `dist/`, binaries. Always send `Authorization: Bearer $GITHUB_TOKEN`.
+- Map GitHub failures to `RepoError` with a user-facing message (not public / no files / rate-limited / not a GitHub URL). `submit.py` turns those into `422 {detail}`.
+- `project.py`: return the cached row if it exists; otherwise build `SkillState` per role skill from progress, coverage, and the verified set; call `generate_project`; resolve slugs → `skill.id`; insert once. Demo student + top role + `DEMO_MODE` → `load_demo_project()`.
+- `submit.py`: `409` if no project; demo URL → cached review; else `fetch_repo` → `review_repo` → insert `Submission` with `verified_skill_ids = project.verifies if passed else []`; return the **full** verified set.
+- Never store `verified` on `Skill`. It's derived.
 
 ## Working without the AI lane
 

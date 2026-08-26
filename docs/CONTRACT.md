@@ -1,4 +1,4 @@
-# ANCHOR — Shared Contract
+# ANCHOR — Shared Contract (v4)
 
 This file is the single source of truth for every shape that crosses a lane boundary.
 Its mirrors are `backend/app/schemas.py`, `backend/app/analysis/schema.py`,
@@ -56,7 +56,26 @@ Soft (warn + skip): `coverage[].course_code` not in the student's codes; duplica
 
 ---
 
-## 2. Fit % formula
+## 1b. Project generation output — `ProjectOut`
+
+```jsonc
+{ "title": "Build a log-ingestion pipeline",
+  "spec": "3–4 sentences: what to build, what done looks like.",
+  "criteria": ["…", "…", "…"],                     // 3–4, each checkable by READING the repo
+  "verifies": ["containerization", "etl-basics"] }  // 2–4 skill SLUGS from the role; prefer missing/ticked
+```
+Hard-fail: 3–4 criteria · 2–4 verifies · no duplicates · every slug in the role's skill list. Resolved to DB ids before storage.
+
+## 1c. Repo review output — `ReviewOut`
+
+```jsonc
+{ "criteria_scores": [ { "criterion": "…", "score": 1, "note": "one sentence" } ],   // same count + order as project.criteria; score ∈ {0,1,2}
+  "feedback": "One short paragraph to the student." }
+```
+Hard-fail: count/order mismatch (case-insensitive compare) · score outside 0–2.
+**Computed in code:** `total = Σ score`, `max_total = 2 × criteria`, `passed = total ≥ ceil(REVIEW_PASS_RATIO × max_total)` with `REVIEW_PASS_RATIO = 0.6`.
+
+## 2. Fit % formula (v4)
 
 Identical in `backend/app/scoring.py` and `frontend/src/lib/scoring.ts`. Tested against
 `contracts/fixtures/parity_cases.json` in both.
@@ -65,14 +84,21 @@ Identical in `backend/app/scoring.py` and `frontend/src/lib/scoring.ts`. Tested 
 WEIGHT = { core: 3, supporting: 1 }
 DEPTH  = { full: 1.0, partial: 0.5 }
 
+TICK   = 0.5          # self-report earns half
+PROOF  = 1.0          # passing repo submission earns full
+
 earned = total = 0
 for each skill in role:
     w = WEIGHT[weight]
     total += w
-    if checked:            earned += w
-    elif coverage_depth:   earned += w * DEPTH[coverage_depth]
-fit = round(earned / total * 100)   # 0 when total == 0
+    earned += w * max( PROOF if verified else 0,
+                       TICK  if checked  else 0,
+                       DEPTH[coverage_depth] if coverage_depth else 0 )
+fit = half_up(earned / total * 100)   # 0 when total == 0
 ```
+
+`max`, never `if/elif`: no action a student takes may lower a score. A tick on a fully-covered skill changes nothing; proof on a fully-covered skill changes nothing.
+`verified` = the skill id is in the union of `verified_skill_ids` over **all** of the student's passing submissions (any role).
 
 - `coverage_depth` is the **best** depth across all courses covering that skill (full > partial > none). Collapsed once when building the roadmap payload, not inside the formula.
 - Rounding: Python `round()` and JS `Math.round()` differ on exact `.5` (banker's vs half-up). Use `Math.floor(x + 0.5)` in TS and `int(x + 0.5)` in Python so both are half-up. Include a `.5` case in the parity fixture.
@@ -132,14 +158,17 @@ Slow (1–3 min live; 6 s in demo mode). Client timeout 240 s.
       "real_world": "Cutting a 4-second dashboard query to 40ms is usually one missing composite index.",
       "coverage_depth": "full",                        // "full" | "partial" | null  (already collapsed to best)
       "covered_by": ["CS301"],                         // course codes, may be empty
-      "checked": false }
+      "checked": false,
+      "verified": true }                               // in the union of passing submissions' verified_skill_ids
   ],
   "roles": [                                           // pre-sorted by (-fit_percent, rank)
     { "id": "ro_b2", "slug": "data-engineer", "title": "Data Engineer",
       "one_liner": "Builds the pipelines that move and reshape data.",
       "proximity": "core", "bridge": "", "rank": 1,
       "fit_percent": 64,
-      "skills": [ { "skill_id": "sk_a1", "weight": "core" } ] }
+      "skills": [ { "skill_id": "sk_a1", "weight": "core" } ],
+      "project": null,                                 // or the GET /project shape once generated
+      "latest_review": null }                          // or the review object from POST /submit
   ],
   "courses": [
     { "id": "sc_c3", "code": "CS301", "name": "Database Management Systems",
@@ -149,6 +178,24 @@ Slow (1–3 min live; 6 s in demo mode). Client timeout 240 s.
 ```
 
 `404` if no analysis yet. Note ids here are DB ids (`sk_…`, `ro_…`), not the model's slugs.
+
+### `GET /project?role_id=…` → 200
+
+```json
+{ "id": "pr_9d", "role_id": "ro_b2", "title": "…", "spec": "…", "criteria": ["…","…","…"], "verifies": ["sk_a1", "sk_f4"] }
+```
+Generates on first call (3–10 s), cached after. `404` unknown role.
+
+### `POST /submit` → 200
+
+Request `{ "role_id": "ro_b2", "repo_url": "https://github.com/owner/repo" }`
+
+```jsonc
+{ "review": { "criteria_scores": [ { "criterion": "…", "score": 2, "note": "…" } ],
+              "feedback": "…", "total": 5, "max_total": 6, "passed": true },
+  "verified_skill_ids": ["sk_a1", "sk_f4", "sk_c2"] }   // FULL set for the student — client replaces, never merges
+```
+`409` no project yet · `422` `{detail: <user-facing repo message>}` · `502` review failed twice. 15–60 s live, 4 s demo.
 
 ### `POST /progress` → 200 `{ "ok": true }`
 
@@ -162,7 +209,9 @@ Request: `{ "skill_id": "sk_a1", "checked": true }`. Idempotent both ways.
 |---|---|---|---|
 | `demo_analysis.json` | §1 `AnalysisOut` | Dev B, `run_analysis_cli.py --demo` | `DEMO_MODE`; persistence tests |
 | `roadmap_response.json` | §3 `GET /roadmap` | Dev C hand-writes Day 1 from this doc; Dev A regenerates Day 2 via `dump_roadmap.py` | frontend with `VITE_USE_FIXTURE=true` |
-| `parity_cases.json` | list of `{ name, skills[], expected }` | all three, Day 2 morning | `test_parity.py`, `scoring.test.ts` |
+| `parity_cases.json` | list of `{ name, skills[{weight, coverage_depth, checked, verified}], expected }` | all three, Day 2 morning | `test_parity.py`, `scoring.test.ts` |
+| `demo_project.json` | §1b `ProjectOut` for the demo student's top role | Dev B, `run_project_cli.py` (live, Day 4 morning) | `DEMO_MODE` |
+| `demo_review.json` | §1c `ReviewOut` + total/max_total/passed for `DEMO_REPO_URL` | Dev B, `run_review_cli.py` (live, Day 4 morning) | `DEMO_MODE` |
 | `analysis.schema.json` | JSON Schema of §1 | Dev B, `export_schema.py` | reference; optional frontend validation of fixtures |
 
 **Integration is done when** `GET /roadmap` from the deployed backend, for the demo student, has
@@ -174,6 +223,7 @@ the exact shape of `roadmap_response.json` and the frontend renders it with `VIT
 
 | Field | Values |
 |---|---|
+| `score` | `0`, `1`, `2` |
 | `depth`, `coverage_depth` | `full`, `partial` (+ `null` only in the roadmap response) |
 | `weight` | `core`, `supporting` |
 | `proximity` | `core`, `adjacent` |

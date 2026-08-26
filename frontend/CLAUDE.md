@@ -17,7 +17,8 @@ Read `../docs/TDD.md` §7 before changing anything here. Types in `src/lib/types
 
 ## Rules
 
-- `checkedIds` in `AnalysisContext` is the only mutable state. Everything else is `useMemo` over it.
+- `checkedIds` (optimistic) and `verifiedIds` (server-authoritative, replaced wholesale by `/submit`) are the only state that affects numbers. Everything else is `useMemo` over them.
+- `ProveIt.tsx` lives inside `RoleDrawer` with four states: loading / ready / reviewing / reviewed. It reuses `SkillRow` for verifies badges and never touches the animation code.
 - The role drawer is **not a route**. It opens on the Roadmap page so the ranking stays visible while boxes are ticked.
 - Re-sort uses absolute positioning + `translateY` with stable keys. Never reorder the array of DOM nodes.
 - Ticking a box never awaits the network. `POST /api/progress` is fire-and-forget; revert + toast on failure.

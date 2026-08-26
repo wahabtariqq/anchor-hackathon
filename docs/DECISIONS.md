@@ -23,3 +23,15 @@ page, package, or deviate from the TDD — that's the whole process.
 | 16 | `pool_size`/`max_overflow` applied only to postgres URLs | SQLite's pool class rejects them, and local run-throughs and tests use SQLite | A |
 | 17 | Catalog curriculum text rewritten to 127-141 words each | The seed shipped at ~53 words against PRD §6.2's 120-200; it is the only course input the one model call gets | A |
 | 18 | A missing `X-Student-Id` returns 404, not FastAPI's default 422 | TDD §11 treats missing and unknown alike, and `lib/api.ts` omits the header when localStorage is empty | A |
+| 19 | v4: Prove It — project generation + repo review are separate calls; project lazy per (student, role), cached forever | Analysis call at token/quality budget; lazy targets current gaps; pre-baked projects go stale | all |
+| 20 | v4: Tick = 0.5, verified = 1.0, combined with `max` not `if/elif` | Self-report ≠ proof; `max` keeps every signal monotonic (the CR's elif chain let a tick lower a covered skill) | all |
+| 21 | v4: Verified skills = union over ALL passing submissions, not the latest | Skills are shared across roles; proof via one role's project must count everywhere | all |
+| 22 | v4: Repo review reads via GitHub REST only — no clone, no execution; UI says so | Safety + scope; honest about what's scored | B |
+| 23 | v4: `passed` threshold (0.6) lives in code, `REVIEW_PASS_RATIO` | Tunable without re-prompting | B |
+| 24 | v4: `GITHUB_TOKEN` required; 60 KB input cap; repo contents delimited as untrusted data | 60 req/h unauthenticated would break judge trials; latency; prompt injection | A |
+| 25 | v4: GitHub fetch lives in `app/github.py` (Dev A), not in `app/analysis/` | Plain HTTP, no AI; balances Dev B's Day 3 | all |
+| 26 | v4: Prove It gated on Day 2 exit criteria; requires Day 4; cut order per PRD §13 | Core must deploy before any Prove It work | all |
+| 27 | v4: Job signal = hand-curated posting excerpt seed set, in only if in the prompt from the start of Day 2 tuning | Grounds requirements without scraping; late context can re-break dedup | all |
+| 28 | v4: Rejected — tick 1.0 + verified 1.5× bonus | Exceeds 100 or needs renormalising; doesn't fix tick-everything | all |
+| 29 | v4 formula change lands on top of a v3 backend (entries 10-18) not yet migrated | Backend (Dev A) built out under v3 before the v4 CR landed; `schemas.py`/`models.py`/`scoring.py`/routers still need the v4 migration — see CONTRACT.md §1b/1c/2/3 | all |
+| — | *(Day 1)* measured analysis latency: ____ s | fill in | B |

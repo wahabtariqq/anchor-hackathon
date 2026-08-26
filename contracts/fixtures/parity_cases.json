@@ -1,69 +1,184 @@
 {
-  "_comment": "Shared by backend/tests/test_parity.py and frontend/src/lib/scoring.test.ts. Finish all ~15 cases together on Day 2 morning, before either fit function is done.",
+  "_comment": "v4 formula: earned += w * max(verified?1:0, checked?0.5:0, DEPTH[coverage]). Half-up rounding. Shared by test_parity.py and scoring.test.ts. Finish all ~18 cases together on Day 2 morning.",
   "cases": [
-    { "name": "all core fully covered",
-      "skills": [ { "weight": "core", "coverage_depth": "full", "checked": false },
-                  { "weight": "core", "coverage_depth": "full", "checked": false } ],
-      "expected": 100 },
-    { "name": "nothing covered",
-      "skills": [ { "weight": "core", "coverage_depth": null, "checked": false },
-                  { "weight": "supporting", "coverage_depth": null, "checked": false } ],
-      "expected": 0 },
-    { "name": "partial core only",
-      "skills": [ { "weight": "core", "coverage_depth": "partial", "checked": false } ],
-      "expected": 50 },
-    { "name": "checked beats partial",
-      "skills": [ { "weight": "core", "coverage_depth": "partial", "checked": true } ],
-      "expected": 100 },
-    { "name": "core full, supporting missing",
-      "skills": [ { "weight": "core", "coverage_depth": "full", "checked": false },
-                  { "weight": "supporting", "coverage_depth": null, "checked": false } ],
-      "expected": 75 },
-    { "name": "empty role", "skills": [], "expected": 0 },
-    { "name": "supporting only, fully covered",
-      "skills": [ { "weight": "supporting", "coverage_depth": "full", "checked": false } ],
-      "expected": 100 },
-    { "name": "checked with no coverage at all",
-      "skills": [ { "weight": "core", "coverage_depth": null, "checked": true } ],
-      "expected": 100 },
-    { "name": "all checked regardless of coverage",
-      "skills": [ { "weight": "core", "coverage_depth": null, "checked": true },
-                  { "weight": "supporting", "coverage_depth": "partial", "checked": true } ],
-      "expected": 100 },
-    { "name": "single supporting, partial coverage",
-      "skills": [ { "weight": "supporting", "coverage_depth": "partial", "checked": false } ],
-      "expected": 50 },
-    { "name": "core checked, supporting partial, core missing",
-      "skills": [ { "weight": "core", "coverage_depth": null, "checked": true },
-                  { "weight": "supporting", "coverage_depth": "partial", "checked": false },
-                  { "weight": "core", "coverage_depth": null, "checked": false } ],
-      "expected": 50 },
-    { "name": "rounding boundary at .5 (12.5% -> 13, half-up not banker's)",
-      "skills": [ { "weight": "supporting", "coverage_depth": "full", "checked": false },
-                  { "weight": "core", "coverage_depth": null, "checked": false },
-                  { "weight": "core", "coverage_depth": null, "checked": false },
-                  { "weight": "supporting", "coverage_depth": null, "checked": false } ],
-      "expected": 13 },
-    { "name": "rounding boundary at .5 (37.5% -> 38, half-up not banker's)",
-      "skills": [ { "weight": "core", "coverage_depth": "full", "checked": false },
-                  { "weight": "core", "coverage_depth": null, "checked": false },
-                  { "weight": "supporting", "coverage_depth": null, "checked": false },
-                  { "weight": "supporting", "coverage_depth": null, "checked": false } ],
-      "expected": 38 },
-    { "name": "realistic 8-skill mixed role",
-      "skills": [ { "weight": "core", "coverage_depth": "full", "checked": false },
-                  { "weight": "core", "coverage_depth": "partial", "checked": false },
-                  { "weight": "core", "coverage_depth": null, "checked": false },
-                  { "weight": "core", "coverage_depth": null, "checked": true },
-                  { "weight": "supporting", "coverage_depth": "full", "checked": false },
-                  { "weight": "supporting", "coverage_depth": null, "checked": false },
-                  { "weight": "supporting", "coverage_depth": "partial", "checked": false },
-                  { "weight": "supporting", "coverage_depth": null, "checked": true } ],
-      "expected": 63 },
-    { "name": "core-only role, mixed depths, nothing checked",
-      "skills": [ { "weight": "core", "coverage_depth": "full", "checked": false },
-                  { "weight": "core", "coverage_depth": "partial", "checked": false },
-                  { "weight": "core", "coverage_depth": null, "checked": false } ],
-      "expected": 50 }
+    {
+      "name": "all core fully covered",
+      "skills": [
+        {
+          "weight": "core",
+          "coverage_depth": "full",
+          "checked": false,
+          "verified": false
+        },
+        {
+          "weight": "core",
+          "coverage_depth": "full",
+          "checked": false,
+          "verified": false
+        }
+      ],
+      "expected": 100
+    },
+    {
+      "name": "nothing covered",
+      "skills": [
+        {
+          "weight": "core",
+          "coverage_depth": null,
+          "checked": false,
+          "verified": false
+        },
+        {
+          "weight": "supporting",
+          "coverage_depth": null,
+          "checked": false,
+          "verified": false
+        }
+      ],
+      "expected": 0
+    },
+    {
+      "name": "partial core only",
+      "skills": [
+        {
+          "weight": "core",
+          "coverage_depth": "partial",
+          "checked": false,
+          "verified": false
+        }
+      ],
+      "expected": 50
+    },
+    {
+      "name": "tick on partial = no change",
+      "skills": [
+        {
+          "weight": "core",
+          "coverage_depth": "partial",
+          "checked": true,
+          "verified": false
+        }
+      ],
+      "expected": 50
+    },
+    {
+      "name": "core full, supporting missing",
+      "skills": [
+        {
+          "weight": "core",
+          "coverage_depth": "full",
+          "checked": false,
+          "verified": false
+        },
+        {
+          "weight": "supporting",
+          "coverage_depth": null,
+          "checked": false,
+          "verified": false
+        }
+      ],
+      "expected": 75
+    },
+    {
+      "name": "empty role",
+      "skills": [],
+      "expected": 0
+    },
+    {
+      "name": "tick on uncovered core = 0.5",
+      "skills": [
+        {
+          "weight": "core",
+          "coverage_depth": null,
+          "checked": true,
+          "verified": false
+        }
+      ],
+      "expected": 50
+    },
+    {
+      "name": "tick on full = no change (max, not elif)",
+      "skills": [
+        {
+          "weight": "core",
+          "coverage_depth": "full",
+          "checked": true,
+          "verified": false
+        }
+      ],
+      "expected": 100
+    },
+    {
+      "name": "verified beats tick",
+      "skills": [
+        {
+          "weight": "core",
+          "coverage_depth": null,
+          "checked": true,
+          "verified": true
+        }
+      ],
+      "expected": 100
+    },
+    {
+      "name": "verified on full = no change",
+      "skills": [
+        {
+          "weight": "core",
+          "coverage_depth": "full",
+          "checked": false,
+          "verified": true
+        }
+      ],
+      "expected": 100
+    },
+    {
+      "name": "demo shape: 3 ticks then proof",
+      "skills": [
+        {
+          "weight": "core",
+          "coverage_depth": "full",
+          "checked": false,
+          "verified": false
+        },
+        {
+          "weight": "core",
+          "coverage_depth": null,
+          "checked": true,
+          "verified": true
+        },
+        {
+          "weight": "core",
+          "coverage_depth": null,
+          "checked": true,
+          "verified": false
+        },
+        {
+          "weight": "supporting",
+          "coverage_depth": "partial",
+          "checked": false,
+          "verified": false
+        }
+      ],
+      "expected": 80
+    },
+    {
+      "name": "half-up boundary",
+      "skills": [
+        {
+          "weight": "core",
+          "coverage_depth": null,
+          "checked": true,
+          "verified": false
+        },
+        {
+          "weight": "supporting",
+          "coverage_depth": null,
+          "checked": false,
+          "verified": false
+        }
+      ],
+      "expected": 38
+    }
   ]
 }

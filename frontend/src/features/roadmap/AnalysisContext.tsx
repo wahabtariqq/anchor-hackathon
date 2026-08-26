@@ -8,6 +8,7 @@ interface AnalysisContextValue {
   loading: boolean;
   error: string | null;
   checkedIds: Set<string>;
+  verifiedIds: Set<string>;
   toggle: (skillId: string) => void;
   roleFit: Map<string, number>;
   openRoleSlug: string | null;
@@ -21,6 +22,9 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set());
+  // Server-authoritative: seeded on load, then only ever replaced wholesale by a
+  // passing /submit response (never merged, never toggled locally like checkedIds).
+  const [verifiedIds, setVerifiedIds] = useState<Set<string>>(new Set());
   const [openRoleSlug, setOpenRoleSlug] = useState<string | null>(null);
 
   useEffect(() => {
@@ -30,6 +34,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
         if (cancelled) return;
         setData(res);
         setCheckedIds(new Set(res.skills.filter((s) => s.checked).map((s) => s.id)));
+        setVerifiedIds(new Set(res.skills.filter((s) => s.verified).map((s) => s.id)));
       })
       .catch((err: unknown) => {
         if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load roadmap");
@@ -42,8 +47,9 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // checkedIds is the ONLY mutable data in the app (per anchor-frontend skill).
-  // roleFit is always derived from it — never stored separately.
+  // checkedIds (optimistic) and verifiedIds (server-authoritative) are the only two
+  // mutable sets that drive numbers (per anchor-frontend skill). roleFit is always
+  // derived from them — never stored separately.
   const roleFit = useMemo(() => {
     const m = new Map<string, number>();
     if (!data) return m;
@@ -56,12 +62,13 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
             weight: rs.weight,
             coverageDepth: cov.get(rs.skill_id) ?? null,
             checked: checkedIds.has(rs.skill_id),
+            verified: verifiedIds.has(rs.skill_id),
           })),
         ),
       );
     }
     return m;
-  }, [data, checkedIds]);
+  }, [data, checkedIds, verifiedIds]);
 
   function toggle(skillId: string) {
     const wasChecked = checkedIds.has(skillId);
@@ -90,6 +97,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     loading,
     error,
     checkedIds,
+    verifiedIds,
     toggle,
     roleFit,
     openRoleSlug,

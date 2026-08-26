@@ -2,195 +2,890 @@
   "student": {
     "name": "Ayesha",
     "semester": 4,
-    "interests": ["Artificial Intelligence", "Databases", "UI/UX Design"]
+    "interests": [
+      "Artificial Intelligence",
+      "Databases",
+      "UI/UX Design"
+    ]
   },
   "skills": [
-    { "id": "sk_01", "slug": "sql-query-optimization", "name": "SQL Query Optimization", "real_world": "Cutting a 4-second dashboard query to 40ms is usually one missing composite index.", "coverage_depth": "full", "covered_by": ["CS301"], "checked": false },
-    { "id": "sk_02", "slug": "relational-schema-design", "name": "Relational Schema Design", "real_world": "A schema that doesn't anticipate a many-to-many relationship means a painful migration six months into production.", "coverage_depth": "full", "covered_by": ["CS301"], "checked": false },
-    { "id": "sk_03", "slug": "normalization", "name": "Normalization", "real_world": "Denormalizing too early is why a 'simple' user-address update touches twelve rows instead of one.", "coverage_depth": "full", "covered_by": ["CS301"], "checked": false },
-    { "id": "sk_04", "slug": "transaction-management", "name": "Transaction Management", "real_world": "Two customers paying for the last seat at once is exactly what a transaction isolation level is supposed to prevent.", "coverage_depth": "partial", "covered_by": ["CS301"], "checked": false },
-    { "id": "sk_05", "slug": "indexing-strategy", "name": "Indexing Strategy", "real_world": "An index on the wrong column silently doubles write latency while doing nothing for the read it was meant to speed up.", "coverage_depth": "partial", "covered_by": ["CS301"], "checked": false },
-    { "id": "sk_06", "slug": "algorithmic-complexity-analysis", "name": "Algorithmic Complexity Analysis", "real_world": "An O(n²) matching loop is invisible in a demo with 50 rows and a five-minute timeout in production with 50,000.", "coverage_depth": "full", "covered_by": ["CS201"], "checked": false },
-    { "id": "sk_07", "slug": "data-structure-selection", "name": "Data Structure Selection", "real_world": "Swapping a list for a hash set turned a 20-second membership check into a rounding error.", "coverage_depth": "full", "covered_by": ["CS201"], "checked": false },
-    { "id": "sk_08", "slug": "recursion-and-divide-conquer", "name": "Recursion & Divide-and-Conquer", "real_world": "A recursive tree traversal without a base-case guard is how a stack overflow ends up in a postmortem.", "coverage_depth": "partial", "covered_by": ["CS201"], "checked": false },
-    { "id": "sk_09", "slug": "supervised-learning-modeling", "name": "Supervised Learning Modeling", "real_world": "Picking logistic regression over a random forest because the model needs to be explained to a compliance team, not just be accurate.", "coverage_depth": "full", "covered_by": ["CS401"], "checked": false },
-    { "id": "sk_10", "slug": "feature-engineering", "name": "Feature Engineering", "real_world": "A single derived feature — days-since-last-purchase — often moves a churn model's accuracy more than switching algorithms does.", "coverage_depth": "full", "covered_by": ["CS401"], "checked": false },
-    { "id": "sk_11", "slug": "model-evaluation-metrics", "name": "Model Evaluation Metrics", "real_world": "A 99%-accurate fraud model is worthless if the fraud rate is 1% and it just predicts 'no fraud' every time — precision and recall catch that.", "coverage_depth": "partial", "covered_by": ["CS401"], "checked": false },
-    { "id": "sk_12", "slug": "python-scripting", "name": "Python Scripting", "real_world": "The difference between a one-off notebook cell and a script someone can re-run next week is usually just argument parsing and a requirements file.", "coverage_depth": "full", "covered_by": ["CS401"], "checked": false },
-    { "id": "sk_13", "slug": "linear-algebra-for-ml", "name": "Linear Algebra for ML", "real_world": "Understanding why a gradient explodes is a matrix-conditioning problem, not a 'try a smaller learning rate' problem.", "coverage_depth": "partial", "covered_by": ["CS401"], "checked": false },
-    { "id": "sk_14", "slug": "rest-api-design", "name": "REST API Design", "real_world": "A PATCH endpoint that silently accepts the whole object is how one client's stale read wipes out another client's just-saved change.", "coverage_depth": "full", "covered_by": ["CS402"], "checked": false },
-    { "id": "sk_15", "slug": "frontend-ui-implementation", "name": "Frontend UI Implementation", "real_world": "The button that's disabled but still clickable on mobile Safari is a state-management bug, not a CSS bug.", "coverage_depth": "full", "covered_by": ["CS402"], "checked": false },
-    { "id": "sk_16", "slug": "http-and-web-fundamentals", "name": "HTTP & Web Fundamentals", "real_world": "Caching a 200 response that should've been a 304 is why a page feels stale five minutes after a fix ships.", "coverage_depth": "full", "covered_by": ["CS402"], "checked": false },
-    { "id": "sk_17", "slug": "responsive-layout-design", "name": "Responsive Layout Design", "real_world": "A fixed-width table is the reason the checkout page is unusable on the exact device most of your traffic comes from.", "coverage_depth": "partial", "covered_by": ["CS402"], "checked": false },
-    { "id": "sk_18", "slug": "client-server-architecture", "name": "Client-Server Architecture", "real_world": "Putting business logic in the client is how a coupon code becomes editable in the browser console.", "coverage_depth": "partial", "covered_by": ["CS402"], "checked": false },
-    { "id": "sk_19", "slug": "data-pipeline-orchestration", "name": "Data Pipeline Orchestration", "real_world": "A nightly job that silently fails at 3am is a data-quality incident by the time anyone notices at 9am, unless something is watching the DAG.", "coverage_depth": null, "covered_by": [], "checked": false },
-    { "id": "sk_20", "slug": "distributed-systems-design", "name": "Distributed Systems Design", "real_world": "Two services both 'sure' they own the latest write is a split-brain bug, not a network bug.", "coverage_depth": null, "covered_by": [], "checked": false },
-    { "id": "sk_21", "slug": "cloud-infrastructure-deployment", "name": "Cloud Infrastructure Deployment", "real_world": "The difference between a demo that works on one laptop and a service that survives a traffic spike is entirely in how it's deployed.", "coverage_depth": null, "covered_by": [], "checked": false },
-    { "id": "sk_22", "slug": "data-visualization", "name": "Data Visualization", "real_world": "A dual-axis chart is how a team convinces itself two unrelated metrics are correlated.", "coverage_depth": null, "covered_by": [], "checked": false },
-    { "id": "sk_23", "slug": "statistical-analysis", "name": "Statistical Analysis", "real_world": "A/B test results with no significance check is how a coin-flip result ships as a 'winning' redesign.", "coverage_depth": null, "covered_by": [], "checked": false },
-    { "id": "sk_24", "slug": "etl-pipeline-development", "name": "ETL Pipeline Development", "real_world": "Silently dropping malformed rows during ingestion is how a finance report is wrong for a full quarter before anyone asks why.", "coverage_depth": null, "covered_by": [], "checked": false },
-    { "id": "sk_25", "slug": "ui-ux-design-principles", "name": "UI/UX Design Principles", "real_world": "Burying the delete-account flow five clicks deep isn't a dark pattern by accident — good UX makes the hard-to-find choice a deliberate one.", "coverage_depth": null, "covered_by": [], "checked": false },
-    { "id": "sk_26", "slug": "user-research-methods", "name": "User Research Methods", "real_world": "Five real usability-test sessions catch the confusing screen that a thousand analytics events never would.", "coverage_depth": null, "covered_by": [], "checked": false },
-    { "id": "sk_27", "slug": "prototyping-and-wireframing", "name": "Prototyping & Wireframing", "real_world": "A clickable prototype surfaces the missing 'are you sure?' step before it's a support ticket in production.", "coverage_depth": null, "covered_by": [], "checked": false },
-    { "id": "sk_28", "slug": "ml-model-deployment", "name": "ML Model Deployment", "real_world": "A model that scores 95% in the notebook and never gets served is a research artifact, not a product feature.", "coverage_depth": null, "covered_by": [], "checked": false },
-    { "id": "sk_29", "slug": "dashboarding-and-reporting", "name": "Dashboarding & Reporting", "real_world": "A dashboard nobody trusts because the numbers don't match the spreadsheet is a data-lineage problem, not a chart problem.", "coverage_depth": null, "covered_by": [], "checked": false },
-    { "id": "sk_30", "slug": "database-administration-and-backup", "name": "Database Administration & Backup", "real_world": "An untested backup is a backup that fails exactly once — during the outage it was supposed to save you from.", "coverage_depth": null, "covered_by": [], "checked": false },
-    { "id": "sk_31", "slug": "stakeholder-communication", "name": "Stakeholder Communication", "real_world": "Translating 'the model has 12% variance' into 'expect this forecast to be off by about one week' is what actually gets a plan approved.", "coverage_depth": null, "covered_by": [], "checked": false },
-    { "id": "sk_32", "slug": "data-warehousing", "name": "Data Warehousing", "real_world": "Query a 200-table OLTP schema for a quarterly report and you'll wait an hour; a warehouse's star schema returns it in seconds.", "coverage_depth": null, "covered_by": [], "checked": false }
+    {
+      "id": "sk_01",
+      "slug": "sql-query-optimization",
+      "name": "SQL Query Optimization",
+      "real_world": "Cutting a 4-second dashboard query to 40ms is usually one missing composite index.",
+      "coverage_depth": "full",
+      "covered_by": [
+        "CS301"
+      ],
+      "checked": false,
+      "verified": false
+    },
+    {
+      "id": "sk_02",
+      "slug": "relational-schema-design",
+      "name": "Relational Schema Design",
+      "real_world": "A schema that doesn't anticipate a many-to-many relationship means a painful migration six months into production.",
+      "coverage_depth": "full",
+      "covered_by": [
+        "CS301"
+      ],
+      "checked": false,
+      "verified": false
+    },
+    {
+      "id": "sk_03",
+      "slug": "normalization",
+      "name": "Normalization",
+      "real_world": "Denormalizing too early is why a 'simple' user-address update touches twelve rows instead of one.",
+      "coverage_depth": "full",
+      "covered_by": [
+        "CS301"
+      ],
+      "checked": false,
+      "verified": false
+    },
+    {
+      "id": "sk_04",
+      "slug": "transaction-management",
+      "name": "Transaction Management",
+      "real_world": "Two customers paying for the last seat at once is exactly what a transaction isolation level is supposed to prevent.",
+      "coverage_depth": "partial",
+      "covered_by": [
+        "CS301"
+      ],
+      "checked": false,
+      "verified": false
+    },
+    {
+      "id": "sk_05",
+      "slug": "indexing-strategy",
+      "name": "Indexing Strategy",
+      "real_world": "An index on the wrong column silently doubles write latency while doing nothing for the read it was meant to speed up.",
+      "coverage_depth": "partial",
+      "covered_by": [
+        "CS301"
+      ],
+      "checked": false,
+      "verified": false
+    },
+    {
+      "id": "sk_06",
+      "slug": "algorithmic-complexity-analysis",
+      "name": "Algorithmic Complexity Analysis",
+      "real_world": "An O(n²) matching loop is invisible in a demo with 50 rows and a five-minute timeout in production with 50,000.",
+      "coverage_depth": "full",
+      "covered_by": [
+        "CS201"
+      ],
+      "checked": false,
+      "verified": false
+    },
+    {
+      "id": "sk_07",
+      "slug": "data-structure-selection",
+      "name": "Data Structure Selection",
+      "real_world": "Swapping a list for a hash set turned a 20-second membership check into a rounding error.",
+      "coverage_depth": "full",
+      "covered_by": [
+        "CS201"
+      ],
+      "checked": false,
+      "verified": false
+    },
+    {
+      "id": "sk_08",
+      "slug": "recursion-and-divide-conquer",
+      "name": "Recursion & Divide-and-Conquer",
+      "real_world": "A recursive tree traversal without a base-case guard is how a stack overflow ends up in a postmortem.",
+      "coverage_depth": "partial",
+      "covered_by": [
+        "CS201"
+      ],
+      "checked": false,
+      "verified": false
+    },
+    {
+      "id": "sk_09",
+      "slug": "supervised-learning-modeling",
+      "name": "Supervised Learning Modeling",
+      "real_world": "Picking logistic regression over a random forest because the model needs to be explained to a compliance team, not just be accurate.",
+      "coverage_depth": "full",
+      "covered_by": [
+        "CS401"
+      ],
+      "checked": false,
+      "verified": false
+    },
+    {
+      "id": "sk_10",
+      "slug": "feature-engineering",
+      "name": "Feature Engineering",
+      "real_world": "A single derived feature — days-since-last-purchase — often moves a churn model's accuracy more than switching algorithms does.",
+      "coverage_depth": "full",
+      "covered_by": [
+        "CS401"
+      ],
+      "checked": false,
+      "verified": false
+    },
+    {
+      "id": "sk_11",
+      "slug": "model-evaluation-metrics",
+      "name": "Model Evaluation Metrics",
+      "real_world": "A 99%-accurate fraud model is worthless if the fraud rate is 1% and it just predicts 'no fraud' every time — precision and recall catch that.",
+      "coverage_depth": "partial",
+      "covered_by": [
+        "CS401"
+      ],
+      "checked": false,
+      "verified": false
+    },
+    {
+      "id": "sk_12",
+      "slug": "python-scripting",
+      "name": "Python Scripting",
+      "real_world": "The difference between a one-off notebook cell and a script someone can re-run next week is usually just argument parsing and a requirements file.",
+      "coverage_depth": "full",
+      "covered_by": [
+        "CS401"
+      ],
+      "checked": false,
+      "verified": false
+    },
+    {
+      "id": "sk_13",
+      "slug": "linear-algebra-for-ml",
+      "name": "Linear Algebra for ML",
+      "real_world": "Understanding why a gradient explodes is a matrix-conditioning problem, not a 'try a smaller learning rate' problem.",
+      "coverage_depth": "partial",
+      "covered_by": [
+        "CS401"
+      ],
+      "checked": false,
+      "verified": false
+    },
+    {
+      "id": "sk_14",
+      "slug": "rest-api-design",
+      "name": "REST API Design",
+      "real_world": "A PATCH endpoint that silently accepts the whole object is how one client's stale read wipes out another client's just-saved change.",
+      "coverage_depth": "full",
+      "covered_by": [
+        "CS402"
+      ],
+      "checked": false,
+      "verified": false
+    },
+    {
+      "id": "sk_15",
+      "slug": "frontend-ui-implementation",
+      "name": "Frontend UI Implementation",
+      "real_world": "The button that's disabled but still clickable on mobile Safari is a state-management bug, not a CSS bug.",
+      "coverage_depth": "full",
+      "covered_by": [
+        "CS402"
+      ],
+      "checked": false,
+      "verified": false
+    },
+    {
+      "id": "sk_16",
+      "slug": "http-and-web-fundamentals",
+      "name": "HTTP & Web Fundamentals",
+      "real_world": "Caching a 200 response that should've been a 304 is why a page feels stale five minutes after a fix ships.",
+      "coverage_depth": "full",
+      "covered_by": [
+        "CS402"
+      ],
+      "checked": false,
+      "verified": false
+    },
+    {
+      "id": "sk_17",
+      "slug": "responsive-layout-design",
+      "name": "Responsive Layout Design",
+      "real_world": "A fixed-width table is the reason the checkout page is unusable on the exact device most of your traffic comes from.",
+      "coverage_depth": "partial",
+      "covered_by": [
+        "CS402"
+      ],
+      "checked": false,
+      "verified": false
+    },
+    {
+      "id": "sk_18",
+      "slug": "client-server-architecture",
+      "name": "Client-Server Architecture",
+      "real_world": "Putting business logic in the client is how a coupon code becomes editable in the browser console.",
+      "coverage_depth": "partial",
+      "covered_by": [
+        "CS402"
+      ],
+      "checked": false,
+      "verified": false
+    },
+    {
+      "id": "sk_19",
+      "slug": "data-pipeline-orchestration",
+      "name": "Data Pipeline Orchestration",
+      "real_world": "A nightly job that silently fails at 3am is a data-quality incident by the time anyone notices at 9am, unless something is watching the DAG.",
+      "coverage_depth": null,
+      "covered_by": [],
+      "checked": false,
+      "verified": false
+    },
+    {
+      "id": "sk_20",
+      "slug": "distributed-systems-design",
+      "name": "Distributed Systems Design",
+      "real_world": "Two services both 'sure' they own the latest write is a split-brain bug, not a network bug.",
+      "coverage_depth": null,
+      "covered_by": [],
+      "checked": false,
+      "verified": false
+    },
+    {
+      "id": "sk_21",
+      "slug": "cloud-infrastructure-deployment",
+      "name": "Cloud Infrastructure Deployment",
+      "real_world": "The difference between a demo that works on one laptop and a service that survives a traffic spike is entirely in how it's deployed.",
+      "coverage_depth": null,
+      "covered_by": [],
+      "checked": false,
+      "verified": false
+    },
+    {
+      "id": "sk_22",
+      "slug": "data-visualization",
+      "name": "Data Visualization",
+      "real_world": "A dual-axis chart is how a team convinces itself two unrelated metrics are correlated.",
+      "coverage_depth": null,
+      "covered_by": [],
+      "checked": false,
+      "verified": false
+    },
+    {
+      "id": "sk_23",
+      "slug": "statistical-analysis",
+      "name": "Statistical Analysis",
+      "real_world": "A/B test results with no significance check is how a coin-flip result ships as a 'winning' redesign.",
+      "coverage_depth": null,
+      "covered_by": [],
+      "checked": false,
+      "verified": false
+    },
+    {
+      "id": "sk_24",
+      "slug": "etl-pipeline-development",
+      "name": "ETL Pipeline Development",
+      "real_world": "Silently dropping malformed rows during ingestion is how a finance report is wrong for a full quarter before anyone asks why.",
+      "coverage_depth": null,
+      "covered_by": [],
+      "checked": false,
+      "verified": false
+    },
+    {
+      "id": "sk_25",
+      "slug": "ui-ux-design-principles",
+      "name": "UI/UX Design Principles",
+      "real_world": "Burying the delete-account flow five clicks deep isn't a dark pattern by accident — good UX makes the hard-to-find choice a deliberate one.",
+      "coverage_depth": null,
+      "covered_by": [],
+      "checked": false,
+      "verified": false
+    },
+    {
+      "id": "sk_26",
+      "slug": "user-research-methods",
+      "name": "User Research Methods",
+      "real_world": "Five real usability-test sessions catch the confusing screen that a thousand analytics events never would.",
+      "coverage_depth": null,
+      "covered_by": [],
+      "checked": false,
+      "verified": false
+    },
+    {
+      "id": "sk_27",
+      "slug": "prototyping-and-wireframing",
+      "name": "Prototyping & Wireframing",
+      "real_world": "A clickable prototype surfaces the missing 'are you sure?' step before it's a support ticket in production.",
+      "coverage_depth": null,
+      "covered_by": [],
+      "checked": false,
+      "verified": false
+    },
+    {
+      "id": "sk_28",
+      "slug": "ml-model-deployment",
+      "name": "ML Model Deployment",
+      "real_world": "A model that scores 95% in the notebook and never gets served is a research artifact, not a product feature.",
+      "coverage_depth": null,
+      "covered_by": [],
+      "checked": false,
+      "verified": false
+    },
+    {
+      "id": "sk_29",
+      "slug": "dashboarding-and-reporting",
+      "name": "Dashboarding & Reporting",
+      "real_world": "A dashboard nobody trusts because the numbers don't match the spreadsheet is a data-lineage problem, not a chart problem.",
+      "coverage_depth": null,
+      "covered_by": [],
+      "checked": false,
+      "verified": false
+    },
+    {
+      "id": "sk_30",
+      "slug": "database-administration-and-backup",
+      "name": "Database Administration & Backup",
+      "real_world": "An untested backup is a backup that fails exactly once — during the outage it was supposed to save you from.",
+      "coverage_depth": null,
+      "covered_by": [],
+      "checked": false,
+      "verified": false
+    },
+    {
+      "id": "sk_31",
+      "slug": "stakeholder-communication",
+      "name": "Stakeholder Communication",
+      "real_world": "Translating 'the model has 12% variance' into 'expect this forecast to be off by about one week' is what actually gets a plan approved.",
+      "coverage_depth": null,
+      "covered_by": [],
+      "checked": false,
+      "verified": false
+    },
+    {
+      "id": "sk_32",
+      "slug": "data-warehousing",
+      "name": "Data Warehousing",
+      "real_world": "Query a 200-table OLTP schema for a quarterly report and you'll wait an hour; a warehouse's star schema returns it in seconds.",
+      "coverage_depth": null,
+      "covered_by": [],
+      "checked": false,
+      "verified": false
+    }
   ],
   "roles": [
     {
-      "id": "ro_01", "slug": "backend-engineer", "title": "Backend Engineer",
+      "id": "ro_01",
+      "slug": "backend-engineer",
+      "title": "Backend Engineer",
       "one_liner": "Designs and ships the APIs and services that power an application's core logic.",
-      "proximity": "core", "bridge": "", "rank": 1, "fit_percent": 62,
+      "proximity": "core",
+      "bridge": "",
+      "rank": 1,
+      "fit_percent": 62,
       "skills": [
-        { "skill_id": "sk_14", "weight": "core" },
-        { "skill_id": "sk_18", "weight": "core" },
-        { "skill_id": "sk_02", "weight": "core" },
-        { "skill_id": "sk_21", "weight": "core" },
-        { "skill_id": "sk_04", "weight": "core" },
-        { "skill_id": "sk_16", "weight": "supporting" },
-        { "skill_id": "sk_01", "weight": "supporting" },
-        { "skill_id": "sk_06", "weight": "supporting" },
-        { "skill_id": "sk_20", "weight": "supporting" },
-        { "skill_id": "sk_19", "weight": "supporting" },
-        { "skill_id": "sk_12", "weight": "supporting" }
-      ]
+        {
+          "skill_id": "sk_14",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_18",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_02",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_21",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_04",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_16",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_01",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_06",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_20",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_19",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_12",
+          "weight": "supporting"
+        }
+      ],
+      "project": null,
+      "latest_review": null
     },
     {
-      "id": "ro_07", "slug": "full-stack-product-engineer", "title": "Full-Stack Product Engineer",
+      "id": "ro_07",
+      "slug": "full-stack-product-engineer",
+      "title": "Full-Stack Product Engineer",
       "one_liner": "Ships a feature end-to-end, from the database schema to the screen a user taps.",
-      "proximity": "adjacent", "bridge": "Your Web Development coursework and UI/UX interest converge here — pair that with your database work and you're closer to shipping full products than you'd think.",
-      "rank": 7, "fit_percent": 62,
+      "proximity": "adjacent",
+      "bridge": "Your Web Development coursework and UI/UX interest converge here — pair that with your database work and you're closer to shipping full products than you'd think.",
+      "rank": 7,
+      "fit_percent": 62,
       "skills": [
-        { "skill_id": "sk_14", "weight": "core" },
-        { "skill_id": "sk_15", "weight": "core" },
-        { "skill_id": "sk_25", "weight": "core" },
-        { "skill_id": "sk_02", "weight": "core" },
-        { "skill_id": "sk_27", "weight": "core" },
-        { "skill_id": "sk_16", "weight": "supporting" },
-        { "skill_id": "sk_17", "weight": "supporting" },
-        { "skill_id": "sk_18", "weight": "supporting" },
-        { "skill_id": "sk_26", "weight": "supporting" },
-        { "skill_id": "sk_01", "weight": "supporting" },
-        { "skill_id": "sk_12", "weight": "supporting" }
-      ]
+        {
+          "skill_id": "sk_14",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_15",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_25",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_02",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_27",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_16",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_17",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_18",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_26",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_01",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_12",
+          "weight": "supporting"
+        }
+      ],
+      "project": null,
+      "latest_review": null
     },
     {
-      "id": "ro_08", "slug": "data-visualization-engineer", "title": "Data Visualization Engineer",
+      "id": "ro_08",
+      "slug": "data-visualization-engineer",
+      "title": "Data Visualization Engineer",
       "one_liner": "Turns models and raw data into interfaces people can actually read and trust.",
-      "proximity": "adjacent", "bridge": "Your Machine Learning and Database coursework plus your UI/UX interest point somewhere you haven't considered — turning models and data into interfaces people actually use.",
-      "rank": 8, "fit_percent": 53,
+      "proximity": "adjacent",
+      "bridge": "Your Machine Learning and Database coursework plus your UI/UX interest point somewhere you haven't considered — turning models and data into interfaces people actually use.",
+      "rank": 8,
+      "fit_percent": 53,
       "skills": [
-        { "skill_id": "sk_22", "weight": "core" },
-        { "skill_id": "sk_29", "weight": "core" },
-        { "skill_id": "sk_15", "weight": "core" },
-        { "skill_id": "sk_01", "weight": "core" },
-        { "skill_id": "sk_25", "weight": "supporting" },
-        { "skill_id": "sk_09", "weight": "supporting" },
-        { "skill_id": "sk_17", "weight": "supporting" },
-        { "skill_id": "sk_12", "weight": "supporting" },
-        { "skill_id": "sk_26", "weight": "supporting" },
-        { "skill_id": "sk_02", "weight": "supporting" }
-      ]
+        {
+          "skill_id": "sk_22",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_29",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_15",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_01",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_25",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_09",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_17",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_12",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_26",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_02",
+          "weight": "supporting"
+        }
+      ],
+      "project": null,
+      "latest_review": null
     },
     {
-      "id": "ro_02", "slug": "data-scientist", "title": "Data Scientist",
+      "id": "ro_02",
+      "slug": "data-scientist",
+      "title": "Data Scientist",
       "one_liner": "Turns messy data into models and analysis that answer a real business question.",
-      "proximity": "core", "bridge": "", "rank": 2, "fit_percent": 50,
+      "proximity": "core",
+      "bridge": "",
+      "rank": 2,
+      "fit_percent": 50,
       "skills": [
-        { "skill_id": "sk_09", "weight": "core" },
-        { "skill_id": "sk_23", "weight": "core" },
-        { "skill_id": "sk_10", "weight": "core" },
-        { "skill_id": "sk_11", "weight": "core" },
-        { "skill_id": "sk_22", "weight": "core" },
-        { "skill_id": "sk_12", "weight": "supporting" },
-        { "skill_id": "sk_01", "weight": "supporting" },
-        { "skill_id": "sk_13", "weight": "supporting" },
-        { "skill_id": "sk_29", "weight": "supporting" },
-        { "skill_id": "sk_31", "weight": "supporting" },
-        { "skill_id": "sk_06", "weight": "supporting" },
-        { "skill_id": "sk_19", "weight": "supporting" }
-      ]
+        {
+          "skill_id": "sk_09",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_23",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_10",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_11",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_22",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_12",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_01",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_13",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_29",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_31",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_06",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_19",
+          "weight": "supporting"
+        }
+      ],
+      "project": null,
+      "latest_review": null
     },
     {
-      "id": "ro_03", "slug": "machine-learning-engineer", "title": "Machine Learning Engineer",
+      "id": "ro_03",
+      "slug": "machine-learning-engineer",
+      "title": "Machine Learning Engineer",
       "one_liner": "Takes a model from notebook to production-grade prediction service.",
-      "proximity": "core", "bridge": "", "rank": 3, "fit_percent": 46,
+      "proximity": "core",
+      "bridge": "",
+      "rank": 3,
+      "fit_percent": 46,
       "skills": [
-        { "skill_id": "sk_09", "weight": "core" },
-        { "skill_id": "sk_10", "weight": "core" },
-        { "skill_id": "sk_21", "weight": "core" },
-        { "skill_id": "sk_28", "weight": "core" },
-        { "skill_id": "sk_19", "weight": "core" },
-        { "skill_id": "sk_13", "weight": "core" },
-        { "skill_id": "sk_11", "weight": "supporting" },
-        { "skill_id": "sk_12", "weight": "supporting" },
-        { "skill_id": "sk_20", "weight": "supporting" },
-        { "skill_id": "sk_06", "weight": "supporting" },
-        { "skill_id": "sk_23", "weight": "supporting" },
-        { "skill_id": "sk_01", "weight": "supporting" }
-      ]
+        {
+          "skill_id": "sk_09",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_10",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_21",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_28",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_19",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_13",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_11",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_12",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_20",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_06",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_23",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_01",
+          "weight": "supporting"
+        }
+      ],
+      "project": null,
+      "latest_review": null
     },
     {
-      "id": "ro_04", "slug": "database-administrator", "title": "Database Administrator",
+      "id": "ro_04",
+      "slug": "database-administrator",
+      "title": "Database Administrator",
       "one_liner": "Keeps the data layer fast, correct, and recoverable under real load.",
-      "proximity": "core", "bridge": "", "rank": 4, "fit_percent": 45,
+      "proximity": "core",
+      "bridge": "",
+      "rank": 4,
+      "fit_percent": 45,
       "skills": [
-        { "skill_id": "sk_01", "weight": "core" },
-        { "skill_id": "sk_04", "weight": "core" },
-        { "skill_id": "sk_05", "weight": "core" },
-        { "skill_id": "sk_30", "weight": "core" },
-        { "skill_id": "sk_21", "weight": "core" },
-        { "skill_id": "sk_02", "weight": "supporting" },
-        { "skill_id": "sk_03", "weight": "supporting" },
-        { "skill_id": "sk_20", "weight": "supporting" },
-        { "skill_id": "sk_19", "weight": "supporting" },
-        { "skill_id": "sk_06", "weight": "supporting" }
-      ]
+        {
+          "skill_id": "sk_01",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_04",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_05",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_30",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_21",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_02",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_03",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_20",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_19",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_06",
+          "weight": "supporting"
+        }
+      ],
+      "project": null,
+      "latest_review": null
     },
     {
-      "id": "ro_05", "slug": "data-engineer", "title": "Data Engineer",
+      "id": "ro_05",
+      "slug": "data-engineer",
+      "title": "Data Engineer",
       "one_liner": "Builds the pipelines that move and reshape data for analysts and models.",
-      "proximity": "core", "bridge": "", "rank": 5, "fit_percent": 42,
+      "proximity": "core",
+      "bridge": "",
+      "rank": 5,
+      "fit_percent": 42,
       "skills": [
-        { "skill_id": "sk_01", "weight": "core" },
-        { "skill_id": "sk_02", "weight": "core" },
-        { "skill_id": "sk_05", "weight": "core" },
-        { "skill_id": "sk_19", "weight": "core" },
-        { "skill_id": "sk_21", "weight": "core" },
-        { "skill_id": "sk_24", "weight": "core" },
-        { "skill_id": "sk_32", "weight": "supporting" },
-        { "skill_id": "sk_20", "weight": "supporting" },
-        { "skill_id": "sk_12", "weight": "supporting" },
-        { "skill_id": "sk_06", "weight": "supporting" },
-        { "skill_id": "sk_04", "weight": "supporting" },
-        { "skill_id": "sk_30", "weight": "supporting" }
-      ]
+        {
+          "skill_id": "sk_01",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_02",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_05",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_19",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_21",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_24",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_32",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_20",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_12",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_06",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_04",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_30",
+          "weight": "supporting"
+        }
+      ],
+      "project": null,
+      "latest_review": null
     },
     {
-      "id": "ro_06", "slug": "data-analyst", "title": "Data Analyst",
+      "id": "ro_06",
+      "slug": "data-analyst",
+      "title": "Data Analyst",
       "one_liner": "Answers concrete business questions with queries, stats, and clear reporting.",
-      "proximity": "core", "bridge": "", "rank": 6, "fit_percent": 42,
+      "proximity": "core",
+      "bridge": "",
+      "rank": 6,
+      "fit_percent": 42,
       "skills": [
-        { "skill_id": "sk_01", "weight": "core" },
-        { "skill_id": "sk_23", "weight": "core" },
-        { "skill_id": "sk_22", "weight": "core" },
-        { "skill_id": "sk_29", "weight": "core" },
-        { "skill_id": "sk_02", "weight": "supporting" },
-        { "skill_id": "sk_12", "weight": "supporting" },
-        { "skill_id": "sk_31", "weight": "supporting" },
-        { "skill_id": "sk_06", "weight": "supporting" },
-        { "skill_id": "sk_11", "weight": "supporting" },
-        { "skill_id": "sk_05", "weight": "supporting" },
-        { "skill_id": "sk_09", "weight": "supporting" }
-      ]
+        {
+          "skill_id": "sk_01",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_23",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_22",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_29",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sk_02",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_12",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_31",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_06",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_11",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_05",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "sk_09",
+          "weight": "supporting"
+        }
+      ],
+      "project": null,
+      "latest_review": null
     }
   ],
   "courses": [
-    { "id": "sc_01", "code": "CS201", "name": "Data Structures & Algorithms", "semester_tag": "past", "skill_ids": ["sk_06", "sk_07", "sk_08"] },
-    { "id": "sc_02", "code": "CS301", "name": "Database Management Systems", "semester_tag": "past", "skill_ids": ["sk_01", "sk_02", "sk_03", "sk_04", "sk_05"] },
-    { "id": "sc_03", "code": "CS401", "name": "Machine Learning", "semester_tag": "current", "skill_ids": ["sk_09", "sk_10", "sk_11", "sk_12", "sk_13"] },
-    { "id": "sc_04", "code": "CS402", "name": "Web Development", "semester_tag": "current", "skill_ids": ["sk_14", "sk_15", "sk_16", "sk_17", "sk_18"] }
+    {
+      "id": "sc_01",
+      "code": "CS201",
+      "name": "Data Structures & Algorithms",
+      "semester_tag": "past",
+      "skill_ids": [
+        "sk_06",
+        "sk_07",
+        "sk_08"
+      ]
+    },
+    {
+      "id": "sc_02",
+      "code": "CS301",
+      "name": "Database Management Systems",
+      "semester_tag": "past",
+      "skill_ids": [
+        "sk_01",
+        "sk_02",
+        "sk_03",
+        "sk_04",
+        "sk_05"
+      ]
+    },
+    {
+      "id": "sc_03",
+      "code": "CS401",
+      "name": "Machine Learning",
+      "semester_tag": "current",
+      "skill_ids": [
+        "sk_09",
+        "sk_10",
+        "sk_11",
+        "sk_12",
+        "sk_13"
+      ]
+    },
+    {
+      "id": "sc_04",
+      "code": "CS402",
+      "name": "Web Development",
+      "semester_tag": "current",
+      "skill_ids": [
+        "sk_14",
+        "sk_15",
+        "sk_16",
+        "sk_17",
+        "sk_18"
+      ]
+    }
   ]
 }

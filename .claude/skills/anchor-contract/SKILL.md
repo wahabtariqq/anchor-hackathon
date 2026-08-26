@@ -1,6 +1,6 @@
 ---
 name: anchor-contract
-description: The shared data contract for ANCHOR — model output schema, API request/response shapes, fit % formula, fixtures, and the rules for changing any of them. Use this whenever a task touches schemas.py, types.ts, models.py, analysis/schema.py, anything in contracts/, any API response shape, the fit formula, or when two lanes (backend / AI / frontend) disagree about a field name, type, or enum. Also use it before writing any fixture JSON by hand.
+description: The shared data contract for ANCHOR — analysis / project / review output schemas, API request/response shapes, the v4 fit % formula (max of verified, tick, coverage), fixtures, and the rules for changing any of them. Use this whenever a task touches schemas.py, types.ts, models.py, analysis/schema.py, anything in contracts/, any API response shape, the fit formula, or when two lanes (backend / AI / frontend) disagree about a field name, type, or enum. Also use it before writing any fixture JSON by hand.
 ---
 
 # ANCHOR contract
@@ -42,7 +42,11 @@ Copy the shape from `docs/CONTRACT.md` §3 exactly. Common mistakes:
 The contract wins. If the contract is silent, decide, write it into `docs/CONTRACT.md`, and
 add a line to `docs/DECISIONS.md`. Do not resolve it in Slack alone.
 
-## Fit formula gotcha
+## Fit formula gotchas
+
+`max`, not `if/elif`. The v4 change request had an elif chain that let a tick lower a fully-covered skill; the contract uses `max` so no action lowers a score. The parity fixture must include `coverage_depth: "full", checked: true → 1.0` and `verified` cases.
+
+### Rounding
 
 Python `round()` is banker's rounding; JS `Math.round()` is half-up. Both implementations
 use explicit half-up (`int(x + 0.5)` / `Math.floor(x + 0.5)`). If you see parity tests

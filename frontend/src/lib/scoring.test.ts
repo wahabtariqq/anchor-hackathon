@@ -6,6 +6,7 @@ interface ParitySkill {
   weight: "core" | "supporting";
   coverage_depth: "full" | "partial" | null;
   checked: boolean;
+  verified: boolean;
 }
 
 describe("fitPercent parity cases", () => {
@@ -15,6 +16,7 @@ describe("fitPercent parity cases", () => {
         weight: s.weight,
         coverageDepth: s.coverage_depth,
         checked: s.checked,
+        verified: s.verified,
       }));
       expect(fitPercent(skills)).toBe(c.expected);
     });

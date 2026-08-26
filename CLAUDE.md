@@ -11,15 +11,17 @@ covered vs missing skills per role, and re-ranks every role live when the studen
 
 1. **Skills are the only source of truth.** Courses and roles are views over the skill table.
    Progress is keyed to `skill.id`, never to a course or a role.
-2. **One model call, then arithmetic.** Only `backend/app/analysis/` calls Anthropic, once per
-   student. Fit % is computed in `scoring.py` / `scoring.ts`, never by the model, never cached.
+2. **Three model call types, then arithmetic.** Analysis (once per student), project generation (lazy,
+   cached per student × role), repo review (per submission). Only `backend/app/analysis/` calls Anthropic.
+   Fit % and `passed` are computed in code (`scoring.py` / `scoring.ts`, `review.py`), never by the model.
+3. **Nothing lowers a score.** Fit uses `max(verified, tick, coverage)`. Verified = union over all passing submissions.
 
 ## Repo map and ownership lanes
 
 | Path | Owner | Notes |
 |---|---|---|
-| `backend/app/**` except `analysis/` | Dev A | API, DB, persistence, scoring |
-| `backend/app/analysis/**`, `backend/seed/demo_analysis.json` | Dev B | AI pipeline. Exposes one function. Nobody else edits. |
+| `backend/app/**` except `analysis/` | Dev A | API, DB, persistence, scoring, `github.py`, `/project`, `/submit` |
+| `backend/app/analysis/**`, `contracts/fixtures/demo_*.json` | Dev B | Three model calls. Exposes `run_analysis`, `generate_project`, `review_repo`. Nobody else edits. |
 | `frontend/src/features/roadmap/**`, `frontend/src/lib/**`, `frontend/src/app/**` | Dev C | Roadmap, drawer, animation, state |
 | `frontend/src/features/setup/**` | Dev A | Setup screen |
 | `frontend/src/features/analyzing/**` | Dev B | Analyzing screen |
@@ -40,6 +42,8 @@ instead of making it. Cross-lane work goes through the integration seams below.
 3. `contracts/fixtures/demo_analysis.json` is Dev B's validated model output. It feeds both
    `DEMO_MODE` and Dev A's persistence tests.
 4. `contracts/fixtures/parity_cases.json` is read by both `test_parity.py` and `scoring.test.ts`.
+5. `app.github.fetch_repo(url) -> RepoBundle` (Dev A) feeds `app.analysis.review_repo(project, bundle)` (Dev B).
+   Prove It is Day 3 afternoon + Day 4 and only starts once the core is deployed (PRD §13).
 
 ## Commands
 
@@ -52,6 +56,8 @@ python scripts/seed_db.py
 python scripts/run_analysis_cli.py --demo          # Dev B: pipeline only, no DB, saves fixture
 python scripts/dump_roadmap.py --student <id>      # Dev A: refresh roadmap_response.json
 python -m app.analysis.export_schema               # Dev B: refresh contracts/analysis.schema.json
+python scripts/run_project_cli.py --role data-engineer        # Dev B: project from demo_analysis.json
+python scripts/run_review_cli.py --url https://github.com/o/r # Dev B: fetch + review against demo_project.json
 
 # frontend
 cd frontend && npm install
