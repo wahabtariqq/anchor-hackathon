@@ -10,7 +10,7 @@ from sqlmodel import SQLModel
 
 from app.config import settings
 from app.db import engine
-from app.routers import courses, roadmap, students
+from app.routers import courses, progress, roadmap, students
 
 logging.basicConfig(level=logging.INFO)
 
@@ -33,6 +33,7 @@ app.add_middleware(
 app.include_router(courses.router)
 app.include_router(students.router)
 app.include_router(roadmap.router)
+app.include_router(progress.router)
 
 
 @app.get("/health")
