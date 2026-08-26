@@ -12,10 +12,13 @@ from app.models import Student
 
 
 def current_student(
-    x_student_id: str = Header(alias="X-Student-Id"),
+    x_student_id: str | None = Header(default=None, alias="X-Student-Id"),
     session: Session = Depends(get_session),
 ) -> Student:
-    student = session.get(Student, x_student_id)
+    # TDD §11 treats missing and unknown alike: 404, so the client clears the stored id
+    # and redirects to /setup. lib/api.ts omits the header entirely when localStorage is
+    # empty, which is exactly the "cleared id, stale tab" case.
+    student = session.get(Student, x_student_id) if x_student_id else None
     if not student:
         raise HTTPException(404, "Unknown student — start over")
     return student
