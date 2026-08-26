@@ -15,6 +15,12 @@ class Settings(BaseSettings):
     ANALYSIS_RETRY_MAX_TOKENS: int = 24000
     DEMO_MODE: bool = False
     DEMO_STUDENT_NAME: str = "Ayesha"
+    DEMO_REPO_URL: str = ""
+    # Optional here so the API boots without it, but set it on the host: unauthenticated
+    # GitHub is 60 requests/hour and judge trials would exhaust that (DECISIONS #24).
+    # app/github.py logs a warning on every unauthenticated fetch.
+    GITHUB_TOKEN: str = ""
+    REVIEW_PASS_RATIO: float = 0.6
     CORS_ORIGINS: str = "http://localhost:5173"
 
 
