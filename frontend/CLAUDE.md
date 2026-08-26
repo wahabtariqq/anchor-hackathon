@@ -1,7 +1,9 @@
 # frontend/ — React + Vite
 
-Read `../docs/TDD.md` §7 before changing anything here. Types in `src/lib/types.ts` mirror
-`../docs/CONTRACT.md` — if you change one, change the other in the same PR.
+**Wahab's lane — all of it.** Setup, Analyzing, and Roadmap are no longer split across three
+people; one owner covers the entire frontend. Read `../docs/TDD.md` §7 before changing anything
+here. Types in `src/lib/types.ts` mirror `../docs/CONTRACT.md` — if you change one, change the
+other in the same PR.
 
 ## Layout
 
@@ -10,9 +12,9 @@ Read `../docs/TDD.md` §7 before changing anything here. Types in `src/lib/types
 - `src/lib/identity.ts` — the only `localStorage` access in the app.
 - `src/lib/scoring.ts` — `fitPercent`. Mirror of `backend/app/scoring.py`. Tested against `contracts/fixtures/parity_cases.json`.
 - `src/lib/types.ts` — **shared file**; mirrors `schemas.py`.
-- `src/features/setup/` — Dev A. `SetupPage`, `CourseCard`, `InterestChips`.
-- `src/features/analyzing/` — Dev B. Staged copy on a timer, decoupled from the request.
-- `src/features/roadmap/` — Dev C. `RoadmapPage` (two columns), `RoleCard`, `RoleDrawer`, `FitRing`, `SkillRow`, `WhatMoved`, `AnalysisContext`.
+- `src/features/setup/` — `SetupPage`, `CourseCard`, `InterestChips`.
+- `src/features/analyzing/` — Staged copy on a timer, decoupled from the request.
+- `src/features/roadmap/` — `RoadmapPage` (two columns), `RoleCard`, `RoleDrawer`, `FitRing`, `SkillRow`, `WhatMoved`, `ProveIt`, `AnalysisContext`.
 - `src/components/ui/` — shadcn output. Generated; don't hand-edit.
 
 ## Rules

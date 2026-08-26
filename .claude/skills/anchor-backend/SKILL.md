@@ -52,7 +52,7 @@ relevant TDD section before writing code; the snippets there are the intended im
 
 ## Working without the AI lane
 
-Dev B's fixture `contracts/fixtures/demo_analysis.json` is a valid `AnalysisOut`. Load it with
+Umer's fixture `contracts/fixtures/demo_analysis.json` is a valid `AnalysisOut`. Load it with
 `AnalysisOut.model_validate_json(...)` and feed it to `persist_analysis` in tests and while
 building `GET /roadmap`. You never need to call Anthropic to work on this lane.
 

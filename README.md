@@ -31,7 +31,7 @@ npm install && npm run dev
 
 ## Lanes
 
-Dev A — backend + Setup screen · Dev B — AI pipeline (`backend/app/analysis/`) + Analyzing screen · Dev C — Roadmap, drawer, animation.
+Salman — backend (`backend/app/**` except `analysis/`) · Umer — AI (`backend/app/analysis/**`) · Wahab — the entire frontend (Setup, Analyzing, Roadmap, drawer, animation).
 See `CLAUDE.md` for the full ownership map and integration seams.
 
 ## v2 (not built)

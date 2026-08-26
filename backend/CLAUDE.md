@@ -15,7 +15,7 @@ Read `../docs/TDD.md` §4 before changing anything here. Contract shapes live in
 - `app/persistence.py` — `persist_analysis`: AnalysisOut → rows, one transaction, no per-row flush.
 - `app/github.py` — `fetch_repo(url) -> RepoBundle`. Token, 2 + ≤10 requests, 60 KB cap, `RepoError(user_message)`. No clone, no execution.
 - `app/routers/` — one file per endpoint. `analyze.py`, `project.py`, `submit.py` are thin: they call `app.analysis.*` and write rows.
-- `app/analysis/` — **Dev B's lane.** Import `run_analysis` from it; do not edit it.
+- `app/analysis/` — **Umer's lane.** Import `run_analysis` from it; do not edit it.
 
 ## Rules
 

@@ -20,11 +20,9 @@ covered vs missing skills per role, and re-ranks every role live when the studen
 
 | Path | Owner | Notes |
 |---|---|---|
-| `backend/app/**` except `analysis/` | Dev A | API, DB, persistence, scoring, `github.py`, `/project`, `/submit` |
-| `backend/app/analysis/**`, `contracts/fixtures/demo_*.json` | Dev B | Three model calls. Exposes `run_analysis`, `generate_project`, `review_repo`. Nobody else edits. |
-| `frontend/src/features/roadmap/**`, `frontend/src/lib/**`, `frontend/src/app/**` | Dev C | Roadmap, drawer, animation, state |
-| `frontend/src/features/setup/**` | Dev A | Setup screen |
-| `frontend/src/features/analyzing/**` | Dev B | Analyzing screen |
+| `backend/**` except `app/analysis/` | Salman | API, DB, persistence, scoring, `github.py`, `/project`, `/submit`, seed/scripts/tests |
+| `backend/app/analysis/**`, `contracts/fixtures/demo_*.json` | Umer | Three model calls. Exposes `run_analysis`, `generate_project`, `review_repo`. Nobody else edits. |
+| `frontend/**` | Wahab | The entire frontend — Setup, Analyzing, Roadmap/drawer/animation, state |
 | `contracts/**`, `docs/CONTRACT.md`, `backend/app/schemas.py`, `frontend/src/lib/types.ts` | **shared** | Change only via a PR titled `contract: …` that updates every mirror at once, plus a chat ping |
 | `frontend/src/components/ui/**` | shadcn CLI | generated, never hand-edit |
 
@@ -34,15 +32,15 @@ instead of making it. Cross-lane work goes through the integration seams below.
 ## Integration seams (how three people work without blocking each other)
 
 1. `backend/app/analysis/__init__.py` exports `run_analysis(student, courses) -> (AnalysisOut, raw_text)`.
-   Dev A's `routers/analyze.py` calls it; Dev B never touches routers.
+   Salman's `routers/analyze.py` calls it; Umer never touches routers.
 2. `contracts/fixtures/roadmap_response.json` is what `GET /api/roadmap` returns for the demo
-   student. Dev C builds the entire UI against it with `VITE_USE_FIXTURE=true`. Dev A regenerates
+   student. Wahab builds the entire UI against it with `VITE_USE_FIXTURE=true`. Salman regenerates
    it with `scripts/dump_roadmap.py` once the real endpoint works. When the real response has the
    same shape, integration is done.
-3. `contracts/fixtures/demo_analysis.json` is Dev B's validated model output. It feeds both
-   `DEMO_MODE` and Dev A's persistence tests.
+3. `contracts/fixtures/demo_analysis.json` is Umer's validated model output. It feeds both
+   `DEMO_MODE` and Salman's persistence tests.
 4. `contracts/fixtures/parity_cases.json` is read by both `test_parity.py` and `scoring.test.ts`.
-5. `app.github.fetch_repo(url) -> RepoBundle` (Dev A) feeds `app.analysis.review_repo(project, bundle)` (Dev B).
+5. `app.github.fetch_repo(url) -> RepoBundle` (Salman) feeds `app.analysis.review_repo(project, bundle)` (Umer).
    Prove It is Day 3 afternoon + Day 4 and only starts once the core is deployed (PRD §13).
 
 ## Commands
@@ -53,11 +51,11 @@ cd backend && pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 pytest -q
 python scripts/seed_db.py
-python scripts/run_analysis_cli.py --demo          # Dev B: pipeline only, no DB, saves fixture
-python scripts/dump_roadmap.py --student <id>      # Dev A: refresh roadmap_response.json
-python -m app.analysis.export_schema               # Dev B: refresh contracts/analysis.schema.json
-python scripts/run_project_cli.py --role data-engineer        # Dev B: project from demo_analysis.json
-python scripts/run_review_cli.py --url https://github.com/o/r # Dev B: fetch + review against demo_project.json
+python scripts/run_analysis_cli.py --demo          # Umer: pipeline only, no DB, saves fixture
+python scripts/dump_roadmap.py --student <id>      # Salman: refresh roadmap_response.json
+python -m app.analysis.export_schema               # Umer: refresh contracts/analysis.schema.json
+python scripts/run_project_cli.py --role data-engineer        # Umer: project from demo_analysis.json
+python scripts/run_review_cli.py --url https://github.com/o/r # Umer: fetch + review against demo_project.json
 
 # frontend
 cd frontend && npm install

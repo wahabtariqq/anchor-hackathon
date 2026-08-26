@@ -3,18 +3,22 @@
 One line per decision. Newest at the bottom. Add a line whenever you add an endpoint, table,
 page, package, or deviate from the TDD — that's the whole process.
 
+`Who` below uses the original lane letters at the time each decision was made: **A = Salman**
+(backend), **B = Umer** (AI). Entries after #18 postdate the team settling into Salman/backend,
+Umer/AI, Wahab/entire-frontend — see `CLAUDE.md` for the current ownership map.
+
 | # | Decision | Why | Who |
 |---|---|---|---|
 | 1 | No auth; `X-Student-Id` header + localStorage | New Supabase projects sign JWTs with ES256, v2 HS256 code would 401; auth earns zero judge points | all |
 | 2 | Role detail is a drawer on the Roadmap, not a route | Re-sort animation must be on screen at the moment a box is ticked | all |
-| 3 | Courses page cut to v2 | Zero seconds in the demo script, half a day of Dev C's time | all |
+| 3 | Courses page cut to v2 | Zero seconds in the demo script, half a day of frontend's time | all |
 | 4 | Anthropic structured outputs instead of fence-stripping + prefill | Guaranteed parseable JSON; prefill unsupported on 4.6+ and incompatible with structured outputs | B |
 | 5 | `bridge` is a plain string ("" for core), not nullable | Union types are the most expensive thing in the output grammar | B |
 | 6 | Persistence commits once, no per-row flush | Ids come from `default_factory`; 60+ pooler round trips were pure waste | A |
 | 7 | `DEMO_MODE` gated to `DEMO_STUDENT_NAME` | Judges can try their own inputs live after the pitch | all |
 | 8 | Re-onboarding creates a new Student, never updates | Removes every cascade-delete case | A |
 | 9 | Three top-level lanes: `app/`, `app/analysis/`, `frontend/features/*` | Three people, zero merge conflicts on `main.py` / routers | all |
-| 10 | `ANTHROPIC_API_KEY` is optional in `Settings` | Nothing outside `app/analysis/` reads it; the backend must boot for Dev A without Dev B's key | A |
+| 10 | `ANTHROPIC_API_KEY` is optional in `Settings` | Nothing outside `app/analysis/` reads it; the backend must boot for Salman without Umer's key | A |
 | 11 | `analyze.py` resolves `app.analysis`'s entry point at call time, accepting `run` or `run_analysis`; 503 until it exists | TDD §4.8 and root `CLAUDE.md` name it differently and the package is still empty — an import-time binding takes `main.py` down with it. **B: pick one name.** | A |
 | 12 | `POST /progress` uses select-then-insert/delete, not postgres `ON CONFLICT DO NOTHING` | Same idempotency at one-user concurrency, and it runs on SQLite so persistence has tests | A |
 | 13 | `GET /health` added | Railway/Render want a healthcheck; TDD §10 has none | A |
@@ -29,9 +33,9 @@ page, package, or deviate from the TDD — that's the whole process.
 | 22 | v4: Repo review reads via GitHub REST only — no clone, no execution; UI says so | Safety + scope; honest about what's scored | B |
 | 23 | v4: `passed` threshold (0.6) lives in code, `REVIEW_PASS_RATIO` | Tunable without re-prompting | B |
 | 24 | v4: `GITHUB_TOKEN` required; 60 KB input cap; repo contents delimited as untrusted data | 60 req/h unauthenticated would break judge trials; latency; prompt injection | A |
-| 25 | v4: GitHub fetch lives in `app/github.py` (Dev A), not in `app/analysis/` | Plain HTTP, no AI; balances Dev B's Day 3 | all |
+| 25 | v4: GitHub fetch lives in `app/github.py` (Salman), not in `app/analysis/` | Plain HTTP, no AI; balances Umer's Day 3 | all |
 | 26 | v4: Prove It gated on Day 2 exit criteria; requires Day 4; cut order per PRD §13 | Core must deploy before any Prove It work | all |
 | 27 | v4: Job signal = hand-curated posting excerpt seed set, in only if in the prompt from the start of Day 2 tuning | Grounds requirements without scraping; late context can re-break dedup | all |
 | 28 | v4: Rejected — tick 1.0 + verified 1.5× bonus | Exceeds 100 or needs renormalising; doesn't fix tick-everything | all |
-| 29 | v4 formula change lands on top of a v3 backend (entries 10-18) not yet migrated | Backend (Dev A) built out under v3 before the v4 CR landed; `schemas.py`/`models.py`/`scoring.py`/routers still need the v4 migration — see CONTRACT.md §1b/1c/2/3 | all |
+| 29 | v4 formula change lands on top of a v3 backend (entries 10-18) not yet migrated | Backend (Salman) built out under v3 before the v4 CR landed; `schemas.py`/`models.py`/`scoring.py`/routers still need the v4 migration — see CONTRACT.md §1b/1c/2/3 | all |
 | — | *(Day 1)* measured analysis latency: ____ s | fill in | B |

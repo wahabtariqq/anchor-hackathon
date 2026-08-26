@@ -207,12 +207,12 @@ Request: `{ "skill_id": "sk_a1", "checked": true }`. Idempotent both ways.
 
 | File | Shape | Written by | Read by |
 |---|---|---|---|
-| `demo_analysis.json` | §1 `AnalysisOut` | Dev B, `run_analysis_cli.py --demo` | `DEMO_MODE`; persistence tests |
-| `roadmap_response.json` | §3 `GET /roadmap` | Dev C hand-writes Day 1 from this doc; Dev A regenerates Day 2 via `dump_roadmap.py` | frontend with `VITE_USE_FIXTURE=true` |
+| `demo_analysis.json` | §1 `AnalysisOut` | Umer, `run_analysis_cli.py --demo` | `DEMO_MODE`; persistence tests |
+| `roadmap_response.json` | §3 `GET /roadmap` | Wahab hand-writes Day 1 from this doc; Salman regenerates Day 2 via `dump_roadmap.py` | frontend with `VITE_USE_FIXTURE=true` |
 | `parity_cases.json` | list of `{ name, skills[{weight, coverage_depth, checked, verified}], expected }` | all three, Day 2 morning | `test_parity.py`, `scoring.test.ts` |
-| `demo_project.json` | §1b `ProjectOut` for the demo student's top role | Dev B, `run_project_cli.py` (live, Day 4 morning) | `DEMO_MODE` |
-| `demo_review.json` | §1c `ReviewOut` + total/max_total/passed for `DEMO_REPO_URL` | Dev B, `run_review_cli.py` (live, Day 4 morning) | `DEMO_MODE` |
-| `analysis.schema.json` | JSON Schema of §1 | Dev B, `export_schema.py` | reference; optional frontend validation of fixtures |
+| `demo_project.json` | §1b `ProjectOut` for the demo student's top role | Umer, `run_project_cli.py` (live, Day 4 morning) | `DEMO_MODE` |
+| `demo_review.json` | §1c `ReviewOut` + total/max_total/passed for `DEMO_REPO_URL` | Umer, `run_review_cli.py` (live, Day 4 morning) | `DEMO_MODE` |
+| `analysis.schema.json` | JSON Schema of §1 | Umer, `export_schema.py` | reference; optional frontend validation of fixtures |
 
 **Integration is done when** `GET /roadmap` from the deployed backend, for the demo student, has
 the exact shape of `roadmap_response.json` and the frontend renders it with `VITE_USE_FIXTURE` removed.

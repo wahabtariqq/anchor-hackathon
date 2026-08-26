@@ -60,4 +60,4 @@ disagreeing by exactly 1, this is why.
 | Which file is the model output schema? | `backend/app/analysis/schema.py` (`AnalysisOut`) |
 | Which file is the roadmap response? | `backend/app/schemas.py` (`RoadmapResponse`) ↔ `frontend/src/lib/types.ts` |
 | How does the frontend run without the backend? | `VITE_USE_FIXTURE=true` reads `contracts/fixtures/roadmap_response.json` |
-| Who regenerates `roadmap_response.json`? | Dev A, `python scripts/dump_roadmap.py --student <id>` |
+| Who regenerates `roadmap_response.json`? | Salman, `python scripts/dump_roadmap.py --student <id>` |

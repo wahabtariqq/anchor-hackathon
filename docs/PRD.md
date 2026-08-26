@@ -332,17 +332,17 @@ Assign who clicks, who talks. Rehearse until it's comfortably under the limit.
 
 ## 13. Plan (3 core days + Day 4 for Prove It)
 
-**Dev A — backend, DB, deploy, Setup screen, GitHub fetch, `/submit`** · **Dev B — three model calls, Analyzing screen, demo fixtures** · **Dev C — Roadmap, drawer, animation, Prove It panel**
+**Salman — backend, DB, deploy, GitHub fetch, `/submit`** · **Umer — three model calls, demo fixtures** · **Wahab — the entire frontend: Setup, Analyzing, Roadmap, drawer, animation, Prove It panel**
 
 Prove It is **gated**: it starts only when Day 2's exit criteria are met (validated analysis fixture, dedup looks clean, the tick re-sort animation works against the fixture). If those slip, Prove It slips, not the core. **If you only have 3 days, Prove It is out** — the formula change alone is pointless without the verified path.
 
 ### Day 1 — Foundations *(unchanged from v3)*
 
-A: DB, seed, identity, `/courses`, `/students`. B: analysis package with structured outputs → validated fixture + measured latency. C: app shell, context, `scoring.ts`, `FitRing`, `RoleCard` on the fixture. All: contract agreed, hello-worlds deployed, CORS verified. **Seed postings (§8.6): whoever has slack copies excerpts tonight, or it's out.**
+Salman: DB, seed, identity, `/courses`, `/students`. Umer: analysis package with structured outputs → validated fixture + measured latency. Wahab: app shell, context, `scoring.ts`, `FitRing`, `RoleCard` on the fixture. All: contract agreed, hello-worlds deployed, CORS verified. **Seed postings (§8.6): whoever has slack copies excerpts tonight, or it's out.**
 
 ### Day 2 — Engine and the moment *(unchanged, plus the new parity fixture)*
 
-All (morning): write **v4** `parity_cases.json` — must include verified > checked > coverage cases and the "tick on fully-covered skill does nothing" case. A: persistence, v4 `fit_percent`, `/roadmap`, `/progress`, Setup screen. B: retry logic, prompt tuning (dedup first), `demo_analysis.json`, `DEMO_MODE`. C: two-column Roadmap, drawer, ticks, translateY re-sort, WhatMoved.
+All (morning): write **v4** `parity_cases.json` — must include verified > checked > coverage cases and the "tick on fully-covered skill does nothing" case. Salman: persistence, v4 `fit_percent`, `/roadmap`, `/progress`. Umer: retry logic, prompt tuning (dedup first), `demo_analysis.json`, `DEMO_MODE`. Wahab: two-column Roadmap, drawer, ticks, translateY re-sort, WhatMoved, Setup screen.
 
 **Exit criteria (gate for Prove It):** tick in the drawer visibly re-sorts the left column · Python and TS fit agree on the v4 fixture · Setup posts a real student · analysis fixture has no near-duplicate skills on inspection.
 
@@ -350,10 +350,10 @@ All (morning): write **v4** `parity_cases.json` — must include verified > chec
 
 | Who | Work |
 |---|---|
-| A + C (morning) | Wire Setup → Analyzing → Roadmap on the real API. Remove fixture mode. Deploy. **Core demo runs end-to-end on deployed URLs by lunch.** |
-| A (afternoon) | `project` + `submission` tables, `GET /project`, `POST /submit` skeleton, `app/github.py` fetch with token, size caps, friendly errors |
-| B (all day) | `ProjectOut` + `ReviewOut` schemas and validators, `project.py` and `review.py` calls with structured outputs, `passed` in code, prompt-injection framing, `run_project_cli.py` / `run_review_cli.py` for iteration. Analyzing screen in the gaps. |
-| C (afternoon) | Prove It panel against a hand-written `demo_project.json` + `demo_review.json`: skeleton state, spec, criteria, verifies badges, URL input, reviewing state, result view, ✓ badges. `verifiedIds` in context. |
+| Salman + Wahab (morning) | Wire Setup → Analyzing → Roadmap on the real API. Remove fixture mode. Deploy. **Core demo runs end-to-end on deployed URLs by lunch.** |
+| Salman (afternoon) | `project` + `submission` tables, `GET /project`, `POST /submit` skeleton, `app/github.py` fetch with token, size caps, friendly errors |
+| Umer (all day) | `ProjectOut` + `ReviewOut` schemas and validators, `project.py` and `review.py` calls with structured outputs, `passed` in code, prompt-injection framing, `run_project_cli.py` / `run_review_cli.py` for iteration. |
+| Wahab (afternoon) | Analyzing screen. Prove It panel against a hand-written `demo_project.json` + `demo_review.json`: skeleton state, spec, criteria, verifies badges, URL input, reviewing state, result view, ✓ badges. `verifiedIds` in context. |
 
 **Exit criteria:** core frozen and deployed. Prove It works locally against fixtures.
 
@@ -361,7 +361,7 @@ All (morning): write **v4** `parity_cases.json` — must include verified > chec
 
 | Time | Work |
 |---|---|
-| Morning | Wire `/project` and `/submit` live. B generates the demo project live and commits it. **A builds the demo repo** (small, real, satisfies criteria). B runs a live review, commits `demo_review.json`. `DEMO_REPO_URL` set on the host. |
+| Morning | Wire `/project` and `/submit` live. Umer generates the demo project live and commits it. **Salman builds the demo repo** (small, real, satisfies criteria). Umer runs a live review, commits `demo_review.json`. `DEMO_REPO_URL` set on the host. |
 | Midday | Deploy. Run the full 75 s script on deployed URLs, twice. **HARD FREEZE.** |
 | Afternoon | Visual pass. Rehearse ×3. README v2 section. DEMO.md updated. |
 | Last 2 h | Buffer. |
@@ -386,7 +386,7 @@ All (morning): write **v4** `parity_cases.json` — must include verified > chec
 | **GitHub rate limit during judge trials** | Medium | `GITHUB_TOKEN` (5000/h); ≤ 13 requests per submission |
 | **Review call slow (≤ 60 KB input)** | Medium | Size cap; staged "Reviewing…" copy; 120 s client timeout |
 | **Prompt injection via README** | Low | Delimited, "untrusted data" framing; it's a demo, not a grading system |
-| Re-sort animation janky | Medium | Built Day 2 by C, against a fixture; Prove It reuses it, no new animation |
+| Re-sort animation janky | Medium | Built Day 2 by Wahab, against a fixture; Prove It reuses it, no new animation |
 | Two-service deploy/CORS failure | Medium | Hello-worlds Day 1 |
 | Output truncated at `max_tokens` | Medium | 16k → 24k retry on `stop_reason == "max_tokens"` |
 | Pitch runs over the time limit | Medium | Confirm the limit before Day 4; 60 s fallback script in DEMO.md |
