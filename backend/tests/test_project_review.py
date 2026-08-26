@@ -390,6 +390,36 @@ def test_a_passing_submission_verifies_skills_and_raises_fit(
     assert moved["latest_review"]["passed"] is True
 
 
+def test_proof_on_an_uncovered_skill_raises_fit_across_every_role_that_needs_it(
+    client: TestClient, session: Session, ai_lane: dict[str, Any]
+) -> None:
+    """The v4 mechanic: one repo, several cards move. Skills are shared, so proof propagates."""
+    student_id = create_student(client)
+    persist_demo_analysis(session, student_id)
+    headers = {"X-Student-Id": student_id}
+    before = client.get("/api/roadmap", headers=headers).json()
+    depth = {s["id"]: s["coverage_depth"] for s in before["skills"]}
+
+    # a role with real gaps, so the verified skills are ones coverage wasn't already paying for
+    role = max(
+        before["roles"],
+        key=lambda r: sum(1 for rs in r["skills"] if depth[rs["skill_id"]] is None),
+    )
+    project = client.get(f"/api/project?role_id={role['id']}", headers=headers).json()
+    assert any(depth[sid] is None for sid in project["verifies"]), "fixture should leave a gap"
+
+    client.post(
+        "/api/submit", json={"role_id": role["id"], "repo_url": "https://github.com/o/r"}, headers=headers
+    )
+    after = client.get("/api/roadmap", headers=headers).json()
+
+    fit_before = {r["id"]: r["fit_percent"] for r in before["roles"]}
+    risen = [r for r in after["roles"] if r["fit_percent"] > fit_before[r["id"]]]
+    assert all(r["fit_percent"] >= fit_before[r["id"]] for r in after["roles"]), "nothing may fall"
+    assert next(r for r in risen if r["id"] == role["id"]), "the submitted role must rise"
+    assert len(risen) > 1, "a shared skill should move more than the one card"
+
+
 def test_a_failing_submission_verifies_nothing_but_is_still_recorded(
     client: TestClient, session: Session, ai_lane: dict[str, Any]
 ) -> None:
