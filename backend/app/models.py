@@ -1,7 +1,11 @@
 """SQLModel tables. Mirror of docs/TDD.md §4.4 — shared file, see .claude/skills/anchor-contract.
 
-Nothing here is ever updated or deleted except Progress rows. A returning student who
-re-onboards gets a new Student row, which removes every cascade-delete case.
+Nothing here is ever updated or deleted except Progress rows; Project and Submission rows are
+append-only. A returning student who re-onboards gets a new Student row, which removes every
+cascade-delete case.
+
+A student's **verified** skills are the union of verified_skill_ids over their passing
+submissions. That is derived on read (see app/persistence.py), never stored on Skill.
 """
 
 import uuid
@@ -90,3 +94,34 @@ class Progress(SQLModel, table=True):
     student_id: str = Field(foreign_key="student.id", primary_key=True)
     skill_id: str = Field(foreign_key="skill.id", primary_key=True)
     checked_at: datetime = Field(default_factory=now)
+
+
+class Project(SQLModel, table=True):
+    """One per (student, role). Written once on first GET /api/project, never regenerated."""
+
+    __table_args__ = (UniqueConstraint("student_id", "role_id"),)
+
+    id: str = Field(default_factory=new_id, primary_key=True)
+    student_id: str = Field(foreign_key="student.id", index=True)
+    role_id: str = Field(foreign_key="role.id")
+    title: str
+    spec: str
+    criteria: list[str] = Field(sa_column=Column(JSON))
+    # skill.id values — the model returns slugs, routers/project.py resolves them before writing
+    verifies: list[str] = Field(sa_column=Column(JSON))
+    created_at: datetime = Field(default_factory=now)
+
+
+class Submission(SQLModel, table=True):
+    id: str = Field(default_factory=new_id, primary_key=True)
+    student_id: str = Field(foreign_key="student.id", index=True)
+    role_id: str = Field(foreign_key="role.id")
+    project_id: str = Field(foreign_key="project.id")
+    repo_url: str
+    review: dict = Field(sa_column=Column(JSON))                    # ReviewOut as stored
+    total: int
+    max_total: int
+    passed: bool
+    # a copy of project.verifies when passed, else [] — frozen at submission time
+    verified_skill_ids: list[str] = Field(sa_column=Column(JSON))
+    created_at: datetime = Field(default_factory=now)
