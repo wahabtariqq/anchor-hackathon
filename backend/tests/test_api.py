@@ -5,29 +5,16 @@ the trickiest code in the lane and §12 leaves both uncovered. Everything here i
 hits real HTTP + real SQL, no mocks.
 """
 
-import json
-from typing import Any
-
 from fastapi.testclient import TestClient
 from sqlmodel import Session, select
 
 from app.models import Coverage, Progress, Skill, Student, StudentCourse
-from app.persistence import persist_analysis
-from tests.conftest import DEMO_STUDENT, make_analysis
-
-
-def create_demo(client: TestClient, **overrides: Any) -> str:
-    body = {**DEMO_STUDENT, **overrides}
-    res = client.post("/api/students", json=body)
-    assert res.status_code == 201, res.text
-    return res.json()["student_id"]
-
-
-def analyse(session: Session, student_id: str) -> None:
-    courses = session.exec(
-        select(StudentCourse).where(StudentCourse.student_id == student_id)
-    ).all()
-    persist_analysis(session, student_id, make_analysis(), json.dumps({"stub": True}), list(courses))
+from tests.conftest import (
+    DEMO_STUDENT,
+    create_student as create_demo,
+    make_analysis,
+    persist_demo_analysis as analyse,
+)
 
 
 # ---- GET /api/courses ----
