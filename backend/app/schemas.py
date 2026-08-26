@@ -111,6 +111,46 @@ class ProgressRequest(BaseModel):
     checked: bool
 
 
+# ---- GET /api/project?role_id=… · POST /api/submit (CONTRACT.md §3) ----
+
+Score = Literal[0, 1, 2]
+
+
+class ProjectResponse(BaseModel):
+    id: str
+    role_id: str
+    title: str
+    spec: str
+    criteria: list[str]
+    verifies: list[str]                # skill DB ids, not the model's slugs
+
+
+class SubmitRequest(BaseModel):
+    role_id: str
+    repo_url: str
+
+
+class CriterionScore(BaseModel):
+    criterion: str
+    score: Score
+    note: str
+
+
+class ReviewResponse(BaseModel):
+    criteria_scores: list[CriterionScore]
+    feedback: str
+    total: int                         # Σ score — computed in code, never by the model
+    max_total: int                     # 2 × len(criteria)
+    passed: bool                       # total ≥ ceil(REVIEW_PASS_RATIO × max_total)
+
+
+class SubmitResponse(BaseModel):
+    review: ReviewResponse
+    # the FULL verified set for the student across every passing submission — the client
+    # replaces its verifiedIds with this, never merges
+    verified_skill_ids: list[str]
+
+
 # ---- GET /api/roadmap ----
 
 
@@ -128,6 +168,7 @@ class RoadmapSkillOut(BaseModel):
     coverage_depth: Depth | None       # already collapsed to the best depth
     covered_by: list[str]              # course codes, may be empty
     checked: bool
+    verified: bool                     # in the union of passing submissions' verified_skill_ids
 
 
 class RoadmapRoleSkillOut(BaseModel):
@@ -145,6 +186,8 @@ class RoadmapRoleOut(BaseModel):
     rank: int
     fit_percent: int
     skills: list[RoadmapRoleSkillOut]
+    project: ProjectResponse | None            # null until GET /api/project generates one
+    latest_review: ReviewResponse | None       # the most recent submission for this role
 
 
 class RoadmapCourseOut(BaseModel):

@@ -5,29 +5,16 @@ the trickiest code in the lane and §12 leaves both uncovered. Everything here i
 hits real HTTP + real SQL, no mocks.
 """
 
-import json
-from typing import Any
-
 from fastapi.testclient import TestClient
 from sqlmodel import Session, select
 
 from app.models import Coverage, Progress, Skill, Student, StudentCourse
-from app.persistence import persist_analysis
-from tests.conftest import DEMO_STUDENT, make_analysis
-
-
-def create_demo(client: TestClient, **overrides: Any) -> str:
-    body = {**DEMO_STUDENT, **overrides}
-    res = client.post("/api/students", json=body)
-    assert res.status_code == 201, res.text
-    return res.json()["student_id"]
-
-
-def analyse(session: Session, student_id: str) -> None:
-    courses = session.exec(
-        select(StudentCourse).where(StudentCourse.student_id == student_id)
-    ).all()
-    persist_analysis(session, student_id, make_analysis(), json.dumps({"stub": True}), list(courses))
+from tests.conftest import (
+    DEMO_STUDENT,
+    create_student as create_demo,
+    make_analysis,
+    persist_demo_analysis as analyse,
+)
 
 
 # ---- GET /api/courses ----
@@ -199,6 +186,9 @@ def test_roadmap_payload(client: TestClient, session: Session) -> None:
     assert all(r["bridge"] == "" for r in body["roles"] if r["proximity"] == "core")
     assert all(r["bridge"] for r in body["roles"] if r["proximity"] == "adjacent")
     assert all(s["checked"] is False for s in body["skills"])
+    # v4: nothing is verified and no project exists until Prove It runs
+    assert all(s["verified"] is False for s in body["skills"])
+    assert all(r["project"] is None and r["latest_review"] is None for r in body["roles"])
     # roles and courses reference the flat skill table by DB id, never by slug
     skill_ids = {s["id"] for s in body["skills"]}
     assert all(rs["skill_id"] in skill_ids for r in body["roles"] for rs in r["skills"])
@@ -248,10 +238,17 @@ def test_roadmap_fit_matches_the_scoring_module(client: TestClient, session: Ses
     body = client.get("/api/roadmap", headers={"X-Student-Id": student_id}).json()
     depth = {s["id"]: s["coverage_depth"] for s in body["skills"]}
     checked = {s["id"] for s in body["skills"] if s["checked"]}
+    verified = {s["id"] for s in body["skills"] if s["verified"]}
     for role in body["roles"]:
         expected = fit_percent(
             [
-                ScoredSkill(rs["skill_id"], rs["weight"], depth[rs["skill_id"]], rs["skill_id"] in checked)
+                ScoredSkill(
+                    rs["skill_id"],
+                    rs["weight"],
+                    depth[rs["skill_id"]],
+                    rs["skill_id"] in checked,
+                    rs["skill_id"] in verified,
+                )
                 for rs in role["skills"]
             ]
         )

@@ -6,6 +6,7 @@ threadpool and the test body share one connection — a default in-memory SQLite
 hand each thread its own empty database.
 """
 
+import json
 import os
 from collections.abc import Iterator
 from types import SimpleNamespace
@@ -35,6 +36,26 @@ DEMO_STUDENT: dict[str, Any] = {
         {"course_id": "cs402", "semester_tag": "current"},
     ],
 }
+
+
+def create_student(client: TestClient, **overrides: Any) -> str:
+    """POST the demo student, returning their id."""
+    res = client.post("/api/students", json={**DEMO_STUDENT, **overrides})
+    assert res.status_code == 201, res.text
+    return res.json()["student_id"]
+
+
+def persist_demo_analysis(session: Session, student_id: str) -> None:
+    """Run make_analysis() through the real persist_analysis for this student."""
+    from sqlmodel import select
+
+    from app.models import StudentCourse
+    from app.persistence import persist_analysis
+
+    courses = session.exec(
+        select(StudentCourse).where(StudentCourse.student_id == student_id)
+    ).all()
+    persist_analysis(session, student_id, make_analysis(), json.dumps({"stub": True}), list(courses))
 
 
 @pytest.fixture

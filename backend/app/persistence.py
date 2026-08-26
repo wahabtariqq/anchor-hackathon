@@ -13,9 +13,9 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from sqlmodel import Session
+from sqlmodel import Session, select
 
-from app.models import Analysis, Coverage, Role, RoleSkill, Skill, StudentCourse
+from app.models import Analysis, Coverage, Role, RoleSkill, Skill, StudentCourse, Submission
 
 if TYPE_CHECKING:                                   # pragma: no cover
     from app.analysis.schema import AnalysisOut
@@ -70,3 +70,19 @@ def persist_analysis(
 
     session.commit()
     return analysis
+
+
+def verified_skill_ids(session: Session, student_id: str) -> set[str]:
+    """The student's verified skills: the union over **all** their passing submissions.
+
+    Union, not the latest submission — skills are shared across roles, so proving one through
+    a Data Engineer project must count everywhere it appears (DECISIONS #21). Derived on every
+    read; never stored on Skill.
+    """
+    rows = session.exec(
+        select(Submission.verified_skill_ids).where(
+            Submission.student_id == student_id,
+            Submission.passed == True,  # noqa: E712 — SQLAlchemy needs ==, not `is`
+        )
+    ).all()
+    return {skill_id for row in rows for skill_id in (row or [])}

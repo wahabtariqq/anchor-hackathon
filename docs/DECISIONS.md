@@ -38,4 +38,13 @@ Umer/AI, Wahab/entire-frontend — see `CLAUDE.md` for the current ownership map
 | 27 | v4: Job signal = hand-curated posting excerpt seed set, in only if in the prompt from the start of Day 2 tuning | Grounds requirements without scraping; late context can re-break dedup | all |
 | 28 | v4: Rejected — tick 1.0 + verified 1.5× bonus | Exceeds 100 or needs renormalising; doesn't fix tick-everything | all |
 | 29 | v4 formula change lands on top of a v3 backend (entries 10-18) not yet migrated | Backend (Salman) built out under v3 before the v4 CR landed; `schemas.py`/`models.py`/`scoring.py`/routers still need the v4 migration — see CONTRACT.md §1b/1c/2/3 | all |
+| 30 | v4 migration of entries 10-18 done: `scoring.py`, `models.py`, `schemas.py`, `roadmap.py`, config | Closes #29 — the v3 backend now speaks v4 (`max` formula, `verified`, Project/Submission, project/latest_review) | Salman |
+| 31 | `verified_skill_ids()` lives in `persistence.py`, not a new module | Both `roadmap.py` and `submit.py` need the union query; persistence.py already owns analysis rows, and a router importing another router is worse | Salman |
+| 32 | `latest_review` is the newest submission per role by `(created_at, id)` | Two submissions in one clock tick must still resolve the same way on every read | Salman |
+| 33 | `SkillState` is duplicated in `routers/project.py` rather than imported from `app/analysis/project.py` | Same four field names, matched structurally; importing Umer's empty module at import time would take `main.py` down | Salman |
+| 34 | `state` precedence: verified > covered:full > ticked > covered:partial > missing | Contract fixes the five labels, not their order. Tick and partial are both 0.5, so a self-claim is ranked as the thing worth proving | Salman |
+| 35 | A project whose `verifies` don't resolve to the role's skills is a 502 with no row written | The AI lane cross-checks too, but a `Project` row pointing at nothing would silently verify nothing forever | Salman |
+| 36 | `GITHUB_TOKEN` optional in `Settings`, one warning per process when unset | Same reason as #10 — the API must boot without it; #24's requirement is a deploy checklist item, not a startup crash | Salman |
+| 37 | `fetch_repo(url, *, client=None)` accepts an injected httpx client | Tests drive the whole fetch path through `MockTransport` with no monkeypatching and no network | Salman |
+| 38 | A role outside the caller's own analysis is 404 on `/project` | TDD §4.15 says "404 if not this student's analysis"; without the check a guessed role id leaks another student's project | Salman |
 | — | *(Day 1)* measured analysis latency: ____ s | fill in | B |
