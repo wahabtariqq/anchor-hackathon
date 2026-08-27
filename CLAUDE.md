@@ -12,7 +12,9 @@ covered vs missing skills per role, and re-ranks every role live when the studen
 1. **Skills are the only source of truth.** Courses and roles are views over the skill table.
    Progress is keyed to `skill.id`, never to a course or a role.
 2. **Three model call types, then arithmetic.** Analysis (once per student), project generation (lazy,
-   cached per student × role), repo review (per submission). Only `backend/app/analysis/` calls Anthropic.
+   cached per student × role), repo review (per submission). Only `backend/app/analysis/` calls the model
+   provider — **Gemini 2.5 Flash free tier, behind an `LLMClient` adapter; see DECISIONS #39.** Claude is
+   the pinned fallback, not the default.
    Fit % and `passed` are computed in code (`scoring.py` / `scoring.ts`, `review.py`), never by the model.
 3. **Nothing lowers a score.** Fit uses `max(verified, tick, coverage)`. Verified = union over all passing submissions.
 
