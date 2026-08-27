@@ -12,8 +12,8 @@ Run `/test-first` when starting any session that produces a module.
 
 | # | Session | Day | Gate | State |
 |---|---|---|---|---|
-| S0 | Provider spike — can the free tier do this at all? | 1 (first) | — | not started |
-| S1 | `AnalysisOut` schema + validators V1–V6 | 1 | — | not started |
+| S0 | Provider spike — can the free tier do this at all? | 1 (first) | — | **blocked — needs `GEMINI_API_KEY`** |
+| S1 | `AnalysisOut` schema + validators V1–V6 | 1 | — | ✅ **done** 2026-08-28 — 98 passed / 0 skipped |
 | S2 | `LLMClient` adapter + schema transform | 1 | S1 | not started |
 | S3 | Analysis prompt v1 → validated fixture + latency | 1 | S2 | not started |
 | S4 | Day-2 tuning + seed-postings gate | 2 | S3 | not started |

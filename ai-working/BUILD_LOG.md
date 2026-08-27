@@ -142,3 +142,85 @@ alongside S1.
 5. **TDD §4.7 vs §4.8 disagree on `run_analysis`'s arity**, not just its name — `(student,
    courses)` in one, a pre-built prompt string in the other. #40 settles the name; the arity
    needs the same `contract:` PR.
+
+---
+
+## 2026-08-28 — S1 — `AnalysisOut` schema + validators V1–V6
+
+Result: **done**
+Matches spec: **DEVIATION** (two — one cosmetic, one cross-lane and additive)
+
+First implementation code in this lane. `app/analysis/schema.py` written; nothing else in
+`app/analysis/` touched — the other seven files are still empty.
+
+Test count went **80 passed / 1 skipped → 98 passed / 0 skipped**. The skip was
+`test_validation.py`, which `importorskip`s this module; it now runs its 16 assertions. Those
+tests are Salman's, written against the contract before my code existed, which makes them an
+honest check rather than a self-graded one.
+
+### spec-check result
+
+Governing sections re-read before writing: **CONTRACT §1, §1.1** · **TDD §4.5**.
+
+| Requirement | Source | Status | Evidence |
+|---|---|---|---|
+| V1 · 35 ≤ skills ≤ 70 | CONTRACT §1.1 | met | rejects 34 and 71 |
+| V1 · skill ids unique | CONTRACT §1.1 | met | `test_rejects_duplicate_skill_ids` |
+| V1 · ids match `^[a-z0-9]+(-[a-z0-9]+)*$` | CONTRACT §1.1 | met | `test_rejects_a_non_kebab_case_skill_id` |
+| V2 · exactly 8 roles | CONTRACT §1.1 | met | rejects 7 and 9 |
+| V2 · 5 ≤ core roles ≤ 6 | CONTRACT §1.1 | met | rejects 4 and 7 |
+| V3 · role skill_ids exist in `skills[]` | CONTRACT §1.1 | met | `test_rejects_a_role_referencing_an_unknown_skill` |
+| V4 · coverage skill_ids exist in `skills[]` | CONTRACT §1.1 | met | `test_rejects_coverage_referencing_an_unknown_skill` |
+| V5 · no skill repeated in one role | CONTRACT §1.1 | met | `test_rejects_a_skill_repeated_within_one_role` |
+| V5 · 8 ≤ skills per role ≤ 16 | CONTRACT §1.1 | met | rejects 7 and 17 |
+| V6 · adjacent roles have non-empty bridge | CONTRACT §1.1 | met | rejects `""` and `"   "` |
+| Soft rules warn + skip, never raise | CONTRACT §1.1 | met | **2 tests added** — see deviation 2 |
+| No `Optional`, no unions; `bridge` is plain `str` | TDD §4.5, DECISIONS #5 | met | no `\| None` in the file |
+| Length bounds in validators, not `Field(min_length=…)` | TDD §4.5 | met | module-level constants |
+| `pattern` on the field, re-checked post-hoc | TDD §4.5 | met | provider strips it from the sent schema |
+| Module imports nothing provider-specific | DECISIONS #39 | met | imports are `typing` + `pydantic` only |
+
+### Deviations
+
+1. **ASCII hyphens in error messages** (`want 35-70`) where TDD §4.5 uses en-dashes
+   (`want 35–70`) — *conscious, cosmetic.* Keeps the source pure ASCII so nothing depends on
+   console codepage on Windows. No test asserts on the dash; messages are otherwise identical.
+
+2. **Added two tests to `backend/tests/test_validation.py`** — *conscious.* ⚠ **cross-lane,
+   needs a ping — but not a contract PR.**
+
+   `backend/tests/` is Salman's lane (`CLAUDE.md` ownership map). The edit is **purely
+   additive** — no existing test changed — and the file is explicitly scaffolded for my lane
+   ("app/analysis/schema.py is Dev B's lane"). I added it rather than leave the gap because
+   CONTRACT §1.1's two soft rules had **no coverage at all**: nothing asserted that an unknown
+   `course_code` or a duplicate `(skill, course)` pair is *tolerated*. Hardening either into a
+   hard failure is a one-line change that would turn a shrug into a 502 during a live demo, and
+   the whole suite would still be green. **No contract shape changed**, so this is a chat ping,
+   not a `contract:` PR.
+
+### Lane-boundary check
+
+`AnalysisOut` implements CONTRACT §1 exactly as already agreed — no field added, renamed, or
+retyped, and no fixture touched. Salman's `persistence.py` consumes `parsed.skills`,
+`parsed.roles`, `parsed.coverage` and every attribute it reads exists with the expected type.
+**Nothing downstream needs to change.**
+
+### Files touched
+
+```
+backend/app/analysis/schema.py        new (~150 lines)
+backend/tests/test_validation.py      +2 tests (additive; Salman's lane — ping him)
+```
+
+Tests added/updated: **2 added** — `test_tolerates_a_coverage_row_with_an_unknown_course_code`,
+`test_tolerates_a_duplicate_skill_course_coverage_pair`. The other 16 in that file were already
+written and started running for the first time.
+
+### Open question for the team
+
+None new. The five from the scaffold entry still stand — the analysis prompt needs a real read,
+seed postings are still at zero, and `parity_cases.json` is still three cases short of what
+TDD §8 names.
+
+**Next: S0** (measure the free-tier output ceiling — needs `GEMINI_API_KEY`) then **S2**.
+S1 needed no key; everything after S0 does.

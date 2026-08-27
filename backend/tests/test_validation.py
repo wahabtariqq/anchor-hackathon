@@ -162,3 +162,25 @@ def test_rejects_an_adjacent_role_without_a_bridge(bridge: str) -> None:
     p = valid_payload()
     p["roles"][6]["bridge"] = bridge
     assert "bridge" in rejects(p)
+
+
+# Soft rules — CONTRACT.md §1.1 "Soft (warn + skip)".
+#
+# These two must NOT raise. persist_analysis drops them with a log warning (TDD §4.9), because
+# a soft data-quality issue is the wrong thing to fail a live analysis over. Hardening either
+# one into a hard failure would turn a shrug into a 502 in front of a judge, and nothing else
+# in the suite would notice — hence these.
+
+
+def test_tolerates_a_coverage_row_with_an_unknown_course_code() -> None:
+    p = valid_payload()
+    p["coverage"][0]["course_code"] = "CS999"
+    parsed = AnalysisOut.model_validate(p)
+    assert parsed.coverage[0].course_code == "CS999"
+
+
+def test_tolerates_a_duplicate_skill_course_coverage_pair() -> None:
+    p = valid_payload()
+    p["coverage"].append(copy.deepcopy(p["coverage"][0]))
+    parsed = AnalysisOut.model_validate(p)
+    assert len(parsed.coverage) == len(p["coverage"])
