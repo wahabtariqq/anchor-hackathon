@@ -1,9 +1,26 @@
-fastapi
-uvicorn[standard]
-sqlmodel
-psycopg[binary]
-pydantic>=2
-pydantic-settings
-anthropic>=1.0
-pytest
-httpx
+# Exact pins. Regenerate deliberately, not casually — a hackathon does not want a
+# transitive dependency changing behaviour between Day 1 and the demo slot.
+# Verified installed and green (80 passed, 1 skipped) on Python 3.12.1.
+
+# --- web / db (Salman's lane) ---
+fastapi==0.141.1
+uvicorn[standard]==0.52.4
+sqlmodel==0.0.39
+psycopg[binary]==3.3.4
+
+# --- validation: the layer the whole AI lane is built on ---
+pydantic==2.13.4
+pydantic-settings==2.15.0
+
+# --- model provider (Dev B's lane) ---
+# Chosen provider. See docs/DECISIONS.md #39 for why Gemini and what was rejected.
+google-genai==2.20.0
+# Declared fallback. Pinned and installed on purpose so falling back is a one-class
+# change rather than a dependency scramble on Day 3. Do not remove without #39 changing.
+anthropic==1.1.0
+
+# --- tests / http ---
+# httpx is both the test client and the transport the LLMClient adapter can use directly,
+# so a provider with no Python SDK needs no new dependency.
+httpx==0.28.1
+pytest==9.1.1
