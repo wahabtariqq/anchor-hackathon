@@ -1,6 +1,6 @@
 # HANDOFF — Dev B (AI lane), ANCHOR
 
-**Written 2026-08-29.** Give this to a fresh session before anything else. It exists so nobody
+**Written 2026-08-29, updated 2026-08-30 after S5.** Give this to a fresh session before anything else. It exists so nobody
 re-derives what has already been measured, and nobody re-opens decisions that are closed.
 
 ---
@@ -25,7 +25,7 @@ one was used early and deliberately deleted.
 
 ## 2. State as of this handoff
 
-**Tests: 147 passing, 0 skipped.** Last commit `66af750`.
+**Tests: 163 passing, 0 skipped.** Sessions S0-S3 and S5 are done.
 
 | File | State |
 |---|---|
@@ -35,7 +35,7 @@ one was used early and deliberately deleted.
 | `app/analysis/__init__.py` | done — exports `run_analysis` |
 | `app/analysis/export_schema.py` | done |
 | `scripts/run_analysis_cli.py` | done — `--demo --runs N --save` + quality report |
-| `app/analysis/demo.py` | **empty — S5** |
+| `app/analysis/demo.py` | done — `applies()` + `load()`, DEMO_MODE branch wired into `run_analysis` |
 | `app/analysis/project.py` | **empty — S6** |
 | `app/analysis/review.py` | **empty — S7** |
 | `scripts/run_project_cli.py` | **empty — S6** |
@@ -48,7 +48,7 @@ one was used early and deliberately deleted.
 | `demo_project.json` | still a `_todo` placeholder — S8 |
 | `demo_review.json` | still a `_todo` placeholder — S8 |
 
-Sessions S0-S3 are done. **S4 or S5 is next** — see section 6.
+**S6 is next, and it is blocked on Salman** — see sections 6 and 7.
 
 ---
 
@@ -62,7 +62,7 @@ env     backend/.env            gitignored, real Gemini key already in it
 
 ```bash
 cd backend
-.venv/Scripts/python.exe -m pytest -q                       # 147 passing
+.venv/Scripts/python.exe -m pytest -q                       # 163 passing
 .venv/Scripts/python.exe scripts/run_analysis_cli.py --demo --runs 3
 .venv/Scripts/python.exe scripts/run_analysis_cli.py --demo --save
 .venv/Scripts/python.exe -m app.analysis.export_schema
@@ -130,27 +130,38 @@ Full reasoning in `docs/DECISIONS.md`. Summarised so a fresh session does not re
    installed with `raising=False`. When S6 and S7 land it exercises real code for the first time.
    **That is the most likely place something unexpected surfaces** — budget slack there.
 
-9. **The schema transform drops `description`**, so Pydantic docstrings never reach the model.
+9. **`contracts/` is outside `backend/`.** Both the prompt mirror and `demo.py`'s fixture load
+   exist because of this: the deployed backend may ship only `backend/`. `demo.py` raises a
+   message naming the cause if the fixture is missing on the host — but the deploy config is
+   Salman's to fix, and it fails during the pitch if it is wrong.
+
+10. **The schema transform drops `description`**, so Pydantic docstrings never reach the model.
    The only channel for instructing it is `ai-working/prompts/*.md`.
 
 ---
 
 ## 6. What to do next
 
-**S5 (`demo.py` + DEMO_MODE) is the higher-value next move, ahead of S4.** Reasoning: S4's
-tuning targets are already clean — zero near-duplicate skills and 60-72% cross-role reuse across
-all three live runs — while free-tier 503s make the cached demo path the thing the pitch
-actually rests on. S4's only genuinely open item is the seed-postings decision, which is a team
-call rather than a coding task.
+**S5 is done.** S4's tuning targets were already clean before it started -- zero near-duplicate
+skills and 60-72% cross-role reuse across three live runs -- so S4 has no coding work left in
+it. Its one genuinely open item is the seed-postings decision, which is a team call.
 
-- **S5** — `demo.py`: `applies(student)` and `load()` returning the committed fixture after a 6 s
-  sleep. Gate on `DEMO_MODE` **and** a case-insensitive name match so any other student still
-  gets a live call — that is what lets judges try their own input. Add the branch to
-  `run_analysis`. Small session.
-- **S6** — `project.py`. Get the four `SkillState` field names from Salman **first**, see below.
-- **S7** — `review.py`. The `<repo>` untrusted-data paragraph is the only injection defence that
-  exists; the injection test is required, not optional.
+That leaves **S6 as the next real session, and it is blocked**: get the four `SkillState` field
+names from Salman first (section 7). Do not guess them -- a mismatch fails silently.
+
+- **S6** — `project.py`: `ProjectOut`, validators, `generate_project`, `run_project_cli.py`.
+  The `verifies` subset-of-role-slugs check goes through `complete_validated`'s `cross_check`
+  hook, which exists for exactly this.
+- **S7** — `review.py`. The `<repo>` untrusted-data paragraph is the only injection defence
+  that exists; the injection test is required, not optional. Not blocked on anyone.
 - **S8** — blocked on Salman building the demo repo.
+
+**If S6 is blocked when you start, do S7 first** — it needs nothing from anyone.
+
+**One trap waiting in S8**, found while reading Salman's routers: `routers/submit.py` sleeps
+4 s *itself* before calling `load_demo_review`, but `routers/project.py` does **not** sleep
+before `load_demo_project`. So `load_demo_review` must **not** sleep and `load_demo_project`
+**must** sleep ~3 s (PRD 12.1). Read both routers again before writing either.
 
 Session plans with inputs, deliverables and done-checks: `ai-working/SESSIONS.md`.
 

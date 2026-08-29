@@ -42,6 +42,11 @@ list. Copy it into chat rather than assuming anyone reads build logs.
   discover this during rehearsal."* The client timeout (240 s) is fine; the **host proxy** is
   the risk.
 
+- **`contracts/fixtures/` must ship to the deploy host.** It sits outside `backend/`, and
+  `DEMO_MODE` reads `demo_analysis.json` from it. If the deploy only ships `backend/`, the demo
+  path raises during the pitch. Deployment config is your lane; the error message names the
+  cause, but that is a consolation prize on stage.
+
 ### Needs Salman to know
 
 - `app/config.py` gained `LLM_PROVIDER`, `GEMINI_API_KEY`, `GEMINI_MODEL` (S2). Nothing existing
@@ -662,3 +667,89 @@ ai-working/README.md      HANDOFF.md added to the file table
 ```
 
 Tests added/updated: none — no runtime code changed. Suite still 147 passing.
+
+---
+
+## 2026-08-30 — S5 — demo.py and the DEMO_MODE branch
+
+Result: **done**
+Matches spec: **DEVIATION** (two, both conscious)
+
+Fully self-contained: nothing was needed from Salman or Wahab. `analyze.py` deliberately does
+not gate the demo -- TDD 4.8 keeps that decision inside this package -- so the branch is mine,
+and `demo_analysis.json`, `DEMO_MODE` and `DEMO_STUDENT_NAME` all already existed.
+
+Tests **147 to 163**.
+
+### Verified end to end, not just in mocks
+
+```
+DEMO_MODE = True | DEMO_STUDENT_NAME = Ayesha
+demo student ('ayesha') -> 6.0s, 48 skills, 8 roles, 27782 raw chars
+other student ('Bilal') -> LIVE CALL (correct)
+```
+
+Lowercase name still hit the cache; a different name still went to the model. That second line
+is the one that matters -- it is what lets judges try their own courses right after the pitch
+(DECISIONS #7). DEMO_MODE alone would turn the product into a video.
+
+### spec-check result
+
+Sections re-read: **PRD 12.1, 12.2** · **TDD 4.8** · **CONTRACT 4** · DECISIONS #7, #41.
+
+| Requirement | Source | Status | Evidence |
+|---|---|---|---|
+| Gated on DEMO_MODE **and** the student name | PRD 12.1, #7 | met | 5 gate tests |
+| Any other student gets a real call | PRD 12.1 | met | `test_run_analysis_calls_the_model_for_everyone_else` |
+| Case-insensitive name match | DECISIONS #41 | met | parametrised over `ayesha`/`AYESHA`/padded |
+| ~6 s of latency so the screen reads as work | PRD 12.1 | met | measured 6.0 s |
+| Returns the same `(parsed, raw)` shape as a live call | TDD 4.8 | met | `run_analysis` branch tests |
+| Fixture carries the demo student's course codes | PRD 12.2 | met | asserted against the committed file |
+| Decision lives in `app/analysis/`, not the router | TDD 4.8 | met | `analyze.py` untouched |
+| `load_demo` exported | anchor-analysis skill | met | `__init__.py` |
+| `load_demo_project` / `load_demo_review` | skill | **not met** | S8 -- their fixtures are still placeholders |
+
+### Deviations
+
+1. **`load()` validates the fixture before returning it** -- conscious, not in the TDD. It is a
+   file we committed ourselves, so validating looks redundant. It is not: a fixture that quietly
+   stopped satisfying V1-V6 would otherwise fail *inside* `persist_analysis`, mid-demo, as an
+   opaque database error instead of a legible one. Three tests cover the failure modes (missing
+   file, still-a-placeholder, no longer validates), each asserting the message names the cause
+   and, where possible, the command that fixes it.
+
+2. **The sleep happens after validation, and is injectable** -- conscious. Sleeping first would
+   make a broken fixture take six seconds to report. `delay=0` keeps the unit suite instant; a
+   6 s sleep inside a test suite is a bug, not a feature.
+
+### Notes for Salman
+
+- **`contracts/fixtures/demo_analysis.json` has to exist on the deploy host.** `contracts/`
+  lives at the repo root, *outside* `backend/`. If the deploy only ships `backend/`, DEMO_MODE
+  raises and the demo path dies -- during the pitch, with a stack trace rather than a friendly
+  message. I made the error name the cause explicitly, but the fix is deployment config, which
+  is yours. **Worth checking before Day 4 rather than on it.**
+- **`POST /api/analyze` now takes ~6 s instead of 53-102 s when `DEMO_MODE=true` and the student
+  is Ayesha.** Everyone else still gets the slow live path, so the Appendix B question from S3
+  is unchanged -- the cached path does not rescue it.
+- Your name matching in `routers/project.py` and `routers/submit.py` already uses
+  `.strip().lower()`; mine now matches, so all three demo gates agree. Nothing for you to change.
+- No file of yours was touched this session. `tests/test_demo.py` is new and additive.
+
+### Note to self for S8 -- an asymmetry that will bite
+
+`routers/submit.py` sleeps `DEMO_SLEEP_SECONDS = 4` **itself** before calling
+`load_demo_review`, but `routers/project.py` does **not** sleep before `load_demo_project`.
+So: `load_demo_review` must **not** sleep (double delay otherwise) and `load_demo_project`
+**must** sleep ~3 s (PRD 12.1). Read both routers again before writing either.
+
+### Files touched
+
+```
+backend/app/analysis/demo.py        new, applies() + load()
+backend/app/analysis/__init__.py    demo branch in run_analysis, load_demo exported
+backend/tests/test_demo.py          new, 16 tests (Salman's dir, additive)
+```
+
+Tests added/updated: **16**. Gate 5 · fixture loading and its three failure modes 6 ·
+`run_analysis` branching 3 · latency and course-code assertions 2.

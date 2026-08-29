@@ -15,13 +15,16 @@ that catches `AnalysisFailed` catches transport failures too and the router cont
 unchanged.
 """
 
+from app.analysis import demo
 from app.analysis.client import AnalysisFailed, ProviderError, complete_validated
+from app.analysis.demo import load as load_demo
 from app.analysis.prompt import build_prompt
 from app.analysis.schema import AnalysisOut
 
 __all__ = [
     "run_analysis",
     "build_prompt",
+    "load_demo",
     "AnalysisOut",
     "AnalysisFailed",
     "ProviderError",
@@ -42,9 +45,14 @@ def run_analysis(student, courses, *, client=None) -> tuple[AnalysisOut, str]:
     `client` is injected only by tests and the CLI. In the app it is `None` and the configured
     provider is used.
 
-    DEMO_MODE is deliberately NOT handled here -- it lands in S5 as a branch in this function,
-    once `demo.py` exists. Until then every student gets a live call.
+    DEMO_MODE is handled here rather than in Salman's router, per TDD 4.8: `analyze.py` is
+    thin and every decision about prompts, retries and caching belongs to this package. The
+    gate is DEMO_MODE **and** the student's name -- never DEMO_MODE alone -- so any other
+    student still gets a real call and judges can try their own input (DECISIONS #7).
     """
+    if demo.applies(student):
+        return demo.load()
+
     return complete_validated(
         AnalysisOut,
         build_prompt(student, courses),

@@ -17,7 +17,7 @@ Run `/test-first` when starting any session that produces a module.
 | S2 | `LLMClient` adapter + schema transform | 1 | S1 | not started |
 | S3 | Analysis prompt v1 → validated fixture + latency | 1 | S2 | ✅ **done** 2026-08-29 — 3/3 clean, fixture committed |
 | S4 | Day-2 tuning + seed-postings gate | 2 | S3 | **next** — 0 dupes already; seed postings undecided |
-| S5 | `DEMO_MODE` + final `demo_analysis.json` | 2 | S3 | not started |
+| S5 | `DEMO_MODE` + final `demo_analysis.json` | 2 | S3 | ✅ **done** 2026-08-30 — 163 tests, verified end to end |
 | S6 | `ProjectOut` schema + prompt | 3 | **Day-2 exit** | not started |
 | S7 | `ReviewOut` schema + prompt + injection test | 3 | **Day-2 exit** | not started |
 | S8 | Demo project + review cache | 4 | S6, S7, Salman's repo | not started |
