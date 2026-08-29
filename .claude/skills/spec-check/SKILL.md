@@ -102,7 +102,32 @@ this repo specifically:
 - `test_project_review.py` monkeypatches the AI lane with `raising=False`, so it passes against
   stubs. Green there does **not** mean the real implementation matches.
 
-## Step 6 — Append to BUILD_LOG
+## Step 6 — Write the notes for other devs
+
+**Every BUILD_LOG entry that touched, or depends on, someone else's lane gets a
+`### Notes for Salman` section** (or Wahab, as applicable). Not a passing mention buried in a
+deviation paragraph — its own heading, so it can be copied straight into chat without
+rereading the entry.
+
+One bullet per item, each saying what he has to *do* or *know*:
+
+- **A file of his that changed** — which file, what was added, and confirmation that nothing
+  existing was modified or removed.
+- **Something he must supply** — a field name, a signature, a value. Say what breaks without
+  it, and whether it breaks loudly or silently. Silent is the one that matters: `SkillState` is
+  matched structurally, so a renamed field breaks his caller with **no test failure**
+  (DECISIONS #33).
+- **A measurement that changes a decision he owns** — deploy config, timeouts, thresholds.
+  Give the number, not an adjective.
+- **Behaviour of his that changes because this lane grew** — an endpoint that used to 503
+  because the package was empty and now really calls the model, for instance.
+
+Then mirror every unresolved item into the standing **Open notes for other lanes** list at the
+top of `BUILD_LOG.md`, and strike items there once they are done. The per-entry section is the
+history; the list at the top is what still needs saying out loud. An entry with nothing
+cross-lane simply omits the section.
+
+## Step 7 — Append to BUILD_LOG
 
 Append one entry to `ai-working/BUILD_LOG.md` in the file's template. **Append only — never edit
 a past entry.** Fill `Matches spec:` honestly:

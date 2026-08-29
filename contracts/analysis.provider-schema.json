@@ -1,0 +1,119 @@
+{
+  "properties": {
+    "skills": {
+      "items": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "real_world": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "real_world"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "coverage": {
+      "items": {
+        "properties": {
+          "skill_id": {
+            "type": "string"
+          },
+          "course_code": {
+            "type": "string"
+          },
+          "depth": {
+            "enum": [
+              "full",
+              "partial"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "skill_id",
+          "course_code",
+          "depth"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "roles": {
+      "items": {
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "one_liner": {
+            "type": "string"
+          },
+          "proximity": {
+            "enum": [
+              "core",
+              "adjacent"
+            ],
+            "type": "string"
+          },
+          "bridge": {
+            "type": "string"
+          },
+          "rank": {
+            "type": "integer"
+          },
+          "skills": {
+            "items": {
+              "properties": {
+                "skill_id": {
+                  "type": "string"
+                },
+                "weight": {
+                  "enum": [
+                    "core",
+                    "supporting"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "skill_id",
+                "weight"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "one_liner",
+          "proximity",
+          "bridge",
+          "rank",
+          "skills"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "skills",
+    "coverage",
+    "roles"
+  ],
+  "type": "object"
+}

@@ -1,1 +1,848 @@
-{ "_todo": "Umer: written by scripts/run_analysis_cli.py --demo --save" }
+{
+  "skills": [
+    {
+      "id": "asymptotic-analysis",
+      "name": "Asymptotic Analysis",
+      "real_world": "Estimating execution time scaling with Big-O notation before writing code prevents exponential complexity traps in production."
+    },
+    {
+      "id": "binary-tree-traversal",
+      "name": "Binary Tree Traversal",
+      "real_world": "Recursive and iterative tree traversals underpin abstract syntax tree parsing, file system iteration, and visual layout trees."
+    },
+    {
+      "id": "graph-search-algorithms",
+      "name": "Graph Search Algorithms",
+      "real_world": "Graph traversals like BFS and DFS calculate shortest delivery routes and resolve complex package build dependencies."
+    },
+    {
+      "id": "dynamic-programming-optimization",
+      "name": "Dynamic Programming",
+      "real_world": "Breaking overlapping subproblems into memoized dynamic programming solutions converts exponential algorithms into polynomial-time operations."
+    },
+    {
+      "id": "hash-table-design",
+      "name": "Hash Table Design",
+      "real_world": "Selecting robust hash functions and collision resolution strategies keeps key-value lookup performance at true O(1) time."
+    },
+    {
+      "id": "relational-schema-normalization",
+      "name": "Relational Schema Normalization",
+      "real_world": "Normalizing database tables up to BCNF eliminates duplicate storage and protects system data integrity from write anomalies."
+    },
+    {
+      "id": "sql-query-optimization",
+      "name": "SQL Query Optimization",
+      "real_world": "Cutting a 4-second dashboard query to 40ms is usually achieved by adding targeted composite indexes and rewriting expensive joins."
+    },
+    {
+      "id": "database-transaction-isolation",
+      "name": "Database Transaction Isolation",
+      "real_world": "Selecting appropriate ACID isolation levels prevents race conditions like dirty reads and non-repeatable reads under high traffic."
+    },
+    {
+      "id": "database-indexing-strategies",
+      "name": "Database Indexing Strategies",
+      "real_world": "Choosing between B-Tree and hash indexes directly controls the trade-off between lookup latency and write throughput."
+    },
+    {
+      "id": "nosql-data-modeling",
+      "name": "NoSQL Data Modeling",
+      "real_world": "Designing document and key-value schemas based on read access patterns optimizes low-latency query workloads."
+    },
+    {
+      "id": "supervised-model-training",
+      "name": "Supervised Model Training",
+      "real_world": "Fitting classifiers and regressors on tagged datasets requires carefully balancing model capacity against generalization error."
+    },
+    {
+      "id": "ml-hyperparameter-tuning",
+      "name": "ML Hyperparameter Tuning",
+      "real_world": "Systematically searching learning rates and regularization weights prevents model underfitting and convergence failures."
+    },
+    {
+      "id": "ml-model-evaluation",
+      "name": "ML Model Evaluation",
+      "real_world": "Evaluating precision-recall curves and F1-scores prevents false confidence on heavily imbalanced datasets."
+    },
+    {
+      "id": "feature-engineering-and-scaling",
+      "name": "Feature Engineering & Scaling",
+      "real_world": "Standardizing numerical features and one-hot encoding categorical variables prevents gradient descent from diverging."
+    },
+    {
+      "id": "dimensionality-reduction",
+      "name": "Dimensionality Reduction",
+      "real_world": "Applying Principal Component Analysis to high-dimensional data compresses redundant features while retaining signal."
+    },
+    {
+      "id": "rest-api-design",
+      "name": "REST API Design",
+      "real_world": "Structuring clear HTTP REST endpoints with predictable request schemas makes backend services easy for frontends to integrate."
+    },
+    {
+      "id": "http-protocol-fundamentals",
+      "name": "HTTP Protocol Fundamentals",
+      "real_world": "Configuring HTTP headers, status codes, and CORS rules resolves cross-origin resource sharing errors on frontend fetches."
+    },
+    {
+      "id": "frontend-component-architecture",
+      "name": "Frontend Component Architecture",
+      "real_world": "Structuring user interfaces into modular, stateful components prevents duplicate frontend code and unmaintainable UI logic."
+    },
+    {
+      "id": "client-side-state-management",
+      "name": "Client-Side State Management",
+      "real_world": "Managing state across component hierarchies keeps user interfaces responsive without executing redundant backend API requests."
+    },
+    {
+      "id": "responsive-css-layout",
+      "name": "Responsive CSS Layout",
+      "real_world": "Utilizing Flexbox and CSS Grid guarantees application interfaces adapt fluidly across mobile screens and desktop displays."
+    },
+    {
+      "id": "web-authentication-and-sessions",
+      "name": "Web Authentication & Sessions",
+      "real_world": "Issuing signed JWT tokens or secure session cookies protects application endpoints from unauthorized access."
+    },
+    {
+      "id": "web-security-hardening",
+      "name": "Web Security Hardening",
+      "real_world": "Sanitizing user inputs prevents cross-site scripting, SQL injection, and request forgery vulnerabilities in public applications."
+    },
+    {
+      "id": "fullstack-application-deployment",
+      "name": "Full-Stack Application Deployment",
+      "real_world": "Configuring environment secrets and web hosting platforms enables smooth delivery of live full-stack services."
+    },
+    {
+      "id": "user-research-and-persona-mapping",
+      "name": "User Research & Persona Mapping",
+      "real_world": "Conducting user interviews uncovers workflows and pain points before engineering teams waste effort on unused features."
+    },
+    {
+      "id": "wireframing-and-prototyping",
+      "name": "Wireframing & Prototyping",
+      "real_world": "Creating interactive low-fidelity prototypes validates user navigation flows before writing frontend production code."
+    },
+    {
+      "id": "usability-testing-and-evaluation",
+      "name": "Usability Testing & Evaluation",
+      "real_world": "Observing real users navigate task workflows highlights non-intuitive UI elements and conversion bottlenecks."
+    },
+    {
+      "id": "ui-design-systems-and-tokens",
+      "name": "UI Design Systems & Tokens",
+      "real_world": "Establishing standardized color, spacing, and typography design tokens guarantees visual consistency across multi-team web apps."
+    },
+    {
+      "id": "data-pipeline-orchestration",
+      "name": "Data Pipeline Orchestration",
+      "real_world": "Coordinating multi-stage DAG data transformations ensures downstream analytics tables update reliably on scheduled batches."
+    },
+    {
+      "id": "data-warehousing-principles",
+      "name": "Data Warehousing Principles",
+      "real_world": "Designing star schemas in columnar analytical databases turns complex analytical queries into sub-second runs."
+    },
+    {
+      "id": "exploratory-data-analysis",
+      "name": "Exploratory Data Analysis",
+      "real_world": "Profiling raw datasets with statistical summaries uncovers missing values and data anomalies prior to model training."
+    },
+    {
+      "id": "vector-embeddings-and-search",
+      "name": "Vector Embeddings & Search",
+      "real_world": "Generating unstructured data vector embeddings enables semantic similarity search for modern AI search platforms."
+    },
+    {
+      "id": "deep-learning-fundamentals",
+      "name": "Deep Learning Fundamentals",
+      "real_world": "Training feedforward multi-layer neural networks via backpropagation enables learning complex non-linear pattern representations."
+    },
+    {
+      "id": "prompt-engineering-and-llm-integration",
+      "name": "Prompt Engineering & LLM Integration",
+      "real_world": "Crafting contextual system prompts and integrating LLM APIs allows products to process dynamic natural language commands."
+    },
+    {
+      "id": "version-control-with-git",
+      "name": "Version Control with Git",
+      "real_world": "Branching, committing, and resolving merge conflicts cleanly enables engineering teams to collaborate without code overwrites."
+    },
+    {
+      "id": "ci-cd-pipeline-automation",
+      "name": "CI/CD Pipeline Automation",
+      "real_world": "Automating test runs and release deployments guarantees every pull request is validated before reaching production."
+    },
+    {
+      "id": "system-architecture-design",
+      "name": "System Architecture Design",
+      "real_world": "Architecting decoupled microservices and event queues prevents single points of software failure under sudden traffic surges."
+    },
+    {
+      "id": "containerization-with-docker",
+      "name": "Containerization with Docker",
+      "real_world": "Packaging web application dependencies into lightweight Docker containers eliminates local platform configuration discrepancies."
+    },
+    {
+      "id": "web-accessibility-compliance",
+      "name": "Web Accessibility Compliance",
+      "real_world": "Adding ARIA labels and semantic HTML markup ensures visually impaired users navigate web applications via screen readers."
+    },
+    {
+      "id": "cache-strategy-design",
+      "name": "Cache Strategy Design",
+      "real_world": "Implementing Redis in-memory caching layers reduces primary database load and delivers rapid latency improvements."
+    },
+    {
+      "id": "cloud-infrastructure-provisioning",
+      "name": "Cloud Infrastructure Provisioning",
+      "real_world": "Configuring cloud virtual networks, storage buckets, and serverless compute supports scalable application deployment."
+    },
+    {
+      "id": "real-time-event-streaming",
+      "name": "Real-Time Event Streaming",
+      "real_world": "Establishing persistent WebSocket connections enables instantaneous dynamic updates in live collaborative applications."
+    },
+    {
+      "id": "model-deployment-and-serving",
+      "name": "Model Deployment & Serving",
+      "real_world": "Deploying machine learning models as containerized microservices enables real-time low-latency inference endpoints."
+    },
+    {
+      "id": "logging-and-observability",
+      "name": "Logging & Observability",
+      "real_world": "Instrumenting structured application logging and metrics collection allows rapid root-cause diagnosis of active production incidents."
+    },
+    {
+      "id": "design-thinking-and-ideation",
+      "name": "Design Thinking & Ideation",
+      "real_world": "Translating ambiguous user feedback into clear product feature requirements bridges the gap between software and real needs."
+    },
+    {
+      "id": "interaction-design-patterns",
+      "name": "Interaction Design Patterns",
+      "real_world": "Applying micro-interactions and explicit UI feedback states prevents user confusion during multi-step web workflows."
+    },
+    {
+      "id": "a-b-testing-and-experimentation",
+      "name": "A/B Testing & Experimentation",
+      "real_world": "Structuring split experiments measures the statistical significance of product design changes on conversion metrics."
+    },
+    {
+      "id": "data-visualization-design",
+      "name": "Data Visualization Design",
+      "real_world": "Creating intuitive visual chart components helps business users interpret complex backend data metrics quickly."
+    },
+    {
+      "id": "unit-and-integration-testing",
+      "name": "Unit & Integration Testing",
+      "real_world": "Writing automated component and API test suites catches application regressions before software reaches production."
+    }
+  ],
+  "coverage": [
+    {
+      "skill_id": "asymptotic-analysis",
+      "course_code": "CS201",
+      "depth": "full"
+    },
+    {
+      "skill_id": "binary-tree-traversal",
+      "course_code": "CS201",
+      "depth": "full"
+    },
+    {
+      "skill_id": "graph-search-algorithms",
+      "course_code": "CS201",
+      "depth": "full"
+    },
+    {
+      "skill_id": "dynamic-programming-optimization",
+      "course_code": "CS201",
+      "depth": "full"
+    },
+    {
+      "skill_id": "hash-table-design",
+      "course_code": "CS201",
+      "depth": "full"
+    },
+    {
+      "skill_id": "relational-schema-normalization",
+      "course_code": "CS301",
+      "depth": "full"
+    },
+    {
+      "skill_id": "sql-query-optimization",
+      "course_code": "CS301",
+      "depth": "full"
+    },
+    {
+      "skill_id": "database-transaction-isolation",
+      "course_code": "CS301",
+      "depth": "full"
+    },
+    {
+      "skill_id": "database-indexing-strategies",
+      "course_code": "CS301",
+      "depth": "full"
+    },
+    {
+      "skill_id": "nosql-data-modeling",
+      "course_code": "CS301",
+      "depth": "partial"
+    },
+    {
+      "skill_id": "supervised-model-training",
+      "course_code": "CS401",
+      "depth": "full"
+    },
+    {
+      "skill_id": "ml-hyperparameter-tuning",
+      "course_code": "CS401",
+      "depth": "full"
+    },
+    {
+      "skill_id": "ml-model-evaluation",
+      "course_code": "CS401",
+      "depth": "full"
+    },
+    {
+      "skill_id": "feature-engineering-and-scaling",
+      "course_code": "CS401",
+      "depth": "full"
+    },
+    {
+      "skill_id": "dimensionality-reduction",
+      "course_code": "CS401",
+      "depth": "full"
+    },
+    {
+      "skill_id": "deep-learning-fundamentals",
+      "course_code": "CS401",
+      "depth": "partial"
+    },
+    {
+      "skill_id": "exploratory-data-analysis",
+      "course_code": "CS401",
+      "depth": "full"
+    },
+    {
+      "skill_id": "rest-api-design",
+      "course_code": "CS402",
+      "depth": "full"
+    },
+    {
+      "skill_id": "http-protocol-fundamentals",
+      "course_code": "CS402",
+      "depth": "full"
+    },
+    {
+      "skill_id": "frontend-component-architecture",
+      "course_code": "CS402",
+      "depth": "full"
+    },
+    {
+      "skill_id": "client-side-state-management",
+      "course_code": "CS402",
+      "depth": "full"
+    },
+    {
+      "skill_id": "responsive-css-layout",
+      "course_code": "CS402",
+      "depth": "full"
+    },
+    {
+      "skill_id": "web-authentication-and-sessions",
+      "course_code": "CS402",
+      "depth": "full"
+    },
+    {
+      "skill_id": "web-security-hardening",
+      "course_code": "CS402",
+      "depth": "partial"
+    },
+    {
+      "skill_id": "fullstack-application-deployment",
+      "course_code": "CS402",
+      "depth": "full"
+    },
+    {
+      "skill_id": "web-accessibility-compliance",
+      "course_code": "CS402",
+      "depth": "partial"
+    },
+    {
+      "skill_id": "real-time-event-streaming",
+      "course_code": "CS402",
+      "depth": "partial"
+    },
+    {
+      "skill_id": "logging-and-observability",
+      "course_code": "CS402",
+      "depth": "partial"
+    }
+  ],
+  "roles": [
+    {
+      "id": "full-stack-engineer",
+      "title": "Full-Stack Engineer",
+      "one_liner": "Builds complete web applications end-to-end, connecting interactive frontend interfaces with scalable backend services and databases.",
+      "proximity": "core",
+      "bridge": "",
+      "rank": 1,
+      "skills": [
+        {
+          "skill_id": "rest-api-design",
+          "weight": "core"
+        },
+        {
+          "skill_id": "frontend-component-architecture",
+          "weight": "core"
+        },
+        {
+          "skill_id": "client-side-state-management",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sql-query-optimization",
+          "weight": "core"
+        },
+        {
+          "skill_id": "web-authentication-and-sessions",
+          "weight": "core"
+        },
+        {
+          "skill_id": "responsive-css-layout",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "http-protocol-fundamentals",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "web-security-hardening",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "fullstack-application-deployment",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "cache-strategy-design",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "unit-and-integration-testing",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "web-accessibility-compliance",
+          "weight": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "machine-learning-engineer",
+      "title": "Machine Learning Engineer",
+      "one_liner": "Designs, trains, and deploys predictive machine learning models into high-throughput production software environments.",
+      "proximity": "core",
+      "bridge": "",
+      "rank": 2,
+      "skills": [
+        {
+          "skill_id": "supervised-model-training",
+          "weight": "core"
+        },
+        {
+          "skill_id": "ml-hyperparameter-tuning",
+          "weight": "core"
+        },
+        {
+          "skill_id": "ml-model-evaluation",
+          "weight": "core"
+        },
+        {
+          "skill_id": "model-deployment-and-serving",
+          "weight": "core"
+        },
+        {
+          "skill_id": "feature-engineering-and-scaling",
+          "weight": "core"
+        },
+        {
+          "skill_id": "dimensionality-reduction",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "deep-learning-fundamentals",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "exploratory-data-analysis",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "rest-api-design",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "containerization-with-docker",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "dynamic-programming-optimization",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "asymptotic-analysis",
+          "weight": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "backend-engineer",
+      "title": "Backend Engineer",
+      "one_liner": "Architects server-side APIs, database schemas, and background jobs for high-performance distributed systems.",
+      "proximity": "core",
+      "bridge": "",
+      "rank": 3,
+      "skills": [
+        {
+          "skill_id": "rest-api-design",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sql-query-optimization",
+          "weight": "core"
+        },
+        {
+          "skill_id": "database-transaction-isolation",
+          "weight": "core"
+        },
+        {
+          "skill_id": "database-indexing-strategies",
+          "weight": "core"
+        },
+        {
+          "skill_id": "system-architecture-design",
+          "weight": "core"
+        },
+        {
+          "skill_id": "http-protocol-fundamentals",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "relational-schema-normalization",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "web-authentication-and-sessions",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "cache-strategy-design",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "web-security-hardening",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "logging-and-observability",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "graph-search-algorithms",
+          "weight": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "ai-application-developer",
+      "title": "AI Application Developer",
+      "one_liner": "Integrates artificial intelligence models, vector search, and context windows into interactive user-facing web products.",
+      "proximity": "core",
+      "bridge": "",
+      "rank": 4,
+      "skills": [
+        {
+          "skill_id": "prompt-engineering-and-llm-integration",
+          "weight": "core"
+        },
+        {
+          "skill_id": "vector-embeddings-and-search",
+          "weight": "core"
+        },
+        {
+          "skill_id": "rest-api-design",
+          "weight": "core"
+        },
+        {
+          "skill_id": "frontend-component-architecture",
+          "weight": "core"
+        },
+        {
+          "skill_id": "supervised-model-training",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "ml-model-evaluation",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "client-side-state-management",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "fullstack-application-deployment",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "nosql-data-modeling",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "deep-learning-fundamentals",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "http-protocol-fundamentals",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "usability-testing-and-evaluation",
+          "weight": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "database-administrator",
+      "title": "Database Administrator",
+      "one_liner": "Manages relational and non-relational database clusters to guarantee performance, uptime, security, and recovery.",
+      "proximity": "core",
+      "bridge": "",
+      "rank": 5,
+      "skills": [
+        {
+          "skill_id": "sql-query-optimization",
+          "weight": "core"
+        },
+        {
+          "skill_id": "database-transaction-isolation",
+          "weight": "core"
+        },
+        {
+          "skill_id": "database-indexing-strategies",
+          "weight": "core"
+        },
+        {
+          "skill_id": "relational-schema-normalization",
+          "weight": "core"
+        },
+        {
+          "skill_id": "cloud-infrastructure-provisioning",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "nosql-data-modeling",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "logging-and-observability",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "system-architecture-design",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "web-security-hardening",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "fullstack-application-deployment",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "unit-and-integration-testing",
+          "weight": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "ux-engineer",
+      "title": "UX Engineer",
+      "one_liner": "Bridges visual design and software development by building reusable design systems and accessible frontend code.",
+      "proximity": "adjacent",
+      "bridge": "Your web development coursework in CS402 and your explicit interest in UI/UX Design converge here — UX engineers turn visual design specs and accessibility guidelines into living component libraries.",
+      "rank": 6,
+      "skills": [
+        {
+          "skill_id": "frontend-component-architecture",
+          "weight": "core"
+        },
+        {
+          "skill_id": "ui-design-systems-and-tokens",
+          "weight": "core"
+        },
+        {
+          "skill_id": "web-accessibility-compliance",
+          "weight": "core"
+        },
+        {
+          "skill_id": "responsive-css-layout",
+          "weight": "core"
+        },
+        {
+          "skill_id": "client-side-state-management",
+          "weight": "core"
+        },
+        {
+          "skill_id": "wireframing-and-prototyping",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "usability-testing-and-evaluation",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "interaction-design-patterns",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "rest-api-design",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "http-protocol-fundamentals",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "design-thinking-and-ideation",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "unit-and-integration-testing",
+          "weight": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "data-engineer",
+      "title": "Data Engineer",
+      "one_liner": "Constructs automated pipeline infrastructure that transforms raw transactional data streams into reliable analytics warehouses.",
+      "proximity": "adjacent",
+      "bridge": "Your DBMS coursework in CS301 and algorithmic foundations in CS201 position you to build automated data transformation pipelines and high-throughput columnar storage systems.",
+      "rank": 7,
+      "skills": [
+        {
+          "skill_id": "data-pipeline-orchestration",
+          "weight": "core"
+        },
+        {
+          "skill_id": "data-warehousing-principles",
+          "weight": "core"
+        },
+        {
+          "skill_id": "sql-query-optimization",
+          "weight": "core"
+        },
+        {
+          "skill_id": "relational-schema-normalization",
+          "weight": "core"
+        },
+        {
+          "skill_id": "database-indexing-strategies",
+          "weight": "core"
+        },
+        {
+          "skill_id": "graph-search-algorithms",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "dynamic-programming-optimization",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "nosql-data-modeling",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "cloud-infrastructure-provisioning",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "containerization-with-docker",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "exploratory-data-analysis",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "logging-and-observability",
+          "weight": "supporting"
+        }
+      ]
+    },
+    {
+      "id": "analytics-engineer",
+      "title": "Analytics Engineer",
+      "one_liner": "Transforms messy application logs into clean SQL models and structured dashboards for business decision-making.",
+      "proximity": "adjacent",
+      "bridge": "Your DBMS coursework in CS301 combined with your chosen UI/UX Design interest positions you directly to turn complex relational database schemas into intuitive visual data interfaces.",
+      "rank": 8,
+      "skills": [
+        {
+          "skill_id": "sql-query-optimization",
+          "weight": "core"
+        },
+        {
+          "skill_id": "relational-schema-normalization",
+          "weight": "core"
+        },
+        {
+          "skill_id": "data-visualization-design",
+          "weight": "core"
+        },
+        {
+          "skill_id": "data-warehousing-principles",
+          "weight": "core"
+        },
+        {
+          "skill_id": "exploratory-data-analysis",
+          "weight": "core"
+        },
+        {
+          "skill_id": "feature-engineering-and-scaling",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "a-b-testing-and-experimentation",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "user-research-and-persona-mapping",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "database-indexing-strategies",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "data-pipeline-orchestration",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "design-thinking-and-ideation",
+          "weight": "supporting"
+        },
+        {
+          "skill_id": "web-accessibility-compliance",
+          "weight": "supporting"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,161 @@
+{
+  "$defs": {
+    "CoverageOut": {
+      "description": "One (skill, course) pair the student's coursework covers.\n\n`course_code` is deliberately *not* validated against the student's codes here \u2014 this model\ndoes not know them. `persistence.py` drops unknown codes with a warning (TDD \u00a74.9), because\na soft data-quality issue is the wrong thing to fail a live analysis over.",
+      "properties": {
+        "skill_id": {
+          "title": "Skill Id",
+          "type": "string"
+        },
+        "course_code": {
+          "title": "Course Code",
+          "type": "string"
+        },
+        "depth": {
+          "enum": [
+            "full",
+            "partial"
+          ],
+          "title": "Depth",
+          "type": "string"
+        }
+      },
+      "required": [
+        "skill_id",
+        "course_code",
+        "depth"
+      ],
+      "title": "CoverageOut",
+      "type": "object"
+    },
+    "RoleOut": {
+      "description": "One career role: a weighted subset of the skill vocabulary.\n\n`bridge` is a plain `str`, `\"\"` for core roles, never `None` \u2014 union types are the most\nexpensive thing in the output grammar (DECISIONS #5).",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "one_liner": {
+          "title": "One Liner",
+          "type": "string"
+        },
+        "proximity": {
+          "enum": [
+            "core",
+            "adjacent"
+          ],
+          "title": "Proximity",
+          "type": "string"
+        },
+        "bridge": {
+          "title": "Bridge",
+          "type": "string"
+        },
+        "rank": {
+          "title": "Rank",
+          "type": "integer"
+        },
+        "skills": {
+          "items": {
+            "$ref": "#/$defs/RoleSkillOut"
+          },
+          "title": "Skills",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "one_liner",
+        "proximity",
+        "bridge",
+        "rank",
+        "skills"
+      ],
+      "title": "RoleOut",
+      "type": "object"
+    },
+    "RoleSkillOut": {
+      "properties": {
+        "skill_id": {
+          "title": "Skill Id",
+          "type": "string"
+        },
+        "weight": {
+          "enum": [
+            "core",
+            "supporting"
+          ],
+          "title": "Weight",
+          "type": "string"
+        }
+      },
+      "required": [
+        "skill_id",
+        "weight"
+      ],
+      "title": "RoleSkillOut",
+      "type": "object"
+    },
+    "SkillOut": {
+      "description": "One atomic capability. `id` is the vocabulary the whole product is keyed to.",
+      "properties": {
+        "id": {
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "real_world": {
+          "title": "Real World",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "real_world"
+      ],
+      "title": "SkillOut",
+      "type": "object"
+    }
+  },
+  "description": "The whole analysis payload. One per student, immutable once persisted.",
+  "properties": {
+    "skills": {
+      "items": {
+        "$ref": "#/$defs/SkillOut"
+      },
+      "title": "Skills",
+      "type": "array"
+    },
+    "coverage": {
+      "items": {
+        "$ref": "#/$defs/CoverageOut"
+      },
+      "title": "Coverage",
+      "type": "array"
+    },
+    "roles": {
+      "items": {
+        "$ref": "#/$defs/RoleOut"
+      },
+      "title": "Roles",
+      "type": "array"
+    }
+  },
+  "required": [
+    "skills",
+    "coverage",
+    "roles"
+  ],
+  "title": "AnalysisOut",
+  "type": "object"
+}

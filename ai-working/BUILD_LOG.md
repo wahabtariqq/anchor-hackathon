@@ -20,6 +20,50 @@ Open question for the team (if any):
 
 ---
 
+## Open notes for other lanes
+
+Kept current: added when a session touches or blocks another lane, struck through when done.
+Per-session detail is in each entry's **Notes for Salman** section; this is the say-it-out-loud
+list. Copy it into chat rather than assuming anyone reads build logs.
+
+### Needs Salman to act
+
+- **Send me the four `SkillState` field names before S6.** He duplicated the dataclass
+  structurally rather than import this package (DECISIONS #33), so nothing enforces agreement:
+  if my field names differ, his `routers/project.py` breaks **silently, with no test failure**.
+  This is the single highest-risk handoff left in the lane.
+- **Decide whether the deploy host needs TDD Appendix B (async analyze).** Measured across
+  three live runs: **53.2 s / 72.0 s / 101.8 s**. TDD §5.1 warns that some hosts cut requests at
+  **~100 s** — our worst case is already past that. TDD says decide by end of Day 1 and *"don't
+  discover this during rehearsal."* The client timeout (240 s) is fine; the **host proxy** is
+  the risk.
+
+### Needs Salman to know
+
+- `app/config.py` gained `LLM_PROVIDER`, `GEMINI_API_KEY`, `GEMINI_MODEL` (S2). Nothing existing
+  changed; all three default so the API still boots without them — the property #10 and #36
+  exist to protect.
+- `backend/.env.example` gained a provider block. `ANTHROPIC_*` kept as the declared fallback.
+- Three files added to his `tests/`: `test_client.py` (37), `test_prompt.py` (12), plus 2 tests
+  appended to `test_validation.py`. All additive; none of his tests were modified.
+- **`POST /api/analyze` now really calls the model.** `app.analysis` exports `run_analysis`, so
+  his `_resolve_run()` finds it and the 503 "pipeline not available yet" path no longer fires.
+  His 409/422 tests are unaffected — both short-circuit before resolution.
+- Entry point is **`run_analysis`**, closing DECISIONS #11. His resolver already accepts either.
+
+### Needs the whole team
+
+- **Seed postings are still at zero** with a Day-2-morning deadline. PRD §8.6 admits the set
+  only if it is in the prompt from the *start* of tuning; otherwise it is out permanently.
+- **`parity_cases.json` has 12 cases; TDD §8 asks ~18** and names *mixed depths*, *core-only*
+  and *supporting-only* — all three absent, and the test asserts only `>= 12`.
+- **`ai-working/prompts/analysis.md` needs a human read.** The v3 text is lost (#43); this one
+  is new work and it is now driving the committed demo fixture.
+- The `contract:` PR for the provider change is still open: PRD §4.3, TDD §4.7, TDD §9 still
+  describe the Anthropic SDK.
+
+---
+
 ## 2026-08-27 — Phase 2 + 3 — Scaffold `ai-working/`, add `spec-check` and `test-first` skills
 
 Result: **done**
@@ -437,3 +481,131 @@ Unchanged, plus one retired: **#5 (the `run_analysis` arity contradiction) is no
 `(student, courses)`, per deviation 1. The rest still stand: the analysis prompt needs a human
 read, seed postings are at zero, `parity_cases.json` is three cases short, and I still need
 `SkillState`'s four field names from Salman before S6.
+
+---
+
+## 2026-08-29 — S3 — prompt.py, __init__.py, the analysis CLI, and the demo fixture
+
+Result: **done**
+Matches spec: **DEVIATION** (three, all conscious)
+
+**The lane's core path now works end to end.** `POST /api/analyze` will produce a real,
+validated analysis. Tests **135 to 147**.
+
+### The done-check, met
+
+`python scripts/run_analysis_cli.py --demo --runs 3 --save` gave **3/3 validated.**
+
+| run | latency | skills | roles | reuse | near-dupes | vague |
+|---|---|---|---|---|---|---|
+| 1 | 72.0 s | 50 | 5 core / 3 adj | 62% | **0** | **0** |
+| 2 | 101.8 s | 49 | 5 core / 3 adj | 60% | **0** | **0** |
+| 3 | 53.2 s | 48 | 5 core / 3 adj | 72% | **0** | **0** |
+
+`contracts/fixtures/demo_analysis.json` committed from run 3 -- 28,632 bytes, 48 skills,
+8 roles, 28 coverage rows, codes exactly CS201/CS301/CS401/CS402. Top role Full-Stack
+Engineer; adjacent UX Engineer, Data Engineer, Analytics Engineer.
+
+`contracts/analysis.schema.json` written, plus `analysis.provider-schema.json` -- the same
+schema after the transform, so the stripped keywords are visible rather than surprising.
+
+### Two things the runs revealed
+
+**1. The retry policy fired in production, unprompted, and worked.** Run 1, attempt 1:
+
+```
+role 'product-designer-ui-ux' references unknown skill 'frontend-performance-optimization'
+```
+
+V3 caught a dangling reference, the retry fired, attempt 2 was clean, and the CLI reported a
+pass. That is the exact failure the validators exist for: a role whose fit % would be computed
+from a skill the student can never tick, so the card could never move. **It happened on 1 of 3
+runs.** Without V3 plus the retry, that payload reaches the database and the bug stays invisible
+until someone wonders why a card is stuck.
+
+**2. Worst-case latency is 101.8 s, and that is the number that matters.** TDD 5.1 warns that
+some hosts cut long requests at ~100 s and says to switch to Appendix B before Day 3 rather than
+discover it during rehearsal. We are **over that line**. The 240 s client timeout is fine; the
+**host proxy** is the exposure. Escalated in the standing notes.
+
+Spread was 53 to 102 s across three identical requests, so this is free-tier variance, not a
+property of the prompt. Budget for the worst case, not the median.
+
+### spec-check result
+
+Sections re-read: **PRD 8.1** · **TDD 4.8** · **CLAUDE.md seam #1** · **CONTRACT 4** ·
+anchor-analysis skill "Definition of done for this lane".
+
+| Requirement | Source | Status | Evidence |
+|---|---|---|---|
+| `run_analysis(student, courses) -> (parsed, raw)` | CLAUDE.md seam 1 | met | `test_run_analysis_returns_parsed_and_raw...` |
+| Salman's router can resolve the entry point | TDD 4.8 | met | `_ENTRY_POINTS` finds `run_analysis` |
+| `build_prompt` renders semester, interests, courses | TDD 4.8 | met | 6 rendering tests |
+| Prompt is the PRD 8.1 text | PRD 8.1 | **deviated** | v3 text lost; written from scratch (#43) |
+| CLI runs the pipeline with no DB, no server | skill | met | `--demo`, `--courses`, `--runs`, `--save` |
+| `--demo` validates 3 consecutive runs | skill DoD | met | 3/3 above |
+| Fixture committed with the demo student's codes | CONTRACT 4 | met | CS201/CS301/CS401/CS402 |
+| `export_schema` writes the JSON Schema | CONTRACT 4 | met | both files written |
+| Latency recorded in DECISIONS | skill DoD | met | filled in at S0, refined here |
+| `raw` is the model's exact bytes | TDD 4.9 | met | asserted in the test |
+| DEMO_MODE branch | PRD 12.1 | **not met** | S5 owns it; deliberate |
+
+### Deviations
+
+1. **The prompt is new work, not the PRD 8.1 text** -- conscious, unavoidable. Logged as
+   DECISIONS #43. It is now driving a committed fixture, which raises the stakes on it getting
+   a human read.
+
+2. **`ANALYSIS_PROMPT` is mirrored into prompt.py rather than read from the .md at runtime** --
+   conscious. Reading `ai-working/prompts/analysis.md` at runtime is the obvious single source
+   of truth and it would **work locally and fail on deploy**: the backend ships `backend/` and
+   the docs directory is outside it. Mirroring costs a drift risk, so
+   `test_prompt.py::test_the_mirrored_prompt_matches_the_canonical_markdown` compares the two
+   byte for byte. Edit the .md, then regenerate.
+
+3. **export_schema writes a second file, `analysis.provider-schema.json`** -- conscious,
+   additive. CONTRACT 4 lists one. The transformed schema is what the model is actually sent,
+   and having both side by side is what makes "pattern is stripped, so it is re-checked in
+   Python" self-evident to the next person instead of folklore.
+
+### Notes for Salman
+
+- **POST /api/analyze is live.** `app.analysis` now exports `run_analysis`, so your
+  `_resolve_run()` finds it and the 503 "Analysis pipeline not available yet" path stops
+  firing. Your 409 and 422 tests are unaffected -- both return before resolution happens.
+  A real call takes **53 to 102 seconds**.
+- **Please decide on Appendix B.** Worst measured run was **101.8 s**, against TDD 5.1's ~100 s
+  proxy warning. This is your call: deploy host and router shape are your lane. If the host cuts
+  long requests, /analyze fails on stage and the failure will look like a model problem.
+- **Entry point is `run_analysis`**, closing DECISIONS #11 -- your note there said "B: pick one
+  name". Your resolver already accepts either, so nothing changes for you.
+- **tests/test_prompt.py added** to your tests directory, 12 tests, additive. It imports
+  `valid_payload` from your test_validation.py rather than duplicating a fixture builder.
+- **contracts/fixtures/demo_analysis.json is real now** -- your persistence tests can stop
+  treating it as a placeholder. 48 skills, 8 roles, 28 coverage rows, and the coverage codes are
+  exactly the demo student's four, so `persist_analysis` should drop nothing.
+- Nothing of yours was modified this session. Every file touched in your lane is an addition.
+
+### Files touched
+
+```
+backend/app/analysis/prompt.py          new, 179 lines (template mirrored from the .md)
+backend/app/analysis/__init__.py        new, run_analysis + the lane's exports
+backend/app/analysis/export_schema.py   new
+backend/scripts/run_analysis_cli.py     new, --demo/--courses/--runs/--save + quality report
+backend/tests/test_prompt.py            new, 12 tests (Salman's dir, additive)
+contracts/fixtures/demo_analysis.json   REAL, replaces the _todo placeholder
+contracts/analysis.schema.json          new
+contracts/analysis.provider-schema.json new
+.claude/skills/spec-check/SKILL.md      new Step 6: notes for other devs
+```
+
+Tests added/updated: **12**. Mirror-drift guard 1 · placeholder substitution 6 · course and code
+rendering 3 · postings block 1 · run_analysis seam with a mocked client 1.
+
+### Open question for the team
+
+The CLI reports **5 to 6 skills referenced by no role** on every run, consistently the CS201
+algorithms ones (dynamic-programming, graph-traversal-algorithms, sorting-*). Harmless -- they
+still show under "covered by your courses" -- but it is the model minting vocabulary it then
+does not use. Worth one line in S4 if it persists; not worth a prompt change on its own.
