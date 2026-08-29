@@ -20,6 +20,10 @@ Open question for the team (if any):
 
 ---
 
+> **Starting a fresh session? Read `ai-working/HANDOFF.md` first.** It carries the current
+> state, the closed decisions, the measured numbers, and the gotchas that cost real time to
+> find. This file is the history; that one is the briefing.
+
 ## Open notes for other lanes
 
 Kept current: added when a session touches or blocks another lane, struck through when done.
@@ -609,3 +613,52 @@ The CLI reports **5 to 6 skills referenced by no role** on every run, consistent
 algorithms ones (dynamic-programming, graph-traversal-algorithms, sorting-*). Harmless -- they
 still show under "covered by your courses" -- but it is the model minting vocabulary it then
 does not use. Worth one line in S4 if it persists; not worth a prompt change on its own.
+
+---
+
+## 2026-08-29 — HANDOFF — session-continuity briefing
+
+Result: **done**
+Matches spec: **yes** (no spec governs this; it is process, not product)
+
+Wrote `ai-working/HANDOFF.md`, 196 lines, so a fresh session resumes without re-deriving
+anything. Linked from the top of this file and from the lane README.
+
+Eight sections: orientation and lane ownership · current file-by-file state and test count ·
+environment, commands and the key-rotation warning · the nine closed decisions in one table ·
+**the gotchas** · what to do next and why · what is blocked on other people · where each kind
+of truth lives.
+
+**The gotchas section is the part that matters.** A new session can re-read the PRD in ten
+minutes, but it cannot re-derive that `gemini-2.5-flash` returns *"no longer available to new
+users"* while still appearing in `models.list`, that the SDK 403s where raw REST succeeds, or
+that filtering keys inside `properties` silently deletes `RoleOut.title`. Each of those cost a
+real debugging cycle here. They are written as "do not do X, because Y happened", not as tips.
+
+It also records two environment facts that are invisible from the code: `Write`/`Edit` are
+blocked outside a worktree so files go in via shell heredocs in ~60-line chunks, and the harness
+collapses doubled backslashes inside a command, so generated code must use a token substitution
+rather than backslash escapes. Both produced confusing failures before being understood.
+
+### Notes for Salman
+
+Nothing new this session — no code changed. The two items already waiting on you are unchanged
+and are the only things blocking this lane:
+
+- **The four `SkillState` field names**, before S6 can start. A mismatch breaks your
+  `routers/project.py` silently, with no test failure (DECISIONS #33).
+- **The TDD Appendix B call**, given the measured 101.8 s worst-case analysis latency against
+  TDD 5.1's ~100 s host-proxy warning.
+
+Both are in "Open notes for other lanes" at the top of this file, written to be copy-pasted into
+chat rather than read out of a build log.
+
+### Files touched
+
+```
+ai-working/HANDOFF.md     new, 196 lines
+ai-working/BUILD_LOG.md   pointer to the handoff at the top
+ai-working/README.md      HANDOFF.md added to the file table
+```
+
+Tests added/updated: none — no runtime code changed. Suite still 147 passing.

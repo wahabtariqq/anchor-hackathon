@@ -18,6 +18,7 @@ prompt-authoring, and audit surface for the AI lane. Runtime code lives in
 | `prompts/analysis.md` — the canonical prompt **text** | `prompt.py` — the code that renders it with student data |
 | `prompts/project.md` | `project.py` |
 | `prompts/review.md` | `review.py` |
+| `HANDOFF.md` — briefing for a fresh session: state, closed decisions, gotchas | — |
 | `SESSIONS.md` — the work plan | — |
 | `BUILD_LOG.md` — append-only record of what was actually done | — |
 | `fixtures_notes.md` — what each fixture is, who regenerates it, how | `contracts/fixtures/*.json` — the fixtures themselves |
