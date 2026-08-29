@@ -7,6 +7,19 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     DATABASE_URL: str
+
+    # Which provider app/analysis/ calls. Gemini, over raw REST -- the google-genai SDK
+    # 403s with our key while the same key works against the REST endpoint (DECISIONS #45).
+    LLM_PROVIDER: str = "gemini"
+    # Optional for the same reason as ANTHROPIC_API_KEY below: the API must boot for Salman
+    # and Wahab without the AI lane's key.
+    GEMINI_API_KEY: str = ""
+    # Pinned, never a "-latest" alias: an auto-updating model could change between rehearsal
+    # and the demo slot. gemini-2.5-flash is NOT usable -- 404, "no longer available to new
+    # users" -- despite still appearing in models.list (DECISIONS #46).
+    GEMINI_MODEL: str = "gemini-3.6-flash"
+
+    # Declared fallback provider, kept pinned so falling back is a one-class change.
     # Optional so the API boots without the AI lane's key — nothing outside app/analysis/
     # reads it, and app/analysis/ is imported lazily (see routers/analyze.py).
     ANTHROPIC_API_KEY: str = ""

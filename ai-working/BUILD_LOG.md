@@ -330,3 +330,110 @@ the part most likely to fail on the day; someone should decide whether we still 
 
 Also unchanged from before: the analysis prompt still needs a human read, seed postings are
 still at zero, and `parity_cases.json` is still three cases short.
+
+---
+
+## 2026-08-29 — S2 — `client.py`: provider seam, schema transform, retry policy
+
+Result: **done**
+Matches spec: **DEVIATION** (five — three design, two cross-lane)
+
+`app/analysis/client.py`, 273 lines. Tests **98 → 135 passed** (+37 in a new
+`tests/test_client.py`). Everything mocked; the suite still needs no key, no network, no quota.
+
+Then one live call to prove the mocks aren't lying: `get_client()` → `GeminiClient`
+(`gemini-3.6-flash`), real prompt through `complete_validated`, **valid `AnalysisOut` in 61.1 s**
+— 48 skills, 8 roles, 5 core, coverage codes exactly CS201/CS301/CS401/CS402. Second
+consecutive clean run; S3's bar is three.
+
+### spec-check result
+
+Sections re-read: **TDD §4.7** · `anchor-analysis` skill *"How the call must be made"* ·
+**DECISIONS #39, #45, #46, #47**.
+
+| Requirement | Source | Status | Evidence |
+|---|---|---|---|
+| Structured outputs, schema on every request | TDD §4.7 | met | `test_the_request_carries_the_key_and_the_schema` |
+| Parse via `model_validate_json` so validators run | skill | met | `complete_validated` |
+| Check finish reason **before** parsing | TDD §4.7 | met | truncation tests |
+| Retry once on validation failure | TDD §4.7 | met | `test_validation_failure_retries_once_then_succeeds` |
+| Truncation retries with the larger budget | TDD §4.7 | met | `budgets == [16000, 24000]` |
+| `AnalysisFailed` after two attempts | TDD §4.7 | met | exactly-two-calls assertion |
+| No prefill, no fence-stripping regex | skill | met | neither exists in the file |
+| Transform strips what the grammar rejects | skill | met | 6 parametrised keyword tests |
+| `$ref` inlined, `const` → `enum` | S0 finding | met | dedicated tests |
+| Provider swap is one class | DECISIONS #39 | met | `test_swapping_the_provider_changes_nothing` |
+| Config carries provider settings | backend/CLAUDE.md | met | cross-lane, see deviation 4 |
+| Tests never hit the live API | `test-first` skill | met | fakes + `MockTransport` throughout |
+
+### Deviations
+
+1. **`run_analysis` is not in `client.py`; `complete_validated` is.** *Conscious.* TDD §4.7 shows
+   `run_analysis(student, courses)` living here and calling `build_prompt` itself. Two problems:
+   `prompt.py` is still empty, so the import would break the package today; and the retry policy
+   is identical for all three call types, so binding it to `AnalysisOut` would mean writing it
+   three times. `complete_validated(model_cls, prompt, ...)` is that policy, generic. `run_analysis`
+   becomes a four-line wrapper in S3 — the public signature in `CLAUDE.md` seam #1 is unchanged.
+   This also resolves the §4.7-vs-§4.8 arity contradiction (open question 5) in favour of §4.7's
+   `(student, courses)`.
+
+2. **Added a `cross_check` hook.** *Conscious, not in the TDD.* TDD §4.12 and §4.14 each
+   hand-roll `verifies ⊆ role slugs` and the criteria-echo check inside their own retry loop.
+   Both must *trigger the retry*, not just raise — so they belong inside the policy. One loop
+   with an injected assertion instead of three loops that can drift apart.
+
+3. **Added `ProviderError(AnalysisFailed)`.** *Conscious.* The TDD has only `AnalysisFailed` and
+   no notion of a transport failure, because Anthropic's SDK retried internally. Ours does not,
+   and S0 hit **real 503s on two different models in one session**. Without a retryable transport
+   error, one blip during the demo is a hard 502. Subclassing `AnalysisFailed` keeps the router
+   contract identical — it still catches one exception type.
+
+4. **Edited `app/config.py` and `.env.example`** ⚠ *cross-lane, additive — ping Salman.*
+   Added `LLM_PROVIDER`, `GEMINI_API_KEY`, `GEMINI_MODEL`. `backend/CLAUDE.md` says all env
+   reads go through `config.py`, and the precedent is already there: `ANTHROPIC_API_KEY` lives
+   in Salman's `Settings` for exactly this reason (DECISIONS #10). Both new keys default to
+   safe values so **the API still boots without them**, which is the property #10 and #36 exist
+   to protect. No existing setting changed or removed.
+
+5. **Created `tests/test_client.py`** ⚠ *cross-lane, additive — same as S1.* `backend/tests/` is
+   Salman's, but it is where this lane's tests already live.
+
+### The regression test is real
+
+I reintroduced DECISIONS #47 on purpose (disabled the `properties` branch) and re-ran:
+
+```
+FAILED test_the_field_named_title_survives - RoleOut.title was stripped as if it were an annotation
+FAILED test_every_required_name_exists_in_properties - required names with no property: ['title']
+2 failed, 35 passed
+```
+
+Both fire, with the right messages, then pass again once restored. The second one is the
+stronger guard — it checks the invariant across the *whole* tree rather than the one field that
+happened to bite.
+
+### Note for whoever tunes prompts later
+
+The transform also drops `description`, so **Pydantic field/class docstrings never reach the
+model**. That is deliberate — the docstrings in `schema.py` are dev-facing — but it means the
+only channel for instructing the model is `ai-working/prompts/*.md`. Do not expect a docstring
+to influence output.
+
+### Files touched
+
+```
+backend/app/analysis/client.py   new, 273 lines
+backend/tests/test_client.py     new, 37 tests (Salman's dir — ping)
+backend/app/config.py            +3 settings (Salman's file — ping)
+backend/.env.example             provider block
+```
+
+Tests added/updated: **37**. Transform 9 · retry policy 10 · Gemini REST client 12 ·
+provider-swap 1 · end-to-end-through-the-policy 1 · plus parametrised cases.
+
+### Open question for the team
+
+Unchanged, plus one retired: **#5 (the `run_analysis` arity contradiction) is now settled** —
+`(student, courses)`, per deviation 1. The rest still stand: the analysis prompt needs a human
+read, seed postings are at zero, `parity_cases.json` is three cases short, and I still need
+`SkillState`'s four field names from Salman before S6.

@@ -9,3 +9,6 @@ dist/
 *.db
 *.sqlite
 *.sqlite3
+
+# personal Claude Code settings — not shared with the team
+.claude/settings.local.json

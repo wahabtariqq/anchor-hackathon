@@ -15,7 +15,7 @@ Run `/test-first` when starting any session that produces a module.
 | S0 | Provider spike — can the free tier do this at all? | 1 (first) | — | ✅ **done** 2026-08-29 — 65k ceiling, 7.5k used, 55.4 s |
 | S1 | `AnalysisOut` schema + validators V1–V6 | 1 | — | ✅ **done** 2026-08-28 — 98 passed / 0 skipped |
 | S2 | `LLMClient` adapter + schema transform | 1 | S1 | not started |
-| S3 | Analysis prompt v1 → validated fixture + latency | 1 | S2 | not started |
+| S3 | Analysis prompt v1 → validated fixture + latency | 1 | S2 | **next** — 2 of 3 clean runs already |
 | S4 | Day-2 tuning + seed-postings gate | 2 | S3 | not started |
 | S5 | `DEMO_MODE` + final `demo_analysis.json` | 2 | S3 | not started |
 | S6 | `ProjectOut` schema + prompt | 3 | **Day-2 exit** | not started |
