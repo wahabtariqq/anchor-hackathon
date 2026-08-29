@@ -224,3 +224,109 @@ TDD §8 names.
 
 **Next: S0** (measure the free-tier output ceiling — needs `GEMINI_API_KEY`) then **S2**.
 S1 needed no key; everything after S0 does.
+
+---
+
+## 2026-08-29 — S0 — Provider spike: can the free tier carry the analysis call?
+
+Result: **done**
+Matches spec: **DEVIATION** (three — the docs' provider config was unusable as written)
+
+**The headline: the risk S0 existed to test is closed.** The analysis call fits with enormous
+room, and the prompt passed every validator on its first real run.
+
+### Measured
+
+| | |
+|---|---|
+| Model | `gemini-3.6-flash` |
+| **Output ceiling** | **65,536 tokens** — 4× the 16k the docs budgeted |
+| Output actually used | **7,497 tokens** (+1,665 thinking) — ~11% of ceiling |
+| `finishReason` | `STOP` — not truncated, nowhere near it |
+| Latency | **55.4 s** (prompt 2,389 tokens in) |
+| Payload | 27,410 chars of JSON |
+
+`ANALYSIS_MAX_TOKENS=16000` / `RETRY=24000` are **comfortable, not tight**. The 24k retry
+rung will realistically never fire for truncation. The contingency plans in this session's
+S0 notes — trim the payload, split the call in two — are **not needed**. Nothing architectural
+has to change.
+
+### Output quality — first run, no tuning
+
+Validated clean against `AnalysisOut`: **all of V1–V6 passed**.
+
+- **48 skills** (prompt asks 45–55) · **8 roles**, 5 core / 3 adjacent · 33 coverage rows
+- Coverage codes exactly `CS201, CS301, CS401, CS402` — the demo student's four, nothing invented
+- Role skill counts `[12,12,11,11,11,10,11,11]` — all inside 10–14
+- **Cross-role reuse: 22 of 45 used skills appear in more than one role (49%), max 4.**
+  This is the property the demo's closing beat depends on — one tick moving several cards.
+- **Zero near-duplicate skills** by id-similarity and full-token-overlap. Risk-register #1,
+  clean on the first attempt.
+- **Zero vague `real_world` sentences** against the reject-list ("used in many jobs" etc.)
+- Adjacent bridges name specific courses in second person, as the prompt demands — e.g.
+  *"Your DBMS coursework in query tuning combined with your interest in UI/UX design converges
+  here…"*, *"Your Machine Learning class (CS401) and Web Development skills (CS402)…"*
+
+Minor: 3 of 48 skills are referenced by no role (`dynamic-programming`,
+`microservices-architecture`, `state-machine-design`). Harmless — they still appear under
+"covered by your courses" — but worth a line in S4 if it persists.
+
+### Deviations
+
+1. **`gemini-2.5-flash` is unusable — the model in our own config could not be called.**
+   `generateContent` returns `404: "This model models/gemini-2.5-flash is no longer available
+   to new users. Please update your code to use models/gemini-3.6-flash"`. It still *appears*
+   in `models.list`, which makes this fail confusingly rather than obviously. Pinned
+   `gemini-3.6-flash` (DECISIONS #46). Also rejected `gemini-flash-latest`: an auto-updating
+   alias can change between rehearsal and the demo slot, and it 503'd during this session
+   anyway. `gemini-3.7-flash` timed out under load.
+
+2. **The `google-genai` SDK does not work with this key; using raw REST instead**
+   (DECISIONS #45). The SDK returns `403 PERMISSION_DENIED` on both `models.list()` and
+   `generate_content()`, while the *same key* succeeds against
+   `generativelanguage.googleapis.com` with an `x-goog-api-key` header — so this is the SDK's
+   auth path, not the credential. Dropped `google-genai` from `requirements.txt`; `httpx` was
+   already pinned, so **the provider now costs zero extra dependencies**. This also keeps
+   `finishReason` and `usageMetadata` directly accessible, which the S2 retry policy needs.
+
+3. **Schema-transform bug found and fixed before it could reach `client.py`** (DECISIONS #47).
+   Stripping JSON-Schema annotation keywords by name also deleted the **field** named `title`
+   from `RoleOut`, leaving it listed in `required` — Gemini rejected it with
+   `400 ... required[1]: property is not defined`. Keywords must be stripped at schema level
+   only; keys inside `properties` are field names and are always preserved. S2 inherits this
+   as a required test case.
+
+### Verified working transform
+
+Confirmed Gemini's `responseSchema` needs `$ref`/`$defs` **inlined**, and rejects `pattern`,
+`minLength`, `maxLength`, `additionalProperties`. `const` must be rewritten as a
+single-item `enum` (Pydantic emits `const` for single-value `Literal`s). With those handled,
+the full nested `AnalysisOut` schema — 4 nested models, 2 arrays of objects — was accepted
+without complaint. No sign of the *"very large or deeply nested schemas may be rejected"*
+limit at our size.
+
+### Files touched
+
+```
+backend/.env                  local only, gitignored — key + GEMINI_MODEL=gemini-3.6-flash
+backend/requirements.txt      google-genai dropped; comment explains REST-over-SDK
+docs/DECISIONS.md             #39 corrected, #45-#47 added, Day-1 latency filled in (55.4 s)
+ai-working/SESSIONS.md        status board
+```
+
+No runtime code written — the spike ran as a throwaway script outside the repo. **S2 still
+owns `client.py`**, and now has measured numbers and three concrete gotchas to build against.
+
+Tests added/updated: none. S2's mocked retry/transform tests are where this becomes permanent —
+including the `properties` case from deviation 3.
+
+### Open question for the team
+
+**Free-tier reliability is now a demo risk, and it is not hypothetical.** Two of the models I
+tried returned 503 "high demand" *during this session*. `DEMO_MODE` with a committed
+`demo_analysis.json` stops being a nicety and becomes the thing the pitch rests on — which is
+why S5 was moved earlier. PRD §12.1's promise that *judges can try their own inputs live* is
+the part most likely to fail on the day; someone should decide whether we still make that offer.
+
+Also unchanged from before: the analysis prompt still needs a human read, seed postings are
+still at zero, and `parity_cases.json` is still three cases short.

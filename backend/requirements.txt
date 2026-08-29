@@ -13,8 +13,10 @@ pydantic==2.13.4
 pydantic-settings==2.15.0
 
 # --- model provider (Dev B's lane) ---
-# Chosen provider. See docs/DECISIONS.md #39 for why Gemini and what was rejected.
-google-genai==2.20.0
+# Gemini is called over raw REST through httpx, NOT the google-genai SDK. Measured in S0:
+# the SDK's auth path returns 403 PERMISSION_DENIED with our key, while the identical key
+# works against the REST endpoint with an x-goog-api-key header. httpx is already pinned
+# below, so the provider costs zero extra dependencies. See DECISIONS #39 and #45.
 # Declared fallback. Pinned and installed on purpose so falling back is a one-class
 # change rather than a dependency scramble on Day 3. Do not remove without #39 changing.
 anthropic==1.1.0
