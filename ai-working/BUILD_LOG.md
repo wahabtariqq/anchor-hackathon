@@ -815,3 +815,61 @@ ai-working/README.md      UNBLOCK.md added to the file table
 ```
 
 Tests added/updated: none.
+
+---
+
+## 2026-08-30 — S4 — closed with no prompt change
+
+Result: **done** (closed, not skipped)
+Matches spec: **DEVIATION** — the session ran no tuning, because its targets were already met
+
+S4's tuning order is fixed by the `anchor-analysis` skill: dedup first, then cross-role reuse,
+then adjacent bridges, then `real_world` specificity. Measured across the three consecutive live
+runs from S3:
+
+| target | goal | run 1 | run 2 | run 3 |
+|---|---|---|---|---|
+| near-duplicate skills | 0 | **0** | **0** | **0** |
+| cross-role reuse | high enough that one tick moves several cards | **62%** | **60%** | **72%** |
+| vague `real_world` | 0 | **0** | **0** | **0** |
+| adjacent bridges naming a course, second person | all | yes | yes | yes |
+
+**Every target is already met, so tuning would be change for its own sake** — and the specific
+risk is real: the skill's own guidance is "change one thing per run", because a prompt edit
+aimed at one target routinely breaks another. Dedup is risk-register #1 and it is currently
+perfect. Logged as DECISIONS #48. **Reopen if a later fixture regresses.**
+
+The Day-2 exit criterion this lane owns — *"analysis fixture has no near-duplicate skills on
+inspection"* — is therefore **met**, and S6/S7 are ungated from this side.
+
+### Seed postings: OUT, permanently
+
+DECISIONS #49. PRD §8.6 admits the set *only* if it is in the prompt from the **start** of
+Day-2 tuning, because late grounding context can re-break dedup. Day-2 tuning is now closed and
+`backend/seed/postings/` never advanced past its README, so **the condition the PRD set for
+itself can no longer be met**. This is the PRD's own rule applied, not a preference.
+
+Consequence for the pitch: the judge answer reverts to the v3 wording — roles are generated per
+student at analysis time, live feeds are v2. One pitch line lost; dedup quality kept.
+
+### One thing worth watching in S6/S7
+
+Every run reports **5-6 skills referenced by no role**, consistently the CS201 algorithms ones.
+Harmless for the analysis — they still render under "covered by your courses" — but if the
+project prompt starts selecting `verifies` from unused skills, that becomes a real problem,
+because a project verifying a skill no role requires moves nothing. Worth a glance when S6's
+first output lands.
+
+### Notes for Salman
+
+Nothing new. Both outstanding items remain deployment, unchanged: deploy the API and frontend
+(no deploy config exists in the repo), then the Appendix B call once there is a host to measure.
+
+### Files touched
+
+```
+docs/DECISIONS.md         #48 (S4 closed), #49 (seed set out)
+ai-working/SESSIONS.md    S4 closed, S6 marked next and ungated
+```
+
+Tests added/updated: none — no code changed. Suite 163 passing.

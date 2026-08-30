@@ -1,6 +1,6 @@
 # HANDOFF — Dev B (AI lane), ANCHOR
 
-**Written 2026-08-29, updated 2026-08-30 after S5.**
+**Written 2026-08-29, updated 2026-08-30 after S5 and the S4 closure.**
 
 > **Blocked, or wondering what to do about it? Read `ai-working/UNBLOCK.md`.** It is the
 > companion to this file: what is actually stopping work, what only Umer can decide, and what
@@ -29,7 +29,7 @@ one was used early and deliberately deleted.
 
 ## 2. State as of this handoff
 
-**Tests: 163 passing, 0 skipped.** Sessions S0-S3 and S5 are done.
+**Tests: 163 passing, 0 skipped.** Sessions S0-S3 and S5 done; **S4 closed with no change needed** (DECISIONS #48 — its targets were already met; seed postings OUT per #49). **S6 is next and is not blocked.**
 
 | File | State |
 |---|---|
@@ -146,26 +146,34 @@ Full reasoning in `docs/DECISIONS.md`. Summarised so a fresh session does not re
 
 ## 6. What to do next
 
-**S5 is done.** S4's tuning targets were already clean before it started -- zero near-duplicate
-skills and 60-72% cross-role reuse across three live runs -- so S4 has no coding work left in
-it. Its one genuinely open item is the seed-postings decision, which is a team call.
+**Goal: finish the AI lane.** Deployment is Salman's and is explicitly **out of scope for this
+lane** — do not start it, do not block on it.
 
-That leaves **S6 as the next real session, and it is blocked**: get the four `SkillState` field
-names from Salman first (section 7). Do not guess them -- a mismatch fails silently.
+S4 is **closed** (DECISIONS #48): its tuning targets were already met across three live runs —
+0 near-duplicate skills, 0 vague `real_world`, 60-72% cross-role reuse — so tuning would be
+change for its own sake, against a skill that says "change one thing per run". Seed postings are
+**OUT permanently** (#49): PRD 8.6's own condition can no longer be met.
 
-- **S6** — `project.py`: `ProjectOut`, validators, `generate_project`, `run_project_cli.py`.
-  The `verifies` subset-of-role-slugs check goes through `complete_validated`'s `cross_check`
-  hook, which exists for exactly this.
-- **S7** — `review.py`. The `<repo>` untrusted-data paragraph is the only injection defence
-  that exists; the injection test is required, not optional. Not blocked on anyone.
-- **S8** — blocked on Salman building the demo repo.
+Remaining, in order:
 
-**If S6 is blocked when you start, do S7 first** — it needs nothing from anyone.
+- **S6 — `project.py`.** `ProjectOut`, validators, `generate_project`, `run_project_cli.py`.
+  **Not blocked**: `SkillState` is `slug` / `name` / `weight` / `state`, from Salman's committed
+  `routers/project.py:29-37`. Pin those four names in a test — a rename breaks his caller
+  silently (DECISIONS #33). The `verifies` subset-of-role-slugs rule goes through
+  `complete_validated`'s `cross_check` hook, which exists for exactly this.
+- **S7 — `review.py`.** `ReviewOut`, criteria echo/order validator, `passed` computed in code,
+  `run_review_cli.py`. The `<repo>` untrusted-data paragraph is the only injection defence that
+  exists; the injection test is required, not optional. Not blocked on anyone.
+- **Demo repo.** After S6 produces `demo_project.json`, build a real public repo satisfying
+  *those* criteria. `gh` here is authenticated as **Umer-prog with `repo` scope**, so this does
+  not need Salman.
+- **S8 — the demo caches.** `demo_project.json` then `demo_review.json`, generated live against
+  the real repo. All three artefacts must agree and are regenerated together or not at all.
 
-**One trap waiting in S8**, found while reading Salman's routers: `routers/submit.py` sleeps
-4 s *itself* before calling `load_demo_review`, but `routers/project.py` does **not** sleep
-before `load_demo_project`. So `load_demo_review` must **not** sleep and `load_demo_project`
-**must** sleep ~3 s (PRD 12.1). Read both routers again before writing either.
+**Watch for one thing in S6:** every analysis run leaves 5-6 skills referenced by no role
+(consistently the CS201 algorithms ones). Harmless in the analysis, but a project that
+`verifies` a skill no role requires **moves nothing** — check the first `generate_project`
+output for it.
 
 Session plans with inputs, deliverables and done-checks: `ai-working/SESSIONS.md`.
 
