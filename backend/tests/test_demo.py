@@ -163,3 +163,141 @@ def test_run_analysis_is_live_when_demo_mode_is_off(monkeypatch: pytest.MonkeyPa
     client = Recorder()
     with pytest.raises(AssertionError, match="live client was called"):
         run_analysis(student("Ayesha"), COURSES, client=client)
+
+
+# ---- the Prove It caches (S8) --------------------------------------------------------
+
+import json                                                          # noqa: E402
+from pathlib import Path                                             # noqa: E402
+
+from app.analysis.project import ProjectOut                          # noqa: E402
+from app.analysis.review import ReviewOut, score_review              # noqa: E402
+
+FIXTURES = Path(__file__).resolve().parents[2] / "contracts" / "fixtures"
+
+
+def a_review(project: ProjectOut, *values: int) -> dict:
+    review = ReviewOut.model_validate(
+        {
+            "criteria_scores": [
+                {"criterion": c, "score": v, "note": "seen in the repo"}
+                for c, v in zip(project.criteria, values)
+            ],
+            "feedback": "Good structure; the caching layer needs documenting.",
+        }
+    )
+    total, max_total, passed = score_review(review)
+    return {**review.model_dump(), "total": total, "max_total": max_total, "passed": passed}
+
+
+@pytest.fixture
+def committed_project() -> ProjectOut:
+    return ProjectOut.model_validate_json((FIXTURES / "demo_project.json").read_text("utf-8"))
+
+
+def test_the_committed_demo_project_validates(committed_project: ProjectOut) -> None:
+    """CONTRACT §1b, against the real file DEMO_MODE serves -- not a copy built in the test."""
+    assert 3 <= len(committed_project.criteria) <= 4
+    assert 2 <= len(committed_project.verifies) <= 4
+
+
+def test_load_project_returns_one_model_not_a_tuple(committed_project: ProjectOut) -> None:
+    """`routers/project.py` does `out = load_demo()` then reads `out.verifies` -- a tuple here
+    would break GET /api/project on the demo path only, which is the worst place to find out."""
+    out = demo.load_project(delay=0)
+    assert isinstance(out, ProjectOut)
+    assert out.criteria == committed_project.criteria
+
+
+def test_the_project_path_sleeps_and_the_review_path_does_not() -> None:
+    """The asymmetry is deliberate and easy to "tidy" into a double delay.
+
+    `routers/project.py` never sleeps, so the delay lives in `load_project`.
+    `routers/submit.py` sleeps DEMO_SLEEP_SECONDS = 4 itself, so `load_review` must not.
+    """
+    from app.routers.submit import DEMO_SLEEP_SECONDS
+
+    assert demo.PROJECT_DELAY_SECONDS > 0, "GET /project would return instantly and read as canned"
+    assert DEMO_SLEEP_SECONDS > 0
+
+    project = ProjectOut.model_validate_json((FIXTURES / "demo_project.json").read_text("utf-8"))
+    payload = a_review(project, *([2] * len(project.criteria)))
+    started = time.time()
+    demo.load_review(project)  # uses the committed fixture; must not add its own delay
+    assert time.time() - started < 1.0, "load_review must not sleep -- submit.py already does"
+    assert payload["max_total"] == 2 * len(project.criteria)
+
+
+def test_the_committed_review_agrees_with_the_committed_project(
+    committed_project: ProjectOut,
+) -> None:
+    """The whole point of S8: three artefacts, one truth. If the project was regenerated and
+    the review was not, this is where it is caught -- not on stage."""
+    review, total, max_total, passed = demo.load_review(committed_project)
+    assert [c.criterion for c in review.criteria_scores] == committed_project.criteria
+    assert max_total == 2 * len(committed_project.criteria)
+    assert passed is True, "the demo review must pass, or the badges never flip"
+    assert total == sum(c.score for c in review.criteria_scores)
+
+
+def test_a_review_for_different_criteria_is_refused(
+    committed_project: ProjectOut, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A partial regeneration -- new project, stale review -- must fail loudly."""
+    stale = a_review(committed_project, *([2] * len(committed_project.criteria)))
+    stale["criteria_scores"][0]["criterion"] = "Some criterion from an older project."
+    path = tmp_path / "demo_review.json"
+    path.write_text(json.dumps(stale), encoding="utf-8")
+    monkeypatch.setattr(demo, "REVIEW_FIXTURE", path)
+
+    with pytest.raises(AnalysisFailed, match="does not match demo_project"):
+        demo.load_review(committed_project)
+
+
+def test_a_hand_edited_total_is_refused(
+    committed_project: ProjectOut, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """`passed` is computed, never trusted from the file (DECISIONS #23). Someone nudging the
+    total to make a failing demo pass would otherwise ship a review contradicting its scores."""
+    tampered = a_review(committed_project, *([0] * len(committed_project.criteria)))
+    tampered["total"] = 6
+    tampered["passed"] = True
+    path = tmp_path / "demo_review.json"
+    path.write_text(json.dumps(tampered), encoding="utf-8")
+    monkeypatch.setattr(demo, "REVIEW_FIXTURE", path)
+
+    with pytest.raises(AnalysisFailed, match="do not hand-edit"):
+        demo.load_review(committed_project)
+
+
+@pytest.mark.parametrize(
+    ("attr", "call"),
+    [
+        ("PROJECT_FIXTURE", lambda p: demo.load_project(delay=0)),
+        ("REVIEW_FIXTURE", lambda p: demo.load_review(p)),
+    ],
+)
+def test_a_placeholder_fixture_names_the_command_that_fixes_it(
+    committed_project: ProjectOut, monkeypatch: pytest.MonkeyPatch, tmp_path: Path, attr, call
+) -> None:
+    path = tmp_path / "placeholder.json"
+    path.write_text('{ "_todo": "not generated yet" }', encoding="utf-8")
+    monkeypatch.setattr(demo, attr, path)
+    with pytest.raises(AnalysisFailed, match="run_.*_cli.py"):
+        call(committed_project)
+
+
+@pytest.mark.parametrize(
+    ("attr", "call"),
+    [
+        ("PROJECT_FIXTURE", lambda p: demo.load_project(delay=0)),
+        ("REVIEW_FIXTURE", lambda p: demo.load_review(p)),
+    ],
+)
+def test_a_missing_fixture_blames_the_deploy_not_the_model(
+    committed_project: ProjectOut, monkeypatch: pytest.MonkeyPatch, tmp_path: Path, attr, call
+) -> None:
+    """contracts/ lives outside backend/, so a host shipping only backend/ loses these files."""
+    monkeypatch.setattr(demo, attr, tmp_path / "nope.json")
+    with pytest.raises(AnalysisFailed, match="must ship"):
+        call(committed_project)

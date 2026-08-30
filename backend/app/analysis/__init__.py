@@ -3,8 +3,8 @@
 Three call types, per invariant #2 in the root CLAUDE.md:
 
     parsed, raw                      = run_analysis(student, courses)
-    project, raw                     = generate_project(role_title, one_liner, skills)   # S6
-    review, total, max_total, passed = review_repo(project, bundle)                      # S7
+    project, raw                     = generate_project(role_title, one_liner, skills)
+    review, total, max_total, passed = review_repo(project, bundle)
 
 `run_analysis` is the name, not `run` (DECISIONS #40, closing #11). TDD 4.8 writes `run` and
 the root CLAUDE.md writes `run_analysis`; Salman's `routers/analyze.py` resolves either at call
@@ -18,14 +18,25 @@ unchanged.
 from app.analysis import demo
 from app.analysis.client import AnalysisFailed, ProviderError, complete_validated
 from app.analysis.demo import load as load_demo
+from app.analysis.demo import load_project as load_demo_project
+from app.analysis.demo import load_review as load_demo_review
+from app.analysis.project import ProjectOut, SkillState, generate_project
 from app.analysis.prompt import build_prompt
+from app.analysis.review import ReviewOut, review_repo
 from app.analysis.schema import AnalysisOut
 
 __all__ = [
     "run_analysis",
+    "generate_project",
+    "review_repo",
     "build_prompt",
     "load_demo",
+    "load_demo_project",
+    "load_demo_review",
     "AnalysisOut",
+    "ProjectOut",
+    "SkillState",
+    "ReviewOut",
     "AnalysisFailed",
     "ProviderError",
 ]

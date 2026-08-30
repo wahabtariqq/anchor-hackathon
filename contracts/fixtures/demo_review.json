@@ -1,1 +1,23 @@
-{ "_todo": "Umer: scripts/run_review_cli.py --url $DEMO_REPO_URL --save after Salman builds the repo" }
+{
+  "criteria_scores": [
+    {
+      "criterion": "Caching logic is encapsulated in a dedicated service module implementing a cache-aside pattern with defined TTL constants and explicit key invalidation on write endpoints.",
+      "score": 2,
+      "note": "Caching logic is encapsulated in `cache.js` with defined `TTL_SECONDS` constants and `getOrSet()` loader logic, and `routes.js` explicitly invokes `cache.invalidateProduct()` on POST and PUT write endpoints."
+    },
+    {
+      "criterion": "Web security hardening is visible through configured security headers middleware (e.g., Helmet), strict CORS origin settings, input validation schemas on POST/PUT endpoints, and parameterized database queries.",
+      "score": 2,
+      "note": "Web security features are implemented in `app.js` using Helmet and a strict CORS origin allow-list, enforced via strict Zod schemas in `schemas.js` on write routes, and secured with prepared SQLite statements in `db.js`."
+    },
+    {
+      "criterion": "The test suite contains separate test files for unit tests (verifying cache key generation and validation logic) and integration tests (verifying API response codes, security headers, and cache-hit/miss behavior).",
+      "score": 2,
+      "note": "The test directory separates unit tests (`tests/unit/cache.test.js` and `tests/unit/schemas.test.js`) from integration tests (`tests/integration/api.test.js` and `tests/integration/security.test.js`) covering HTTP status codes, security headers, and cache HIT/MISS states."
+    }
+  ],
+  "feedback": "You built an extraordinarily clean, modular, and thorough full-stack application with a well-designed cache-aside layer, strong security controls, and high-quality automated tests. To take this architecture to the next level, consider replacing the in-memory Map in `cache.js` with an external Redis client so the cache layer can be shared across multiple server instances without drifting out of sync.",
+  "total": 6,
+  "max_total": 6,
+  "passed": true
+}

@@ -212,7 +212,14 @@ def a_role(client: TestClient, session: Session, student_id: str) -> dict[str, A
 # ------------------------------------------------------------------------- GET /api/project
 
 
-def test_project_is_503_until_the_ai_lane_exists(client: TestClient, session: Session) -> None:
+def test_project_is_503_until_the_ai_lane_exists(
+    client: TestClient, session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # app.analysis now really exports generate_project (S6), so the 503 branch has to be
+    # provoked rather than inherited from the package being empty. Deleting the attribute is
+    # what the router actually keys on -- and without this the test would make a LIVE model
+    # call, which no test in this repo is allowed to do.
+    monkeypatch.delattr(analysis_pkg, "generate_project", raising=False)
     student_id = create_student(client)
     persist_demo_analysis(session, student_id)
     role = a_role(client, session, student_id)

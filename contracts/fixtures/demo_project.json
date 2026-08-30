@@ -1,1 +1,14 @@
-{ "_todo": "Umer: scripts/run_project_cli.py --role <top role slug> --save, live, Day 4 morning" }
+{
+  "title": "Build a Cached Product Search API with Security Hardening and Automated Tests",
+  "spec": "Build a full-stack product catalog application featuring a searchable REST API paired with a responsive query interface. The backend must implement a cache-aside strategy using Redis (or an in-memory store) with configurable TTLs and automated cache invalidation when products are updated. The application must enforce security controls including input sanitization, rate limiting, and secure HTTP headers, supported by a suite of unit and integration tests.",
+  "criteria": [
+    "Caching logic is encapsulated in a dedicated service module implementing a cache-aside pattern with defined TTL constants and explicit key invalidation on write endpoints.",
+    "Web security hardening is visible through configured security headers middleware (e.g., Helmet), strict CORS origin settings, input validation schemas on POST/PUT endpoints, and parameterized database queries.",
+    "The test suite contains separate test files for unit tests (verifying cache key generation and validation logic) and integration tests (verifying API response codes, security headers, and cache-hit/miss behavior)."
+  ],
+  "verifies": [
+    "cache-strategy-design",
+    "unit-and-integration-testing",
+    "web-security-hardening"
+  ]
+}
