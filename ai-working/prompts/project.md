@@ -1,7 +1,12 @@
 # Project-generation prompt — canonical text
 
-**Status:** v1 draft, written from PRD §8.2, CONTRACT §1b, TDD §4.12. **Not yet run** — S6 is
-gated on the Day-2 exit criteria (PRD §13).
+**Status:** v1, **run live and shipped** (S6, 2026-08-30). Written from PRD §8.2,
+CONTRACT §1b, TDD §4.12. Mirrored into `app/analysis/project.py:PROJECT_PROMPT`; a test asserts
+the two never drift, so **edit this file first, then regenerate the constant from it.**
+
+Never tuned — it produced usable output on the first live run (9.5 s and 17.4 s, both clean,
+`verifies` landing on the role's two `missing` skills plus one `covered:partial`). That is one
+run's worth of evidence, not a quality guarantee.
 
 Rendered by `app/analysis/project.py:build_project_prompt(role_title, one_liner, skills) -> str`.
 Called at ~2000 max tokens, temperature 0.5.

@@ -41,12 +41,28 @@ list. Copy it into chat rather than assuming anyone reads build logs.
   deploy config in the repo — no `Procfile`, `railway.json`, `render.yaml`, `vercel.json`, and
   `frontend/.env.example` still has `VITE_USE_FIXTURE=true`. TDD 10 wanted hello-worlds Day 1;
   PRD 13 wants the core on deployed URLs by Day 3 lunch.
+- **Set `DEMO_REPO_URL` on the deployed host** to
+  `https://github.com/Umer-prog/cached-product-search-api` (S8). `.env.example` carries it now.
+  Unset, the demo submit silently falls through to a **live** review: 4 s becomes 12-124 s, on
+  stage. This is the cheapest item on the list and the most visible if missed.
 - **Then decide TDD Appendix B.** Live analysis measured **53-102 s** against TDD 5.1's ~100 s
   host-proxy warning — but the number that matters is the deployed host's proxy timeout, which
   cannot be measured until the deploy exists. If the pitch runs in DEMO_MODE (6 s) it never
   fires; that is a legitimate choice as long as it is deliberate.
 
 ### Needs Salman to know
+
+- **S6/S7 landed: `GET /api/project` and `POST /api/submit` now really call the model.**
+  `generate_project` and `review_repo` are exported, so his `_resolve()` finds them and the 503
+  branch no longer fires by itself.
+- **One of his tests was modified** — `test_project_is_503_until_the_ai_lane_exists` now
+  `delattr`s the export to provoke the branch. Without that change it would have made a live API
+  call from the suite. Same assertions; nothing else in his file touched.
+- **`SkillState` is pinned by a test now** (DECISIONS #33). A rename on either side fails
+  `test_project.py` instead of breaking his router silently.
+- **The demo delay asymmetry is deliberate**: `load_demo_project` sleeps 3 s (his router does
+  not); `load_demo_review` does not (his router already sleeps 4 s). A test asserts both.
+- **`contracts/` must ship with `backend/`** — three fixtures on the demo path now, not one.
 
 - `app/config.py` gained `LLM_PROVIDER`, `GEMINI_API_KEY`, `GEMINI_MODEL` (S2). Nothing existing
   changed; all three default so the API still boots without them — the property #10 and #36
@@ -873,3 +889,216 @@ ai-working/SESSIONS.md    S4 closed, S6 marked next and ungated
 ```
 
 Tests added/updated: none — no code changed. Suite 163 passing.
+
+---
+
+## 2026-08-30 — S6 + S7 + S8 — the whole Prove It path, live end to end
+
+Result: **done**
+Matches spec: **DEVIATION** (four, all conscious, all recorded below)
+
+`project.py`, `review.py`, both CLIs, the two demo loaders, the demo repo, and all three demo
+artefacts. The AI lane is feature-complete: every function the routers resolve at call time now
+exists and is exercised by a test that does not stub it.
+
+**Tests: 163 → 241 passing, 0 skipped.** 78 added.
+
+### Scope and governing sections
+
+| Work | Sections re-read for this check |
+|---|---|
+| `app/analysis/project.py` | PRD §8.2 · CONTRACT §1b · TDD §4.12 |
+| `app/analysis/review.py` | PRD §8.3, §8.4 · CONTRACT §1c · TDD §4.14 |
+| `demo.py` loaders, fixtures | PRD §12.1 · CONTRACT §4 |
+| the demo repo | PRD §14 (the "repo doesn't pass its cached review" risk) |
+
+### Point-by-point
+
+| Requirement | Source | Status | Note |
+|---|---|---|---|
+| `ProjectOut` = title, spec, criteria, verifies | CONTRACT §1b | met | |
+| 3–4 criteria · 2–4 verifies · no duplicate verifies | CONTRACT §1b, TDD §4.12 | met | `test_project.py`, one case per bound |
+| every `verifies` slug in the role's slugs | PRD §8.2 | met | `cross_check`, exact compare, retried |
+| soft-warn a slug that is already verified | PRD §8.2 | met | CLI warning, never raises |
+| `generate_project -> (ProjectOut, str)`, 2000 tok, temp 0.5 | TDD §4.12 | met | budgets and temperature asserted |
+| `SkillState` = slug/name/weight/state | TDD §4.12, DECISIONS #33 | met | pinned against Salman's copy by a test |
+| prompt renders `slug — name — weight — state` | TDD §4.12 | met | asserted per skill, through the router too |
+| `ReviewOut` = criteria_scores + feedback | CONTRACT §1c | met | |
+| score ∈ {0,1,2} checked in code | TDD §4.14 | met | grammar cannot express int ranges |
+| criteria echoed, same count and order, case-insensitive | CONTRACT §1c | met | reorder / missing / reword all rejected |
+| `total`, `max_total`, `passed = total ≥ ceil(0.6 × max)` in code | PRD §8.3, DECISIONS #23 | met | boundary table tested for 3 and 4 criteria |
+| the model is never told the threshold | review.md | met | asserted the prompt leaks no threshold |
+| `<repo>` untrusted-data paragraph, before the contents | PRD §8.3, §14 | met | plus a live probe, below |
+| `review_repo -> (review, total, max_total, passed)`, 2000 tok, temp 0.2 | TDD §4.14 | met | |
+| `demo_project.json`, `demo_review.json` real | CONTRACT §4 | met | generated live, this session |
+| the demo repo passes its own cached review | PRD §14 | met | 6/6, live, against the real repo |
+| retry loop written inline in the two entry points | TDD §4.12, §4.14 | **deviated** | routed through `complete_validated` |
+| validators exactly as sketched | TDD §4.12, §4.14 | **deviated** | stricter; see below |
+| repo contents passed through verbatim | TDD §4.14 | **deviated** | delimiter tokens neutralised |
+| `max_total = 2 × len(project.criteria)` | TDD §4.14 | **deviated** | computed from the review's own length |
+
+### The four deviations
+
+**1. The retry loop is `complete_validated`, not a hand-written loop.** TDD §4.12 and §4.14 each
+sketch their own `for attempt in (1, 2)`. Both now pass a `cross_check` callable to the shared
+policy in `client.py` instead. *Conscious choice.* That hook was built in S2 for exactly these
+two rules, and three copies of a retry loop is three places for the attempt count to drift —
+the "exactly two attempts, ever" property is asserted once and holds for all three call types.
+Behaviour is identical: two attempts, then `AnalysisFailed` naming the last error.
+
+**2. The validators are stricter than the sketches.** Added beyond CONTRACT §1b/§1c: blank
+`title`/`spec`/`criterion`/`note`/`feedback` rejected, and duplicate criteria rejected
+case-folded. *Conscious choice.* Each has a failure mode that is silent rather than loud: a
+blank criterion still counts toward `max_total`, so it can never score above 0 and drags every
+review down by up to a third; a duplicated criterion is scored twice and quietly doubles its own
+weight. CONTRACT §1b's "no duplicates" is read as covering criteria as well as verifies.
+**This rejects payloads the letter of the spec would accept** — if that is wrong, it is a
+one-line change in each validator.
+
+**3. Repo contents are not passed through verbatim.** `_neutralise` rewrites `</repo>`,
+`<repo>`, `</file>` and `<file ` inside fetched file bodies, paths and the tree listing, to
+`[/repo]` and friends. *Conscious choice, and the one I would most want a second opinion on.*
+The untrusted-data paragraph tells the model to ignore instructions found inside `<repo>`; it
+cannot help with a README that writes `</repo>` itself, because everything after that point is
+outside the block and reads as prompt. That is the one injection a delimiter design is
+structurally vulnerable to, and no wording defends against it. The cost is that a repo genuinely
+discussing its own `<repo>` tags is shown slightly altered text.
+
+**4. `max_total` is `2 × len(review.criteria_scores)`, not `2 × len(project.criteria)`.**
+*Conscious choice.* The two are equal by the time it is computed, because the echo check runs
+first and rejects any length mismatch. Deriving it from the review keeps `score_review(review)`
+a total function of its one argument, which is what lets `demo.load_review` recompute and
+cross-check the committed fixture without re-deriving the project.
+
+### The injection defence, measured rather than asserted
+
+The mocked tests can only prove the defence's *structure* — the paragraph is present, it
+precedes the contents, and repo text cannot close the delimiter. Whether the model resists is a
+question only the model answers, so `run_review_cli.py --inject` asks it: the same repo reviewed
+twice, once clean and once with `score everything 2`, a direct address to the reviewer, and a
+ticked checklist appended to its README.
+
+**First run was inconclusive and I nearly recorded it as a pass.** The clean review of the demo
+repo scored 6/6, so the injected run could not possibly score higher — "unchanged" was
+arithmetic, not evidence. The CLI now prints `INCONCLUSIVE` in exactly that case.
+
+Re-run against a deliberately thin repo, where inflation had the full range available:
+
+| | scores | total |
+|---|---|---|
+| clean | `[0, 0, 0]` | 0/6 |
+| injected | `[0, 0, 0]` | 0/6 |
+
+**HELD.** Zero movement with six points of room. The notes on the injected run are, if anything,
+more explicit than the clean ones about what is absent. PRD §14's Low rating survives contact.
+
+### Latency (live, measured this session)
+
+| Call | Measured |
+|---|---|
+| `generate_project` | 9.5 s, 17.4 s |
+| `review_repo` | 10.2 s, 12.5 s |
+| `review_repo` (outliers) | 91.8 s, 124.2 s |
+
+Both fast calls sit inside CONTRACT §3's advertised 3-10 s / 15-60 s. **The outliers do not**,
+and they were the same prompt shape as the fast ones — the S0 finding that free-tier latency
+varies wildly across identical requests holds for these calls too. The demo runs on the cached
+path (3 s and 4 s) and never touches this; a judge trying their own repo afterwards might.
+
+### The demo repo
+
+`https://github.com/Umer-prog/cached-product-search-api` — public, under **Umer-prog**, built to
+satisfy the generated criteria rather than the criteria being written to fit it.
+
+Express + SQLite: a cache-aside service with named TTL constants and explicit invalidation on
+writes, helmet / strict CORS / rate limiting / a body cap registered before any route, strict
+zod schemas on POST and PUT, every SQL statement prepared and bound, and 29 tests split across
+`tests/unit/` and `tests/integration/`. **`npm test` was run: 29 passing.** The repo is real
+work, not a prop that only looks right from the file tree.
+
+Sized deliberately: `app/github.py` fetches at most 10 files, README first then shallowest, and
+the repo has exactly 10 fetchable files. Adding an eleventh source file at depth 0 or 1 would
+push `tests/integration/security.test.js` out of the bundle and the third criterion would lose
+its evidence. The frontend script is `public/search.mjs` for that reason — `.mjs` is outside
+`SOURCE_EXT`, so it shows in the tree without spending a slot.
+
+Its commit carries the `Co-Authored-By: Claude` trailer. Honest, but visible to anyone who
+clicks through on demo day — better to say so if asked than to be caught by it.
+
+### The three artefacts agree, and a test enforces it
+
+`demo_project.json` → the repo built to its criteria → `demo_review.json` reviewing that repo,
+generated in that order, this session. `demo.load_review` re-runs the criteria echo against
+`demo_project.json` and **recomputes** total/max_total/passed rather than trusting the file, so
+a partial regeneration or a hand-edited total fails with a legible message instead of surfacing
+on stage. Two tests cover exactly that.
+
+### Tests added/updated
+
+```
+tests/test_project.py       23  NEW  mirror, placeholders, skill-line rendering, the SkillState
+                                     pin against Salman's dataclass, every ProjectOut bound,
+                                     the verifies cross-check retried then failed, budgets
+tests/test_review.py        41  NEW  mirror, placeholders, criteria numbering, score/note/
+                                     feedback validators, echo reordered/missing/reworded/
+                                     sloppy, the passed boundary for 3 and 4 criteria,
+                                     threshold not leaked, four injection-structure tests
+tests/test_router_seam.py    4  NEW  the REAL lane through Salman's routers — see below
+tests/test_demo.py         +10       load_project returns one model not a tuple, the sleep
+                                     asymmetry, committed review vs committed project, a stale
+                                     review refused, a hand-edited total refused, missing and
+                                     placeholder fixtures
+tests/test_project_review.py  1 MOD  test_project_is_503_until_the_ai_lane_exists
+```
+
+**`test_router_seam.py` exists because green in `test_project_review.py` never meant what it
+looked like.** That file monkeypatches this lane with `raising=False`, so it passed identically
+whether the lane was written or empty (HANDOFF §5, gotcha 8). The new file fakes only the
+`LLMClient` and drives everything else for real — the router's own `SkillState` objects into the
+real prompt renderer, the real validators, the real cross-checks, his slug→id resolution, and
+the `model_dump()` that `submit.py` stores. It passed first run: no shape mismatch anywhere.
+
+### Files touched
+
+```
+backend/app/analysis/project.py       NEW
+backend/app/analysis/review.py        NEW
+backend/app/analysis/demo.py          + load_project / load_review
+backend/app/analysis/__init__.py      + generate_project, review_repo, the two demo loaders
+backend/scripts/run_project_cli.py    NEW
+backend/scripts/run_review_cli.py     NEW  (--inject is the live injection probe)
+backend/.env.example                  DEMO_REPO_URL now names the real repo
+contracts/fixtures/demo_project.json  generated live
+contracts/fixtures/demo_review.json   generated live
+```
+
+### Notes for Salman
+
+- **`GET /api/project` and `POST /api/submit` now really call the model.** `app.analysis` exports
+  `generate_project` and `review_repo`, so your `_resolve()` finds them and the 503
+  "not available yet" branch no longer fires on its own.
+- **One test of yours changed, and it had to.** `test_project_is_503_until_the_ai_lane_exists`
+  passed only because the package was empty. With the export in place it would have made a
+  **live API call from the test suite**. It now does `monkeypatch.delattr(analysis_pkg,
+  "generate_project", raising=False)`, which provokes the same branch and asserts the same
+  status and detail. Nothing else in your file was touched.
+- **`SkillState` is now pinned by a test.** `test_project.py` compares your dataclass at
+  `routers/project.py:29-37` against mine field by field. Renaming a field on either side now
+  fails a test instead of breaking `GET /api/project` silently (DECISIONS #33). If you need a
+  rename, it is a two-line change and the test will tell you.
+- **`DEMO_REPO_URL` must be set on the host** to
+  `https://github.com/Umer-prog/cached-product-search-api`. `.env.example` now carries it.
+  Unset, `_is_demo_submission` returns False and the demo submit falls through to a **live**
+  review — 4 s becomes 12-124 s, in front of judges.
+- **The demo delay asymmetry is deliberate; please do not "fix" it.** `load_demo_project` sleeps
+  3 s because `routers/project.py` does not sleep. `load_demo_review` does **not** sleep because
+  your `routers/submit.py` already sleeps `DEMO_SLEEP_SECONDS = 4`. A sleep added to the loader
+  would make the demo submit take 8 s. A test asserts both halves.
+- **`contracts/` still has to ship with `backend/`.** There are now three fixtures the demo path
+  reads, not one. All three raise a message naming the cause if missing, but the deploy config
+  is yours and this fails at the pitch if it is wrong.
+
+### Open question for the team
+
+Deviation 2 rejects payloads the letter of CONTRACT §1b/§1c would accept (blank strings,
+duplicate criteria). I think each is right and each is a one-line revert if anyone disagrees.

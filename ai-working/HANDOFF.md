@@ -1,6 +1,6 @@
 # HANDOFF — Dev B (AI lane), ANCHOR
 
-**Written 2026-08-29, updated 2026-08-30 after S5 and the S4 closure.**
+**Written 2026-08-29. Updated 2026-08-30 after S6, S7 and S8 — the AI lane is now feature-complete.**
 
 > **Blocked, or wondering what to do about it? Read `ai-working/UNBLOCK.md`.** It is the
 > companion to this file: what is actually stopping work, what only Umer can decide, and what
@@ -29,7 +29,9 @@ one was used early and deliberately deleted.
 
 ## 2. State as of this handoff
 
-**Tests: 163 passing, 0 skipped.** Sessions S0-S3 and S5 done; **S4 closed with no change needed** (DECISIONS #48 — its targets were already met; seed postings OUT per #49). **S6 is next and is not blocked.**
+**Tests: 241 passing, 0 skipped.** **S0-S8 are all done.** S4 was closed with no change needed (DECISIONS #48; seed postings OUT per #49). S6, S7 and S8 landed 2026-08-30: both modules, both CLIs, the demo repo, and all three demo artefacts, generated live and in agreement.
+
+**Nothing in this lane is outstanding.** What is left for the project is deployment, which is Salman's — see section 7.
 
 | File | State |
 |---|---|
@@ -40,19 +42,19 @@ one was used early and deliberately deleted.
 | `app/analysis/export_schema.py` | done |
 | `scripts/run_analysis_cli.py` | done — `--demo --runs N --save` + quality report |
 | `app/analysis/demo.py` | done — `applies()` + `load()`, DEMO_MODE branch wired into `run_analysis` |
-| `app/analysis/project.py` | **empty — S6** |
-| `app/analysis/review.py` | **empty — S7** |
-| `scripts/run_project_cli.py` | **empty — S6** |
-| `scripts/run_review_cli.py` | **empty — S7** |
+| `app/analysis/project.py` | done — `ProjectOut`, `SkillState`, `generate_project` |
+| `app/analysis/review.py` | done — `ReviewOut`, echo check, `score_review`, `review_repo` |
+| `scripts/run_project_cli.py` | done — `--role --runs --save` + quality report |
+| `scripts/run_review_cli.py` | done — `--url --save --inject` (live injection probe) |
 
 | Fixture | State |
 |---|---|
 | `demo_analysis.json` | **real** — 48 skills, 8 roles, 28 coverage rows |
 | `analysis.schema.json` + `analysis.provider-schema.json` | **real** |
-| `demo_project.json` | still a `_todo` placeholder — S8 |
-| `demo_review.json` | still a `_todo` placeholder — S8 |
+| `demo_project.json` | **real** — Full-Stack Engineer, 3 criteria, 3 verifies |
+| `demo_review.json` | **real** — 6/6, passing, against the live demo repo |
 
-**S6 is next, and it is blocked on Salman** — see sections 6 and 7.
+**The demo repo is `https://github.com/Umer-prog/cached-product-search-api`** (public, Umer-prog). `DEMO_REPO_URL` must be set to it on the host or the demo submit path never fires.
 
 ---
 
@@ -78,9 +80,21 @@ cd backend
 
 **Two workflow facts about this environment.** The `Write`/`Edit` tools are blocked outside a
 worktree, so files get written with shell heredocs — and long heredocs fail, so write in chunks
-of roughly 60 lines. The harness also collapses a doubled backslash inside a command, so
-**never put backslash escapes in generated code**: substitute a token instead
-(write `@NL@`, then replace it with `chr(92) + "n"`). Both cost time to rediscover.
+of roughly 60 lines. A ~150-line heredoc failed again in S6/S7 with
+`unexpected EOF while looking for matching quote`; 30-40 lines is comfortable.
+
+**On backslashes, measured rather than assumed (S7).** The rule is narrower than this file used
+to say. A **single** backslash survives a heredoc intact — a raw regex written as
+`r"```text\n(.*?)\n```"` came out correct and the existing `test_prompt.py` idiom was
+reusable as-is. Only a **doubled** backslash collapses: `\\` arrives as `\`. That is
+what bit S7 — a line-continuation written as three quotes plus `\\` plus `n` arrived as a
+literal `\n` escape, silently giving the mirrored prompt constant a leading newline. The
+mirror test caught it. So: write single escapes freely; reach for `chr(92)` only where you
+genuinely need two backslash characters, or where a backslash must sit at end of line.
+
+The reliable way to mirror a prompt is not to type it at all — read the `.md`, extract the
+fenced text block, and write the constant from it in the same script. Both mirrors were built
+that way and matched on the first try.
 
 ---
 
@@ -130,9 +144,16 @@ Full reasoning in `docs/DECISIONS.md`. Summarised so a fresh session does not re
 7. **The retry policy earns its place — it fired on 1 of 3 live runs**, catching a role that
    referenced a skill the model never minted. Do not weaken it to save latency.
 
-8. **`test_project_review.py` (522 lines) currently passes against monkeypatched stubs**
-   installed with `raising=False`. When S6 and S7 land it exercises real code for the first time.
-   **That is the most likely place something unexpected surfaces** — budget slack there.
+8. **`test_project_review.py` still passes against monkeypatched stubs** installed with
+   `raising=False`, and it always will — S6/S7 landing did **not** change that. Green there is
+   not evidence about this lane. `tests/test_router_seam.py` (S7) is the file that drives the
+   real lane through his routers with only the `LLMClient` faked; that is the one to watch.
+   It passed first run — no shape mismatch anywhere.
+
+8b. **A prompt-injection probe against a repo that already scores maximum proves nothing.**
+   The first `--inject` run showed 6/6 clean and 6/6 injected, which reads like a pass and is
+   pure arithmetic — there was no room to inflate. Probe a repo that scores low. The CLI now
+   prints `INCONCLUSIVE` in that case, but the reflex is worth keeping.
 
 9. **`contracts/` is outside `backend/`.** Both the prompt mirror and `demo.py`'s fixture load
    exist because of this: the deployed backend may ship only `backend/`. `demo.py` raises a
@@ -146,38 +167,28 @@ Full reasoning in `docs/DECISIONS.md`. Summarised so a fresh session does not re
 
 ## 6. What to do next
 
-**Goal: finish the AI lane.** Deployment is Salman's and is explicitly **out of scope for this
-lane** — do not start it, do not block on it.
+**This lane is finished.** S0-S8 are done, 241 tests pass, and all three demo artefacts are real
+and mutually consistent. There is no next session queued for the AI lane.
 
-S4 is **closed** (DECISIONS #48): its tuning targets were already met across three live runs —
-0 near-duplicate skills, 0 vague `real_world`, 60-72% cross-role reuse — so tuning would be
-change for its own sake, against a skill that says "change one thing per run". Seed postings are
-**OUT permanently** (#49): PRD 8.6's own condition can no longer be met.
+What is genuinely left, in priority order, and **none of it is this lane's**:
 
-Remaining, in order:
+1. **Deploy** the API and frontend (section 7). Still the biggest schedule risk in the project.
+2. **Set `DEMO_REPO_URL`** on the host to `https://github.com/Umer-prog/cached-product-search-api`.
+   One line; without it the demo submit does a live 12-124 s review on stage instead of the 4 s
+   cached one.
+3. **Rotate the Gemini key** after the demo — it was pasted into a chat transcript.
 
-- **S6 — `project.py`.** `ProjectOut`, validators, `generate_project`, `run_project_cli.py`.
-  **Not blocked**: `SkillState` is `slug` / `name` / `weight` / `state`, from Salman's committed
-  `routers/project.py:29-37`. Pin those four names in a test — a rename breaks his caller
-  silently (DECISIONS #33). The `verifies` subset-of-role-slugs rule goes through
-  `complete_validated`'s `cross_check` hook, which exists for exactly this.
-- **S7 — `review.py`.** `ReviewOut`, criteria echo/order validator, `passed` computed in code,
-  `run_review_cli.py`. The `<repo>` untrusted-data paragraph is the only injection defence that
-  exists; the injection test is required, not optional. Not blocked on anyone.
-- **Demo repo.** After S6 produces `demo_project.json`, build a real public repo satisfying
-  *those* criteria. `gh` here is authenticated as **Umer-prog with `repo` scope**, so this does
-  not need Salman.
-- **S8 — the demo caches.** `demo_project.json` then `demo_review.json`, generated live against
-  the real repo. All three artefacts must agree and are regenerated together or not at all.
+If someone does reopen this lane, the two things worth knowing:
 
-**Watch for one thing in S6:** every analysis run leaves 5-6 skills referenced by no role
-(consistently the CS201 algorithms ones). Harmless in the analysis, but a project that
-`verifies` a skill no role requires **moves nothing** — check the first `generate_project`
-output for it.
+- **Do not regenerate one demo artefact alone.** The project spec, the repo and the cached
+  review are one artefact in three files. `demo.load_review` will refuse a mismatch with a
+  legible error, which is the good case; the bad case is regenerating the project and finding
+  out on stage. Regenerate all three, in that order, or none.
+- **The prompts are v1 and have never been tuned.** Both produced good output on the first live
+  run, which is luck as much as design. `run_project_cli.py` and `run_review_cli.py --inject`
+  are the tuning loops if output quality ever needs work.
 
-Session plans with inputs, deliverables and done-checks: `ai-working/SESSIONS.md`.
-
----
+Session plans, inputs, deliverables and done-checks: `ai-working/SESSIONS.md`.
 
 ## 7. Blocked on other people
 
@@ -201,10 +212,14 @@ Only two things genuinely need Salman, and both are deployment:
    `routers/analyze.py`. Untestable until (1) exists. If the pitch runs in DEMO_MODE the
    analysis takes 6 s and this never fires.
 
-Waiting on a decision from Umer, not from Salman: the seed-postings in/out call (PRD 8.6's
-window has passed; recommendation is out), a human read of `ai-working/prompts/analysis.md`,
-and who builds the S8 demo repo — `gh` here is authenticated as **Umer-prog with `repo` scope**,
-so it does not have to be Salman.
+Waiting on a decision from Umer, not from Salman: ~~the seed-postings in/out call~~ (closed,
+DECISIONS #49 — out), a human read of `ai-working/prompts/analysis.md`, ~~and who builds the S8
+demo repo~~ (**done — built and pushed under Umer-prog, 2026-08-30**:
+`https://github.com/Umer-prog/cached-product-search-api`).
+
+Two things a human should still eyeball, neither blocking: the three prompt files have never had
+a human read, and the demo repo's single commit carries a `Co-Authored-By: Claude` trailer that
+a judge clicking through would see.
 
 ## 8. Where the truth lives
 
