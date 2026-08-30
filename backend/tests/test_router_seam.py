@@ -189,3 +189,93 @@ def test_the_review_prompt_carries_the_stored_projects_criteria(
     for i, criterion in enumerate(project["criteria"], 1):
         assert f"{i}. {criterion}" in review_prompt
     assert "README.md" in review_prompt
+
+
+# ------------------------------------------------------------------ the DEMO_MODE path itself
+
+
+def persist_committed_analysis(session: Session, student_id: str) -> None:
+    """`contracts/fixtures/demo_analysis.json` through the real `persist_analysis`."""
+    from pathlib import Path
+
+    from sqlmodel import select
+
+    from app.analysis.schema import AnalysisOut
+    from app.models import StudentCourse
+    from app.persistence import persist_analysis
+
+    fixture = Path(__file__).resolve().parents[2] / "contracts" / "fixtures" / "demo_analysis.json"
+    raw = fixture.read_text(encoding="utf-8")
+    courses = session.exec(
+        select(StudentCourse).where(StudentCourse.student_id == student_id)
+    ).all()
+    persist_analysis(session, student_id, AnalysisOut.model_validate_json(raw), raw, list(courses))
+
+
+@pytest.fixture
+def demo_mode(monkeypatch: pytest.MonkeyPatch):
+    """DEMO_MODE on, with both staged delays removed. 7 s of sleep in a unit suite is a bug."""
+    from app.analysis import demo
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "DEMO_MODE", True)
+    monkeypatch.setattr(settings, "DEMO_STUDENT_NAME", "Ayesha")
+    monkeypatch.setattr(
+        settings, "DEMO_REPO_URL", "https://github.com/Umer-prog/cached-product-search-api"
+    )
+    monkeypatch.setattr(demo, "PROJECT_DELAY_SECONDS", 0.0)
+    monkeypatch.setattr(submit_module, "DEMO_SLEEP_SECONDS", 0)
+    # If either cached path fell through to a live call, this is what it would reach.
+    monkeypatch.setattr(
+        submit_module, "fetch_repo", lambda url: pytest.fail("the demo submit hit the network")
+    )
+
+
+def test_the_demo_path_serves_both_caches_and_flips_the_badges(
+    client: TestClient, session: Session, demo_mode: None
+) -> None:
+    """The exact sequence the pitch runs, end to end, through the real routers.
+
+    Nothing here is stubbed: `app.analysis` is untouched, so the routers resolve the real
+    `load_demo_project` and `load_demo_review`, which read the committed fixtures. If the two
+    fixtures and the demo repo ever stop agreeing, this fails.
+    """
+    student_id = create_student(client)          # named Ayesha, the demo student
+    # The REAL committed analysis, not conftest's synthetic one: demo_project.json's verifies
+    # are slugs from the fixture's rank-1 role, and in production DEMO_MODE persists exactly
+    # this payload. Persisting anything else 502s on slug resolution, which is what caught the
+    # first version of this test.
+    persist_committed_analysis(session, student_id)
+    headers = {"X-Student-Id": student_id}
+
+    before = client.get("/api/roadmap", headers=headers).json()
+    # the demo project is served for the TOP-RANKED role only (routers/project.py:_demo_applies)
+    top = min(before["roles"], key=lambda r: r["rank"])
+
+    project = client.get(f"/api/project?role_id={top['id']}", headers=headers)
+    assert project.status_code == 200, project.text
+    assert len(project.json()["criteria"]) == 3
+    assert len(project.json()["verifies"]) == 3
+
+    res = client.post(
+        "/api/submit",
+        json={
+            "role_id": top["id"],
+            "repo_url": "https://github.com/Umer-prog/cached-product-search-api",
+        },
+        headers=headers,
+    )
+    assert res.status_code == 200, res.text
+    review = res.json()["review"]
+    assert (review["total"], review["max_total"], review["passed"]) == (6, 6, True)
+    assert sorted(res.json()["verified_skill_ids"]) == sorted(project.json()["verifies"])
+
+    after = client.get("/api/roadmap", headers=headers).json()
+    verified = {s["id"] for s in after["skills"] if s["verified"]}
+    assert verified == set(project.json()["verifies"]), "the badges must flip"
+
+    # The whole point of the mechanic: proof moves the number, and never downward.
+    fit_before = {r["id"]: r["fit_percent"] for r in before["roles"]}
+    assert all(r["fit_percent"] >= fit_before[r["id"]] for r in after["roles"])
+    risen = [r for r in after["roles"] if r["fit_percent"] > fit_before[r["id"]]]
+    assert any(r["id"] == top["id"] for r in risen), "the demo role must visibly rise"
