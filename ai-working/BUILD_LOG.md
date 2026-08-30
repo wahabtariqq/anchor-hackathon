@@ -32,20 +32,19 @@ list. Copy it into chat rather than assuming anyone reads build logs.
 
 ### Needs Salman to act
 
-- **Send me the four `SkillState` field names before S6.** He duplicated the dataclass
-  structurally rather than import this package (DECISIONS #33), so nothing enforces agreement:
-  if my field names differ, his `routers/project.py` breaks **silently, with no test failure**.
-  This is the single highest-risk handoff left in the lane.
-- **Decide whether the deploy host needs TDD Appendix B (async analyze).** Measured across
-  three live runs: **53.2 s / 72.0 s / 101.8 s**. TDD §5.1 warns that some hosts cut requests at
-  **~100 s** — our worst case is already past that. TDD says decide by end of Day 1 and *"don't
-  discover this during rehearsal."* The client timeout (240 s) is fine; the **host proxy** is
-  the risk.
+**Both remaining items are deployment. See `ai-working/UNBLOCK.md` for the full picture.**
 
-- **`contracts/fixtures/` must ship to the deploy host.** It sits outside `backend/`, and
-  `DEMO_MODE` reads `demo_analysis.json` from it. If the deploy only ships `backend/`, the demo
-  path raises during the pitch. Deployment config is your lane; the error message names the
-  cause, but that is a consolation prize on stage.
+- ~~Send me the four `SkillState` field names before S6.~~ **Resolved 2026-08-30 — not a
+  blocker and never was.** They are in his committed code at `routers/project.py:29-37`:
+  `slug`, `name`, `weight`, `state`. I over-escalated this; S6 is unblocked.
+- **Deploy the API and frontend, or hand the lane over.** Nothing is deployed and there is no
+  deploy config in the repo — no `Procfile`, `railway.json`, `render.yaml`, `vercel.json`, and
+  `frontend/.env.example` still has `VITE_USE_FIXTURE=true`. TDD 10 wanted hello-worlds Day 1;
+  PRD 13 wants the core on deployed URLs by Day 3 lunch.
+- **Then decide TDD Appendix B.** Live analysis measured **53-102 s** against TDD 5.1's ~100 s
+  host-proxy warning — but the number that matters is the deployed host's proxy timeout, which
+  cannot be measured until the deploy exists. If the pitch runs in DEMO_MODE (6 s) it never
+  fires; that is a legitimate choice as long as it is deliberate.
 
 ### Needs Salman to know
 
@@ -753,3 +752,66 @@ backend/tests/test_demo.py          new, 16 tests (Salman's dir, additive)
 
 Tests added/updated: **16**. Gate 5 · fixture loading and its three failure modes 6 ·
 `run_analysis` branching 3 · latency and course-code assertions 2.
+
+---
+
+## 2026-08-30 — UNBLOCK — audit of what is actually blocking work
+
+Result: **done**
+Matches spec: **yes** (process, not product)
+
+Wrote `ai-working/UNBLOCK.md`, 151 lines, referenced from `HANDOFF.md` and the lane README.
+No code changed; suite still 163 passing.
+
+### Correction
+
+**`SkillState` was never a blocker, and I said it was — three times.** The four field names are
+in Salman's committed code at `routers/project.py:29-37` (`slug`, `name`, `weight`, `state`),
+with a docstring saying it mirrors mine and is matched by attribute name. I escalated it to the
+standing notes, the S3 entry, and the handoff without opening his file to check. **S6 is
+unblocked and was unblocked the whole time.** All three places are corrected.
+
+The underlying risk is still real — a rename breaks his caller silently, with no test failure
+(DECISIONS #33) — but that is a reason to *pin the names in a test*, not a reason to wait.
+
+### What the audit actually found
+
+With that removed, **no coding work in this lane is blocked by anyone.** S6, S7, the three
+missing parity cases, and the provider `contract:` PR can all proceed now.
+
+What is left splits into decisions only Umer can make (seed postings in/out, a human read of
+the analysis prompt, who builds the demo repo) and one gap nobody has started:
+
+**Nothing is deployed, and there is no deploy config in the repo at all.** No `Procfile`,
+`railway.json`, `render.yaml` or `vercel.json`; `frontend/.env.example` still carries
+`VITE_USE_FIXTURE=true` with the comment "Delete on Day 3". TDD 10 wants both hello-worlds
+deployed on Day 1 hour 2; PRD 13 wants the core running end to end on deployed URLs by Day 3
+lunch. **That is a larger schedule risk than anything remaining in this lane**, and it is not in
+this lane.
+
+It also makes the Appendix B question unanswerable rather than merely open: the number that
+matters is the deployed host's proxy timeout, and there is no host.
+
+`gh` in this environment is authenticated as **Umer-prog with `repo` scope**, so the S8 demo
+repo does not have to wait for Salman either — that is now a choice rather than a dependency.
+
+### Notes for Salman
+
+Unchanged in substance, reduced in count. One item withdrawn (`SkillState` — my error), two
+remain, both deployment:
+
+- **Deploy, or hand the lane over.** Nothing is deployed; no deploy config exists.
+- **Then the Appendix B call**, which cannot be tested until there is a host.
+
+A copy-pasteable message for him is at the bottom of `UNBLOCK.md`.
+
+### Files touched
+
+```
+ai-working/UNBLOCK.md     new, 151 lines
+ai-working/HANDOFF.md     pointer at the top, section 7 rewritten
+ai-working/BUILD_LOG.md   standing notes corrected, this entry
+ai-working/README.md      UNBLOCK.md added to the file table
+```
+
+Tests added/updated: none.

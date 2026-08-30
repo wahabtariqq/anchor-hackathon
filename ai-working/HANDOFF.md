@@ -1,6 +1,10 @@
 # HANDOFF — Dev B (AI lane), ANCHOR
 
-**Written 2026-08-29, updated 2026-08-30 after S5.** Give this to a fresh session before anything else. It exists so nobody
+**Written 2026-08-29, updated 2026-08-30 after S5.**
+
+> **Blocked, or wondering what to do about it? Read `ai-working/UNBLOCK.md`.** It is the
+> companion to this file: what is actually stopping work, what only Umer can decide, and what
+> needs Salman. Short version: almost nothing is genuinely blocked. Give this to a fresh session before anything else. It exists so nobody
 re-derives what has already been measured, and nobody re-opens decisions that are closed.
 
 ---
@@ -169,23 +173,30 @@ Session plans with inputs, deliverables and done-checks: `ai-working/SESSIONS.md
 
 ## 7. Blocked on other people
 
-Kept current in **`ai-working/BUILD_LOG.md` under "Open notes for other lanes"**. The two that
-actually block progress:
+**Full detail and the decisions you need to make: `ai-working/UNBLOCK.md`.**
 
-- **Salman: the four `SkillState` field names.** He duplicated the dataclass structurally rather
-  than importing this package (DECISIONS #33). Nothing enforces agreement — a mismatch breaks his
-  `routers/project.py` **silently, with no test failure.** Highest-risk handoff left in the lane.
-- **Salman: the TDD Appendix B decision.** Worst measured analysis run was **101.8 s** against
-  TDD 5.1's ~100 s host-proxy warning. His lane, his call — and if the host cuts the request,
-  `/analyze` fails on stage looking like a model fault when it is not.
+Almost nothing is genuinely blocked. Correcting an earlier over-escalation: **`SkillState` was
+never a blocker** — the four field names are in Salman's committed code at
+`backend/app/routers/project.py:29-37` (`slug`, `name`, `weight`, `state`). **S6 can start now.**
 
-Team-level and unresolved: seed postings still at zero against a Day-2-morning deadline;
-`parity_cases.json` three cases short of what TDD 8 names; the `contract:` PR for the provider
-change still open (PRD 4.3, TDD 4.7 and TDD 9 all still describe the Anthropic SDK); and
-`ai-working/prompts/analysis.md` still needs a human read — it is new work, and it is now driving
-a committed fixture.
+**S6 and S7 need nothing from anyone.** So do the three missing `parity_cases.json` cases and
+the `contract:` PR for the provider docs.
 
----
+Only two things genuinely need Salman, and both are deployment:
+
+1. **Deploying the API and frontend.** Nothing is deployed and there is no deploy config in the
+   repo at all — no `Procfile`, `railway.json`, `render.yaml` or `vercel.json`, and
+   `frontend/.env.example` still has `VITE_USE_FIXTURE=true`. TDD 10 wanted hello-worlds on Day
+   1; PRD 13 wants the core on deployed URLs by Day 3 lunch. **This is the biggest schedule risk
+   left in the project, and it is not in this lane.**
+2. **TDD Appendix B**, only if the deployed host cuts long requests — it edits his
+   `routers/analyze.py`. Untestable until (1) exists. If the pitch runs in DEMO_MODE the
+   analysis takes 6 s and this never fires.
+
+Waiting on a decision from Umer, not from Salman: the seed-postings in/out call (PRD 8.6's
+window has passed; recommendation is out), a human read of `ai-working/prompts/analysis.md`,
+and who builds the S8 demo repo — `gh` here is authenticated as **Umer-prog with `repo` scope**,
+so it does not have to be Salman.
 
 ## 8. Where the truth lives
 
