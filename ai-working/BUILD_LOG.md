@@ -1102,3 +1102,43 @@ contracts/fixtures/demo_review.json   generated live
 
 Deviation 2 rejects payloads the letter of CONTRACT §1b/§1c would accept (blank strings,
 duplicate criteria). I think each is right and each is a one-line revert if anyone disagrees.
+
+---
+
+## 2026-08-30 — S8 addendum — the DEMO_MODE path, tested end to end
+
+Result: **done**
+Matches spec: **yes**
+
+Appended rather than folded into the entry above, per this file's own rule.
+
+**Tests: 241 → 242.** The entry above counts 78 added; it is 79 with this one.
+
+Everything on the demo path was covered except the path itself: `load_demo_project` and
+`load_demo_review` were tested directly, and the routers were tested with the lane stubbed, but
+nothing ran the sequence the pitch runs — cached project, cached review, badges flipping, fit
+rising — through the real routers with the real fixtures.
+
+`test_the_demo_path_serves_both_caches_and_flips_the_badges` does. Nothing is stubbed on the AI
+side; the routers resolve the real loaders, which read the real committed fixtures. Both staged
+delays are patched to zero (7 s of sleep in a unit suite is a bug), and `fetch_repo` is replaced
+with a `pytest.fail`, so the test fails loudly if either cached path ever falls through to the
+network instead of quietly passing while taking two minutes.
+
+**It caught something on the first run.** `demo_project.json`'s `verifies` are slugs from
+`demo_analysis.json`'s rank-1 role, so the test must persist *that* committed fixture;
+`conftest.persist_demo_analysis` builds a synthetic payload, and against it the slug resolution
+502s with `Project referenced skills outside the role`. Production is unaffected — DEMO_MODE
+persists the real fixture — but the failure is a fair warning about how tightly the three
+artefacts are coupled, and it would have caught anyone writing this test later.
+
+Confirmed in the same run: no role's fit falls, and the demo role visibly rises.
+
+Also verified this session: the full suite passes with `GEMINI_API_KEY` set to an invalid value,
+in 3.4 s. No test reaches the API.
+
+### Files touched
+
+```
+backend/tests/test_router_seam.py   + the DEMO_MODE end-to-end test and its fixture
+```
