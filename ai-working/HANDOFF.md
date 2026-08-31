@@ -29,7 +29,7 @@ one was used early and deliberately deleted.
 
 ## 2. State as of this handoff
 
-**Tests: 242 passing, 0 skipped.** **S0-S8 are all done.** S4 was closed with no change needed (DECISIONS #48; seed postings OUT per #49). S6, S7 and S8 landed 2026-08-30: both modules, both CLIs, the demo repo, and all three demo artefacts, generated live and in agreement.
+**Tests: 268 passing, 0 skipped.** Frontend: 15. **S0-S8 are all done.** S4 was closed with no change needed (DECISIONS #48; seed postings OUT per #49). S6, S7 and S8 landed 2026-08-30: both modules, both CLIs, the demo repo, and all three demo artefacts, generated live and in agreement.
 
 **Nothing in this lane is outstanding.** What is left for the project is deployment, which is Salman's — see section 7.
 
@@ -68,11 +68,17 @@ env     backend/.env            gitignored, real Gemini key already in it
 
 ```bash
 cd backend
-.venv/Scripts/python.exe -m pytest -q                       # 163 passing
+.venv/Scripts/python.exe -m pytest -q                       # 268 passing
 .venv/Scripts/python.exe scripts/run_analysis_cli.py --demo --runs 3
 .venv/Scripts/python.exe scripts/run_analysis_cli.py --demo --save
 .venv/Scripts/python.exe -m app.analysis.export_schema
+.venv/Scripts/python.exe scripts/run_evals.py --offline    # grade the fixtures, no API
+.venv/Scripts/python.exe scripts/run_evals.py --suite review   # LIVE, ~3 calls
 ```
+
+> **Evals spend the demo's budget.** Free tier is 10 requests/min and 250/day, and a full
+> live sweep is 9 calls. It hit 429 RESOURCE_EXHAUSTED on 2026-08-31. Use `--offline` while
+> iterating on graders; spend live calls deliberately.
 
 > **The API key in `backend/.env` was pasted into a chat transcript. Treat it as exposed and
 > rotate it after the demo.** It is free to regenerate at Google AI Studio. It is gitignored and
@@ -167,7 +173,7 @@ Full reasoning in `docs/DECISIONS.md`. Summarised so a fresh session does not re
 
 ## 6. What to do next
 
-**This lane is finished.** S0-S8 are done, 242 tests pass, and all three demo artefacts are real
+**This lane is finished.** S0-S8 are done, 268 tests pass, and all three demo artefacts are real
 and mutually consistent. There is no next session queued for the AI lane.
 
 What is genuinely left, in priority order, and **none of it is this lane's**:

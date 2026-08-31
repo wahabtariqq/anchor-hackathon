@@ -1,0 +1,35 @@
+{
+  "description": "One project spec. `verifies` are slugs from the role that asked for it.",
+  "properties": {
+    "title": {
+      "title": "Title",
+      "type": "string"
+    },
+    "spec": {
+      "title": "Spec",
+      "type": "string"
+    },
+    "criteria": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Criteria",
+      "type": "array"
+    },
+    "verifies": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Verifies",
+      "type": "array"
+    }
+  },
+  "required": [
+    "title",
+    "spec",
+    "criteria",
+    "verifies"
+  ],
+  "title": "ProjectOut",
+  "type": "object"
+}

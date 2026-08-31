@@ -1,0 +1,14 @@
+{
+  "owner": "someone",
+  "repo": "tiny-product-api",
+  "default_branch": "main",
+  "tree": [
+    "README.md",
+    "index.js",
+    "package.json"
+  ],
+  "files": {
+    "README.md": "# product api\n\nA tiny product API. Work in progress.\n\n## Running\n\n    node index.js\n",
+    "index.js": "const express = require('express');\nconst app = express();\nconst products = [{ id: 1, name: 'Widget', price: 500 }];\n\napp.get('/products', (req, res) => {\n  const q = req.query.q || '';\n  res.json(products.filter(p => p.name.includes(q)));\n});\n\napp.post('/products', (req, res) => {\n  products.push(req.body);\n  res.json(req.body);\n});\n\napp.listen(3000);\n"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "spec": {
+      "type": "string"
+    },
+    "criteria": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "verifies": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "title",
+    "spec",
+    "criteria",
+    "verifies"
+  ],
+  "type": "object"
+}

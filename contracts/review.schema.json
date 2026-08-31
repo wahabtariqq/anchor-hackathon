@@ -1,0 +1,48 @@
+{
+  "$defs": {
+    "CriterionScore": {
+      "description": "One criterion, echoed back verbatim, with its score and the evidence for it.",
+      "properties": {
+        "criterion": {
+          "title": "Criterion",
+          "type": "string"
+        },
+        "score": {
+          "title": "Score",
+          "type": "integer"
+        },
+        "note": {
+          "title": "Note",
+          "type": "string"
+        }
+      },
+      "required": [
+        "criterion",
+        "score",
+        "note"
+      ],
+      "title": "CriterionScore",
+      "type": "object"
+    }
+  },
+  "description": "The model's half of a review. `total`, `max_total` and `passed` are NOT here -- they are\ncomputed by `score_review` so the threshold stays tunable without re-prompting.",
+  "properties": {
+    "criteria_scores": {
+      "items": {
+        "$ref": "#/$defs/CriterionScore"
+      },
+      "title": "Criteria Scores",
+      "type": "array"
+    },
+    "feedback": {
+      "title": "Feedback",
+      "type": "string"
+    }
+  },
+  "required": [
+    "criteria_scores",
+    "feedback"
+  ],
+  "title": "ReviewOut",
+  "type": "object"
+}

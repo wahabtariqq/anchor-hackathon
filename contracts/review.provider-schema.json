@@ -1,0 +1,34 @@
+{
+  "properties": {
+    "criteria_scores": {
+      "items": {
+        "properties": {
+          "criterion": {
+            "type": "string"
+          },
+          "score": {
+            "type": "integer"
+          },
+          "note": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "criterion",
+          "score",
+          "note"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "feedback": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "criteria_scores",
+    "feedback"
+  ],
+  "type": "object"
+}

@@ -1142,3 +1142,210 @@ in 3.4 s. No test reaches the API.
 ```
 backend/tests/test_router_seam.py   + the DEMO_MODE end-to-end test and its fixture
 ```
+
+---
+
+## 2026-08-31 — Prompt review, eval harness, V7, and the three UNBLOCK items
+
+Result: **done**
+Matches spec: **DEVIATION** (V7 and the new schema exports are both additions — below)
+
+**Tests: 242 → 268 passing.** Frontend: 15 passing.
+
+Four things: the three open items from `UNBLOCK.md`, a close read of the three prompts, an eval
+harness, and the two defects that read turned up.
+
+### The roadmap fixture was six days stale
+
+`contracts/fixtures/roadmap_response.json` was still Wahab's hand-written Day-1 placeholder —
+**32 skills**, roles like "Data Visualization Engineer". The committed analysis produces **48
+skills** and ranks Full-Stack Engineer / ML Engineer / Backend Engineer. The frontend was being
+built against a shape production would never return, and nothing would have caught it until
+`VITE_USE_FIXTURE` came out.
+
+Regenerated through the real `persist_analysis` and `build_roadmap` for Ayesha with the four
+demo courses, no ticks and no submissions. Key-for-key identical to the old file; only the data
+changed. Ids are UUIDs now, as production emits — they change on every regeneration, which is
+fine because nothing may key on them.
+
+### Parity: 12 → 15 cases
+
+The three TDD §8 names and nobody wrote: *mixed depths*, *core-only*, *supporting-only*.
+Expected values derived by hand from CONTRACT §2, not read off an implementation, then checked
+against both. **pytest 16 passed, vitest 15 passed.**
+
+`core-only` and `supporting-only` deliberately share the same expected **50%**: identical depths
+in a single-weight role must normalise to the same percentage whichever weight it is. A formula
+that forgot to divide by total weight would give two different answers, and no existing case
+would have noticed.
+
+### Provider docs corrected
+
+PRD §4.3, PRD §8.1, TDD §4.7, TDD §4.8, TDD §9 and two ASCII diagrams still described the
+Anthropic SDK. TDD §4.7's code sketch is replaced with the shape actually in `client.py`.
+TDD §4.8 wrote `from app.analysis import run` while calling `run_analysis` one line below —
+the disagreement DECISIONS #40 closes. PRD §8.1 deferred to a "v3 §8.3" that does not exist
+(#43) and still promised the seed-posting grounding #49 ruled out.
+
+Kept deliberately: the `ANTHROPIC_*` keys as the declared fallback, and the v2→v3 changelog
+line, which is history and correct as history.
+
+### V7 — `rank` was never validated, and it is load-bearing
+
+Reading `analysis.md` against `schema.py` turned up a real gap. The prompt asks for *"rank 1 to
+8, each number used exactly once"*. **Nothing checked that it happened.** V1–V6 cover skill
+counts, role counts, dangling references and the core/adjacent split; `rank` is a bare `int`.
+Verified before fixing: a payload with two roles ranked 1, and a payload with all eight ranked
+99, both validated clean.
+
+It matters in two places:
+
+- `roadmap.py:166` sorts on `(-fit_percent, rank)` — duplicates make tie order arbitrary.
+  Cosmetic.
+- **`routers/project.py:_demo_applies` picks the demo student's top role with
+  `order_by(Role.rank).first()`.** With a duplicate or constant rank it can select a role the
+  cached demo project was never written for, whose slugs then fail to resolve — a **502 on the
+  one path the pitch depends on**, from a payload that passed every validator.
+
+Added as V7 with four tests: duplicate rank, all-99, 0-based (unique but shifted — the
+plausible model error), and one asserting that array order is irrelevant as long as each rank is
+used once. The committed fixture already ranks 1–8, so nothing was regenerated.
+
+**Deviation:** V7 is stricter than CONTRACT §1.1, which does not mention `rank`. Same category
+as DECISIONS #51 and reversible the same way, but this one guards a demo-path 502.
+
+### The eval harness
+
+Tests answer *does the code do what it says*. They pass whether the model's output is excellent
+or useless, because everything validates either way. `backend/evals/` answers *is the output any
+good*, and every check reports the number it measured so a prompt change can be argued about
+with evidence instead of taste.
+
+Split deliberately:
+
+- **`evals/graders.py` is pure** — no network, no model, no I/O. That is what makes
+  `tests/test_evals.py` possible: 19 tests that run on every `pytest`.
+- **`scripts/run_evals.py` is the live half.** Not a test, never runs under pytest, same rule as
+  the three CLIs. `--offline` grades the committed fixtures and costs nothing.
+
+Thresholds follow the `anchor-analysis` tuning order: dedup, cross-role reuse, bridge
+specificity, `real_world`. Plus structural properties no validator covers — orphaned skills,
+coverage codes belonging to the student, every role having both gaps and wins — and for
+projects, whether the criteria are checkable by reading and whether the verified skills can move
+the fit percentage at all.
+
+**Every grader is tested to fail**, not just to pass. A grader that only ever passes is
+decoration: it makes a report look reassuring for free. Each is fed damaged input and asserted
+to fire — the `sql` / `sql-querying` pair, a one-role-per-skill payload, a bridge naming
+nothing, "used in many jobs", a criterion saying "the tests pass", a project verifying only
+already-covered skills, a note citing no file, a reordered echo.
+
+**Offline baseline: 15/15 on the committed analysis, project and review.**
+
+### The eval found a bug in itself first
+
+The first offline run failed `bridges name a course/interest` on `ux-engineer`. The bridge reads
+*"Your web development coursework in CS402 and your explicit interest in UI/UX Design converge
+here…"* — which is exactly what the prompt asks for. The grader looked for the bare word `you`
+and `Your` is not `you`. **The grader was wrong, not the prompt.** Fixed to accept
+you/your/yours, with a regression test named after the failure.
+
+Worth recording because the reflex it warns against is the expensive one: a grader that fails
+good output invites tuning a prompt that was already right.
+
+### Live eval baseline: project only. The free tier ran out.
+
+| Suite | Result |
+|---|---|
+| project (live) | **5/5**, 11.3 s. `verifies` were 4/4 movable — two `missing`, two `covered:partial` |
+| analysis (live) | **not obtained** |
+| review (live: calibration + injection) | **not obtained** |
+
+The review suite returned `503 UNAVAILABLE` on both attempts, four times running, then began
+returning **429 RESOURCE_EXHAUSTED**. Seven retries over ~3 minutes did not recover it.
+
+I tested and discarded one hypothesis on the way: that the review call fails because its prompt
+is large (30 KB with the strong repo). **It is not size** — the 3.6 KB weak-repo prompt failed
+identically, and both failed in under 7 s. It is free-tier capacity, gotcha #5, plus quota
+exhaustion from the day's own calls.
+
+**That last part is the finding worth keeping: the evals spend the same budget the demo runs
+on** — 10 requests/minute, 250/day. A `--runs 3` sweep of all three suites is 9 calls, and
+repeated sweeps really do exhaust it. `run_evals.py` now prints the call count and the quota
+before spending anything, and `--offline` exists so grader iteration is free.
+
+**For the pitch:** DEMO_MODE is unaffected, it reads files. But PRD §12.1 promises judges can
+try their own input live afterwards, and today that promise would have failed for about twenty
+minutes. Worth knowing before the slot rather than during it.
+
+### Also found: unauthenticated GitHub fetches drop files silently
+
+Capturing `evals/fixtures/strong_repo.json` returned **8 of 10 files** on the first attempt and
+10 on the next. `app/github.py:_get_raw` returns `None` for any non-200 and the loop skips it —
+one skipped file is deliberately not fatal, which is right, but the review then scores a repo it
+has only partly seen and nothing downstream says so.
+
+Unauthenticated GitHub is 60 requests/hour and every submission spends up to 12. **A judge
+trying their own repo could get a low score because two files quietly failed to fetch.** Setting
+`GITHUB_TOKEN` on the host is already on the deploy checklist (DECISIONS #24); this is a second,
+sharper reason for it. `test_evals.py` asserts the saved bundle still has all 10 files, so a
+degraded recapture cannot be committed unnoticed.
+
+### Schema exports (item 5)
+
+`export_schema.py` now writes all three models, raw and provider-transformed — six files.
+CONTRACT §1b and §1c described `ProjectOut` and `ReviewOut` in prose while nothing published
+their shape, so the two newest models were the only ones another lane had to take on trust.
+CONTRACT §4's table lists them now.
+
+### On the prompts themselves
+
+Read all three against the code. They are in good shape; two findings, one fixed:
+
+1. **`rank` unenforced** — fixed as V7 above. This was the prompt asking for something and
+   nothing checking it.
+2. **The review prompt never tells the model the repo is capped.** `github.py` fetches at most
+   10 files, 20 KB each, and appends `…[truncated]` — but `review.md` says nothing about it, so
+   the model sees truncation markers and a tree listing far longer than the file bodies with no
+   explanation. It may score 0 for something living in an unfetched file. **Not changed**, for
+   two reasons: the fix risks teaching the model to excuse absences ("it might be in a file I
+   can't see"), which is exactly the leniency the injection defence works to prevent, and it
+   cannot be measured today with the quota exhausted. Left as a proposal with the eval in place
+   to test it against.
+
+Both `analysis.md`'s stricter-than-validator counts (45–55 skills vs V1's 35–70; 10–14 role
+skills vs 8–16) are deliberate and fine — a prompt asking for the middle of a legal range.
+`{postings_block}` is now permanently empty (#49) but harmless; removing it would churn the
+mirror for nothing.
+
+### Files touched
+
+```
+backend/evals/                        NEW  __init__, graders.py, bundles.py, fixtures/
+backend/scripts/run_evals.py          NEW
+backend/tests/test_evals.py           NEW  19 tests
+backend/app/analysis/schema.py        + V7
+backend/app/analysis/export_schema.py all three models
+backend/tests/test_validation.py      + 4 V7 tests
+backend/tests/test_parity.py          floor 12 -> 15
+contracts/fixtures/roadmap_response.json  regenerated
+contracts/fixtures/parity_cases.json      12 -> 15 cases
+contracts/{project,review}.*schema.json   NEW
+docs/PRD.md, docs/TDD.md, docs/CONTRACT.md
+```
+
+### Notes for Salman
+
+- **`roadmap_response.json` was regenerated** — CONTRACT §4 says this is yours; I did it because
+  the content is my analysis output and the file was six days stale. Same keys, new data. Tell
+  Wahab: 48 skills not 32, and the role titles changed.
+- **`GITHUB_TOKEN` matters more than the checklist implies.** Unauthenticated fetches drop files
+  silently and the review scores what it got. See above.
+- **The free tier hit 429 today.** If judges will try their own input after the pitch, that is
+  the constraint to plan around — not latency.
+
+### Notes for Wahab
+
+- **`roadmap_response.json` changed shape-compatibly but data-completely.** Same keys, same
+  nesting, 48 skills instead of 32, different role titles and ids. If anything was hard-coded to
+  a title or an id from the old file, it breaks now rather than on integration day.

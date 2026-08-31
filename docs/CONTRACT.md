@@ -213,6 +213,8 @@ Request: `{ "skill_id": "sk_a1", "checked": true }`. Idempotent both ways.
 | `demo_project.json` | §1b `ProjectOut` for the demo student's top role | Umer, `run_project_cli.py` (live, Day 4 morning) | `DEMO_MODE` |
 | `demo_review.json` | §1c `ReviewOut` + total/max_total/passed for `DEMO_REPO_URL` | Umer, `run_review_cli.py` (live, Day 4 morning) | `DEMO_MODE` |
 | `analysis.schema.json` | JSON Schema of §1 | Umer, `export_schema.py` | reference; optional frontend validation of fixtures |
+| `project.schema.json`, `review.schema.json` | JSON Schema of §1b, §1c | Umer, `export_schema.py` | reference; added once S6/S7 landed |
+| `*.provider-schema.json` | the same three, as the provider actually receives them | Umer, `export_schema.py` | shows which keywords the transform strips (`pattern`, length bounds) |
 
 **Integration is done when** `GET /roadmap` from the deployed backend, for the demo student, has
 the exact shape of `roadmap_response.json` and the frontend renders it with `VITE_USE_FIXTURE` removed.

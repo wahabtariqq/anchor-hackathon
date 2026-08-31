@@ -147,4 +147,19 @@ class AnalysisOut(BaseModel):
             raise ValueError(
                 f"expected {MIN_CORE_ROLES}-{MAX_CORE_ROLES} core roles, got {n_core}"
             )
+
+        # V7 — rank must be a permutation of 1..N.
+        #
+        # The prompt asks for "1 to 8, each used exactly once"; until this check existed,
+        # nothing verified it happened, and `rank` is load-bearing twice. `roadmap.py` sorts on
+        # (-fit_percent, rank), so duplicates make tie order arbitrary — cosmetic. The one that
+        # bites is `routers/project.py:_demo_applies`, which selects the demo student's top role
+        # with `order_by(Role.rank).first()`: a duplicate or constant rank can hand it a role the
+        # cached demo project was never written for, whose slugs then fail to resolve — a 502 on
+        # the one path the pitch depends on.
+        ranks = sorted(r.rank for r in self.roles)
+        if ranks != list(range(1, len(self.roles) + 1)):
+            raise ValueError(
+                f"rank must use each of 1-{len(self.roles)} exactly once, got {ranks}"
+            )
         return self
