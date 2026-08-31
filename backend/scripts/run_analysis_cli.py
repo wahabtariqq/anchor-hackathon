@@ -122,6 +122,14 @@ def report(parsed: AnalysisOut, elapsed: float, raw: str) -> list[str]:
     codes = sorted({c.course_code for c in parsed.coverage})
     print(f"  coverage codes     {codes}")
 
+    # Not a validator (DECISIONS #57): a bad rank is cosmetic in the roadmap's tie-break and
+    # not worth failing a 53-102 s call over. It is worth blocking --save, though -- the demo
+    # student's cached analysis is what _demo_applies reads when it picks the top role, and a
+    # fixture whose top role is ambiguous can hand the cached demo project to the wrong one.
+    ranks = sorted(r.rank for r in parsed.roles)
+    if ranks != list(range(1, len(parsed.roles) + 1)):
+        warnings.append(f"ranks are {ranks}, want 1-{len(parsed.roles)} each once -- do not --save this")
+
     thin = [r.title for r in parsed.roles if not r.bridge.strip() and r.proximity == "adjacent"]
     if thin:
         warnings.append(f"adjacent roles with no bridge: {thin}")

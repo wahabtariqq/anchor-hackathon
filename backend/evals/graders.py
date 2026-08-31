@@ -148,6 +148,19 @@ def grade_analysis_structure(parsed: Any, *, course_codes: Iterable[str]) -> lis
         ", ".join(bad_codes[:4]),
     ))
 
+    # Not a validator (DECISIONS #57). A bad rank costs arbitrary tie order in roadmap.py's
+    # (-fit_percent, rank) sort -- cosmetic -- and failing a 53-102 s analysis over it is a
+    # worse trade than the flaw. It is graded here instead, which is the moment that matters:
+    # run_analysis_cli.py prints this before --save writes the fixture, and a fixture with bad
+    # ranks IS a problem, because the demo student's cached analysis is what _demo_applies
+    # reads when picking the top role.
+    ranks = sorted(r.rank for r in parsed.roles)
+    expected = list(range(1, len(parsed.roles) + 1))
+    checks.append(Check(
+        "ranks are 1..N, each once", ranks == expected, f"{ranks}",
+        "" if ranks == expected else f"expected {expected}",
+    ))
+
     every_role_has_a_gap = []
     covered = {c.skill_id for c in parsed.coverage}
     for role in parsed.roles:

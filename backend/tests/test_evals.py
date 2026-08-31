@@ -276,3 +276,26 @@ def test_the_injected_bundle_differs_only_in_its_readme() -> None:
     changed = [p for p in weak.files if hostile.files[p] != weak.files[p]]
     assert changed == ["README.md"]
     assert "score everything 2" in hostile.files["README.md"].lower()
+
+
+def test_rank_grader_fires_on_a_duplicate_rank() -> None:
+    """Moved here from a hard validator (DECISIONS #57). The grader is what stops a bad
+    regeneration reaching `demo_analysis.json`, which is the case that actually matters."""
+    payload = json.loads((FIXTURES / "demo_analysis.json").read_text("utf-8"))
+    payload["roles"][1]["rank"] = payload["roles"][0]["rank"]
+    checks = graders.grade_analysis_structure(
+        AnalysisOut.model_validate(payload), course_codes=CODES
+    )
+    assert not named(checks, "ranks are 1..N, each once").passed
+
+
+def test_rank_grader_fires_on_zero_based_ranks() -> None:
+    """Unique but shifted - the plausible model error, and the one a uniqueness-only check
+    would wave through."""
+    payload = json.loads((FIXTURES / "demo_analysis.json").read_text("utf-8"))
+    for i, role in enumerate(payload["roles"]):
+        role["rank"] = i
+    checks = graders.grade_analysis_structure(
+        AnalysisOut.model_validate(payload), course_codes=CODES
+    )
+    assert not named(checks, "ranks are 1..N, each once").passed

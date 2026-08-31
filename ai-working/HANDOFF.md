@@ -29,7 +29,7 @@ one was used early and deliberately deleted.
 
 ## 2. State as of this handoff
 
-**Tests: 268 passing, 0 skipped.** Frontend: 15. **S0-S8 are all done.** S4 was closed with no change needed (DECISIONS #48; seed postings OUT per #49). S6, S7 and S8 landed 2026-08-30: both modules, both CLIs, the demo repo, and all three demo artefacts, generated live and in agreement.
+**Tests: 267 passing, 0 skipped.** Frontend: 15. **S0-S8 are all done.** S4 was closed with no change needed (DECISIONS #48; seed postings OUT per #49). S6, S7 and S8 landed 2026-08-30: both modules, both CLIs, the demo repo, and all three demo artefacts, generated live and in agreement.
 
 **Nothing in this lane is outstanding.** What is left for the project is deployment, which is Salman's — see section 7.
 
@@ -173,7 +173,7 @@ Full reasoning in `docs/DECISIONS.md`. Summarised so a fresh session does not re
 
 ## 6. What to do next
 
-**This lane is finished.** S0-S8 are done, 268 tests pass, and all three demo artefacts are real
+**This lane is finished.** S0-S8 are done, 267 tests pass, and all three demo artefacts are real
 and mutually consistent. There is no next session queued for the AI lane.
 
 What is genuinely left, in priority order, and **none of it is this lane's**:

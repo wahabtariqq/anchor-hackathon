@@ -1349,3 +1349,89 @@ docs/PRD.md, docs/TDD.md, docs/CONTRACT.md
 - **`roadmap_response.json` changed shape-compatibly but data-completely.** Same keys, same
   nesting, 48 skills instead of 32, different role titles and ids. If anything was hard-coded to
   a title or an id from the old file, it breaks now rather than on integration day.
+
+---
+
+## 2026-08-31 — The two open deviations, decided
+
+Result: **done**
+Matches spec: **DEVIATION** (#51 kept, #54 reversed — both reasoned below)
+
+Umer handed both calls back. **#51 kept. #54 reversed.** They looked like the same kind of
+question and were not.
+
+**Tests: 268 → 267.** One net fewer: four V7 tests removed, one tolerance test and two grader
+tests added.
+
+### #51 — the stricter validators stay
+
+`ProjectOut`/`ReviewOut` reject blank `title`/`spec`/`criterion`/`note`/`feedback` and duplicate
+criteria, which CONTRACT §1b/§1c do not literally require.
+
+Kept, because every one of those failures is **silent and permanent**. A blank criterion still
+counts toward `max_total`, so it can never score above 0 and drags the review down by up to a
+third — and the project row is cached forever, so the student is stuck with it. A duplicated
+criterion is scored twice and quietly doubles its own weight. Nothing downstream would ever
+report either.
+
+What keeping it costs is one extra attempt inside a retry that already exists, on a call that
+takes ~10 s. Loud and cheap beats silent and permanent. The blast radius is also small: these
+models only ever validate model output and this lane's own fixtures — Salman's `submit.py`
+builds its own `_ProjectOut` and never touches them.
+
+The one I went back and forth on is rejecting a blank `note`, which fails the whole review over
+one missing sentence when the scores may be fine. Kept anyway: a review shown to a student with
+a blank note is visibly broken, and attempt 2 usually has it.
+
+### #54 — V7 reversed, because my justification for it was wrong
+
+I wrote that V7 guarded a demo-path 502: `routers/project.py:_demo_applies` picks the demo
+student's top role with `order_by(Role.rank).first()`, so a duplicate rank could hand it a role
+the cached demo project was never written for.
+
+**Checked it properly this time.** `_demo_applies` and `demo.applies` gate on the *same*
+DEMO_MODE-and-name condition. So whenever `_demo_applies` can return True, `demo.applies` was
+also True and the analysis came from the committed fixture — which ranks 1–8. **A live
+analysis's ranks can never reach `_demo_applies`.** The scenario I built the validator for does
+not exist.
+
+What a bad rank actually costs is arbitrary tie order in `roadmap.py`'s `(-fit_percent, rank)`
+sort. Cosmetic. Against that, a hard validator spends a **53–102 s retry and then a 502** —
+prevention far more expensive than the flaw, on the one call in the product where a retry is
+genuinely painful.
+
+The risk that *is* real — committing a regenerated `demo_analysis.json` with bad ranks, whose
+top role is then ambiguous — is caught earlier and cheaper:
+
+- `run_analysis_cli.py` warns before `--save` writes the fixture ("do not --save this")
+- `evals/graders.py` grades it, with two tests proving the grader fires (duplicate, and
+  0-based, which stays unique and is the plausible model error)
+- `tests/test_evals.py` asserts the committed fixture still passes, so a degraded regeneration
+  cannot be committed unnoticed
+
+`test_validation.py` now has a test asserting a duplicate rank is **tolerated**, with the
+reasoning inline, so nobody re-adds the validator in six months thinking they found a gap.
+
+**The rule this leaves behind, and the one I got wrong: a hard validator has to prevent
+something broken, not something untidy.** V1–V6 each prevent broken — a dangling reference is a
+card whose fit can never move; a repeated skill is an IntegrityError on insert. V7 prevented two
+equally-scored cards swapping places.
+
+Logged as DECISIONS #57. #54 is left in the table struck through rather than deleted — the
+reasoning was wrong in an instructive way.
+
+### Files touched
+
+```
+backend/app/analysis/schema.py        V7 removed
+backend/tests/test_validation.py      4 V7 tests -> 1 tolerance test
+backend/evals/graders.py              + "ranks are 1..N, each once"
+backend/tests/test_evals.py           + 2 tests proving that grader fires
+backend/scripts/run_analysis_cli.py   + pre-save rank warning
+docs/DECISIONS.md                     #57; #54 struck through
+```
+
+### Notes for Salman
+
+- Nothing in your lane changed. `AnalysisOut` is **less** strict than it was this morning, not
+  more — a payload that validated before still validates.

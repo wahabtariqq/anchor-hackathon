@@ -186,44 +186,26 @@ def test_tolerates_a_duplicate_skill_course_coverage_pair() -> None:
     assert len(parsed.coverage) == len(p["coverage"])
 
 
-# V7 — rank is a permutation of 1..8.
+# rank is deliberately NOT a hard failure — see DECISIONS #57, which supersedes #54.
 #
-# Added after S6/S7: nothing validated `rank` at all, and it is load-bearing in two places.
-# `roadmap.py` sorts by `(-fit_percent, rank)`, so duplicate ranks make tie order arbitrary --
-# cosmetic. The one that bites is `routers/project.py:_demo_applies`, which picks the demo
-# student's top role with `order_by(Role.rank).first()`: with a duplicate or a constant rank it
-# can select a role the cached demo project was not written for, and the slugs then fail to
-# resolve into a 502 mid-pitch. The prompt already asks for "1 to 8, each used exactly once";
-# this is the check that it happened.
+# It was one for about an hour. The justification was that `routers/project.py:_demo_applies`
+# picks the demo student's top role with `order_by(Role.rank).first()`, so a duplicate rank
+# could hand it a role the cached demo project was never written for. That justification was
+# wrong: `_demo_applies` and `demo.applies` gate on the same DEMO_MODE-and-name condition, so
+# whenever the former can fire the analysis came from the committed fixture, not from a live
+# call. A live analysis's ranks can never reach it.
+#
+# What a bad rank actually costs is arbitrary tie order in `roadmap.py`'s
+# `(-fit_percent, rank)` sort. Cosmetic. Failing an analysis over it would spend a 53-102 s
+# retry and then a 502 to prevent two equally-scored cards swapping places, which is a worse
+# trade than the flaw. The real risk — committing a regenerated fixture with bad ranks — is
+# caught before the file is saved, by `run_analysis_cli.py`'s warnings and by the eval grader,
+# with `tests/test_evals.py` asserting the committed fixture still passes.
 
 
-def test_rejects_a_duplicate_rank() -> None:
+def test_a_duplicate_rank_is_tolerated_not_rejected() -> None:
+    """Deliberate. If this ever starts raising, read DECISIONS #57 before "fixing" it."""
     p = valid_payload()
     p["roles"][1]["rank"] = p["roles"][0]["rank"]
-    with pytest.raises(Exception, match="rank"):
-        AnalysisOut.model_validate(p)
-
-
-def test_rejects_ranks_that_are_not_one_to_eight() -> None:
-    p = valid_payload()
-    for role in p["roles"]:
-        role["rank"] = 99
-    with pytest.raises(Exception, match="rank"):
-        AnalysisOut.model_validate(p)
-
-
-def test_rejects_a_rank_outside_the_range_even_when_unique() -> None:
-    """0-based or 1-off ranking is the plausible model error, and it stays unique."""
-    p = valid_payload()
-    for i, role in enumerate(p["roles"]):
-        role["rank"] = i          # 0..7 instead of 1..8
-    with pytest.raises(Exception, match="rank"):
-        AnalysisOut.model_validate(p)
-
-
-def test_accepts_ranks_in_any_order_as_long_as_each_is_used_once() -> None:
-    """Order in the array is not the ranking -- `rank` is. Reversed input must be fine."""
-    p = valid_payload()
-    for i, role in enumerate(p["roles"]):
-        role["rank"] = len(p["roles"]) - i
-    assert {r.rank for r in AnalysisOut.model_validate(p).roles} == set(range(1, 9))
+    parsed = AnalysisOut.model_validate(p)
+    assert parsed.roles[1].rank == parsed.roles[0].rank
