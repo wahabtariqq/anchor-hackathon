@@ -1,5 +1,5 @@
 {
-  "_comment": "v4 formula: earned += w * max(verified?1:0, checked?0.5:0, DEPTH[coverage]). Half-up rounding. Shared by test_parity.py and scoring.test.ts. Finish all ~18 cases together on Day 2 morning.",
+  "_comment": "v4 formula: earned += w * max(verified?1:0, checked?0.5:0, DEPTH[coverage]). Half-up rounding. Shared by test_parity.py and scoring.test.ts -- both iterate every case here, so adding one extends both suites. All 15 cases TDD 8 names are present.",
   "cases": [
     {
       "name": "all core fully covered",
@@ -179,6 +179,84 @@
         }
       ],
       "expected": 38
+    },
+    {
+      "name": "mixed depths across both weights",
+      "skills": [
+        {
+          "weight": "core",
+          "coverage_depth": "full",
+          "checked": false,
+          "verified": false
+        },
+        {
+          "weight": "core",
+          "coverage_depth": "partial",
+          "checked": false,
+          "verified": false
+        },
+        {
+          "weight": "supporting",
+          "coverage_depth": null,
+          "checked": false,
+          "verified": false
+        },
+        {
+          "weight": "supporting",
+          "coverage_depth": "full",
+          "checked": false,
+          "verified": false
+        }
+      ],
+      "expected": 69
+    },
+    {
+      "name": "core-only role",
+      "skills": [
+        {
+          "weight": "core",
+          "coverage_depth": "full",
+          "checked": false,
+          "verified": false
+        },
+        {
+          "weight": "core",
+          "coverage_depth": "partial",
+          "checked": false,
+          "verified": false
+        },
+        {
+          "weight": "core",
+          "coverage_depth": null,
+          "checked": false,
+          "verified": false
+        }
+      ],
+      "expected": 50
+    },
+    {
+      "name": "supporting-only role",
+      "skills": [
+        {
+          "weight": "supporting",
+          "coverage_depth": "full",
+          "checked": false,
+          "verified": false
+        },
+        {
+          "weight": "supporting",
+          "coverage_depth": "partial",
+          "checked": false,
+          "verified": false
+        },
+        {
+          "weight": "supporting",
+          "coverage_depth": null,
+          "checked": false,
+          "verified": false
+        }
+      ],
+      "expected": 50
     }
   ]
 }

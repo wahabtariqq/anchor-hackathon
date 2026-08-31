@@ -35,13 +35,13 @@ This document specifies *how* the PRD gets built: repo layout, module boundaries
       only the student id            ┌───────────────────────────┼──────────────┐
                                      │                                          │
                               ┌──────▼───────┐                        ┌─────────▼────────┐
-                              │  Postgres    │                        │  Anthropic API   │
+                              │  Postgres    │                        │   Gemini API     │
                               │  (SQLAlchemy │                        │  once per        │
                               │   direct)    │                        │  student         │
                               └──────────────┘                        └──────────────────┘
 ```
 
-**Trust boundaries.** `DATABASE_URL` and `ANTHROPIC_API_KEY` live in backend env only. The browser holds a student UUID and nothing else. There is no secret in the frontend at all.
+**Trust boundaries.** `DATABASE_URL` and `GEMINI_API_KEY` live in backend env only. The browser holds a student UUID and nothing else. There is no secret in the frontend at all.
 
 **Identity model.** A student id is a capability: whoever presents it can read and tick that student's roadmap. That's the right trade for a hackathon and is stated plainly in the README. Appendix A shows the upgrade path.
 
@@ -175,7 +175,10 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env")
 
     DATABASE_URL: str
-    ANTHROPIC_API_KEY: str
+    LLM_PROVIDER: str = "gemini"          # selects the client class in app/analysis/client.py
+    GEMINI_API_KEY: str = ""              # optional so the API boots without the AI lane's key
+    GEMINI_MODEL: str = "gemini-3.6-flash"
+    ANTHROPIC_API_KEY: str = ""           # declared fallback, unused while LLM_PROVIDER=gemini
     ANTHROPIC_MODEL: str = "claude-sonnet-4-6"
     ANALYSIS_MAX_TOKENS: int = 16000
     ANALYSIS_RETRY_MAX_TOKENS: int = 24000
@@ -444,62 +447,67 @@ def fit_percent(skills: list[ScoredSkill]) -> int:
 
 **Coverage collapse rule:** unchanged — best depth per skill is resolved when assembling the roadmap payload, not inside `fit_percent`.
 
-### 4.7 Anthropic client — structured outputs (`app/analysis/client.py`)
+### 4.7 Model client — structured outputs (`app/analysis/client.py`)
+
+> **The provider changed after this section was written.** The lane runs on the **Google Gemini
+> free tier over raw REST**, not the `anthropic` SDK — DECISIONS #39 (vendor), #45 (REST, not
+> the `google-genai` SDK, which 403s with our key), #46 (`gemini-3.6-flash`; the model this
+> document originally named cannot be called at all). Claude stays pinned as the declared
+> fallback. **The substance of this section is unchanged** — schema-constrained decoding,
+> validate on the way back, retry once on truncation or validation failure. What changed is the
+> vendor call, and everything vendor-specific now sits behind one protocol so a swap is a new
+> ~40-line class and one env var. The code below is the shape actually in the file.
 
 ```python
 # app/analysis/client.py
-import logging
-from anthropic import Anthropic, transform_schema
-from app.config import settings
-from app.analysis.schema import AnalysisOut
-from app.analysis.prompt import build_prompt
+class LLMClient(Protocol):
+    def complete_json(self, prompt: str, schema: dict, *,
+                      max_tokens: int, temperature: float) -> tuple[str, str]:
+        """Returns (raw_text, finish_reason), the reason normalised to
+        'stop' | 'max_tokens' | 'other' so the retry policy is provider-independent."""
 
-client = Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-log = logging.getLogger(__name__)
+class GeminiClient:
+    """POSTs to generativelanguage.googleapis.com with an x-goog-api-key header, passing
+    generationConfig.responseSchema = transform_schema(Model.model_json_schema())."""
 
-# transform_schema() removes constraints the grammar can't express (pattern, min/max length),
-# sets additionalProperties: false everywhere, and keeps everything else.
-OUTPUT_SCHEMA = transform_schema(AnalysisOut.model_json_schema())
+def complete_validated(model_cls, prompt, *, client=None, max_tokens=None,
+                       retry_max_tokens=None, temperature=0.3,
+                       cross_check=None) -> tuple[Any, str]:
+    """Call, validate, retry once, then give up. Returns (parsed, raw_text).
 
-class AnalysisFailed(Exception):
-    pass
-
-def run_analysis(student, courses) -> tuple[AnalysisOut, str]:
-    """The public surface of app.analysis. Returns (validated, raw_text). Retries once; bumps max_tokens if truncated."""
-    prompt = build_prompt(student, courses)
-    max_tokens = settings.ANALYSIS_MAX_TOKENS
-    last_err: Exception | None = None
-
-    for attempt in (1, 2):
-        resp = client.messages.create(
-            model=settings.ANTHROPIC_MODEL,
-            max_tokens=max_tokens,
-            temperature=0.3,
-            messages=[{"role": "user", "content": prompt}],
-            output_config={"format": {"type": "json_schema", "schema": OUTPUT_SCHEMA}},
-        )
-        raw = next((b.text for b in resp.content if b.type == "text"), "")
-
-        if resp.stop_reason == "max_tokens":
-            last_err = AnalysisFailed(f"truncated at {max_tokens} tokens")
-            max_tokens = settings.ANALYSIS_RETRY_MAX_TOKENS
-            log.warning("attempt %s: %s", attempt, last_err)
-            continue
-
-        try:
-            return AnalysisOut.model_validate_json(raw), raw     # runs our validators, incl. the stripped pattern
-        except Exception as e:
-            last_err = e
-            log.warning("attempt %s failed validation: %s", attempt, e)
-
-    raise AnalysisFailed(f"analysis failed after 2 attempts: {last_err}")
+    Exactly two attempts, ever. Three retryable failures, handled the same way:
+    transport/HTTP (ProviderError -- the free tier really does return 503), a
+    finish_reason of 'max_tokens' (retried with the larger budget), and validation
+    failure. cross_check(parsed) is an optional extra assertion that must raise to
+    reject; it carries the two rules a schema cannot express -- `verifies` being a
+    subset of the role's slugs (§4.12) and the criteria echo (§4.14).
+    """
 ```
 
-**Why this and not the v2 approach.** Structured outputs constrain decoding to the schema, so the JSON is always parseable and every field is present with the right type. The remaining failure modes are semantic (duplicate ids, unknown references) and truncation — exactly what the validators and the `stop_reason` check cover. Fence-stripping regex is gone. Prefill is gone: it's incompatible with structured outputs and unsupported on Claude 4.6+ anyway.
+All three call types go through `complete_validated`. `run_analysis`, `generate_project` and
+`review_repo` differ only in the model class, the prompt, the budget, the temperature, and
+whether they pass a `cross_check`.
 
-**Schema complexity.** The grammar compiler limits union-typed and optional fields. Our schema has zero of either (all fields required, `bridge` is a plain string). If a `400 "Schema is too complex"` ever appears, it isn't from us — check that nothing added an `Optional`.
+**Why this and not the v2 approach.** Schema-constrained decoding means the JSON is always
+parseable and every field is present with the right type. The remaining failure modes are
+semantic (duplicate ids, unknown references) and truncation — exactly what the validators and
+the `finish_reason` check cover. Fence-stripping regex is gone. Prefill is gone.
 
-**First-call latency.** The first request with a new schema compiles a grammar and is slower; it's cached for 24h after. Warm it on deploy by running the demo student once.
+**Normalising `finish_reason` is the point of the seam.** Every provider spells truncation
+differently, and getting it wrong fails silently: a truncated response looks exactly like a bad
+prompt.
+
+**What Gemini's `responseSchema` will not accept.** `pattern`, `minLength`, `maxLength`,
+`additionalProperties`; it does not follow `$ref`, so everything is inlined, and `const` has to
+become a one-item `enum`. This is why the skill-id regex is re-checked in Python and why every
+length bound lives in a validator rather than on a `Field`. **`transform_schema` must never
+filter keys inside `properties`** — those are field names, not schema keywords, and filtering
+them deleted `RoleOut.title` while leaving it in `required` (DECISIONS #47).
+
+**Latency, measured rather than assumed.** The analysis call runs **53–102 s**; project and
+review calls run **~10–17 s**, with observed outliers at **92 s and 124 s** on identical prompt
+shapes. Free-tier latency varies wildly across identical requests, so budget for the worst case.
+`REQUEST_TIMEOUT` is 240 s. There is no grammar-cache warm-up to perform.
 
 ### 4.8 Analyze route
 
@@ -511,7 +519,7 @@ from app.config import settings
 from app.db import get_session
 from app.identity import current_student
 from app.models import Analysis, Student, StudentCourse
-from app.analysis import run, AnalysisFailed
+from app.analysis import run_analysis, AnalysisFailed
 from app.persistence import persist_analysis
 
 router = APIRouter()
@@ -525,7 +533,7 @@ def analyze(student: Student = Depends(current_student), session: Session = Depe
         raise HTTPException(422, "Student has no courses")
 
     try:
-        parsed, raw = run(student, courses)          # app/analysis/__init__.py — handles DEMO_MODE internally
+        parsed, raw = run_analysis(student, courses)   # app/analysis/__init__.py — handles DEMO_MODE internally
     except AnalysisFailed as e:
         raise HTTPException(502, str(e))
 
@@ -535,21 +543,34 @@ def analyze(student: Student = Depends(current_student), session: Session = Depe
 
 The package entry point is the only thing Salman's code imports from Umer's lane:
 
-```python
-# app/analysis/__init__.py
-from app.analysis.schema import AnalysisOut
-from app.analysis.client import run_analysis, AnalysisFailed
-from app.analysis import prompt, demo
+> **Name and arity settled (DECISIONS #40, closing #11).** The entry point is **`run_analysis`**,
+> not `run`, and it takes **`(student, courses)`** — not a pre-built prompt string. This section
+> previously wrote `run` here while calling `run_analysis(prompt)` one line below, which is the
+> disagreement #40 closes. Salman's `routers/analyze.py` resolves the name at call time and
+> accepts either, so nothing broke; the one agreed name is `run_analysis`.
 
-def run(student, courses) -> tuple[AnalysisOut, str]:
+```python
+# app/analysis/__init__.py — the whole public surface, six names
+from app.analysis.client import AnalysisFailed, ProviderError
+from app.analysis.demo import load as load_demo
+from app.analysis.demo import load_project as load_demo_project
+from app.analysis.demo import load_review as load_demo_review
+from app.analysis.project import ProjectOut, SkillState, generate_project
+from app.analysis.review import ReviewOut, review_repo
+from app.analysis.schema import AnalysisOut
+
+def run_analysis(student, courses, *, client=None) -> tuple[AnalysisOut, str]:
     if demo.applies(student):                     # DEMO_MODE and name matches DEMO_STUDENT_NAME
         return demo.load()                        # sleeps 6s, returns validated cached payload
-    return run_analysis(prompt.build_prompt(student, courses))
-
-__all__ = ["run", "AnalysisOut", "AnalysisFailed"]
+    return complete_validated(AnalysisOut, build_prompt(student, courses),
+                              client=client, temperature=0.3)
 ```
 
-`app/analysis/prompt.py:build_prompt` renders PRD §8.3 with the student's semester, interests, and each course as `CODE — NAME` + curriculum text.
+The three demo loaders are resolved the same way, and their sleeps are **asymmetric on purpose**:
+`load_demo` sleeps 6 s and `load_demo_project` sleeps 3 s because neither router sleeps, while
+`load_demo_review` sleeps **not at all** because `routers/submit.py` already sleeps 4 s itself.
+
+`app/analysis/prompt.py:build_prompt` renders the analysis prompt with the student's semester, interests, and each course as `CODE — NAME` + curriculum text. The canonical text lives in `ai-working/prompts/analysis.md` and is mirrored into a constant, with a test asserting the two never drift — the deployed backend ships `backend/` only, so reading it from disk at runtime would work locally and fail on the host. (PRD §8.1 defers to "v3 §8.3"; that document does not exist — DECISIONS #43.)
 
 ### 4.9 Persistence — one transaction, no per-row flush
 
@@ -838,7 +859,7 @@ def submit(body: SubmitRequest, student=Depends(current_student), session=Depend
 ### 5.1 Onboarding + analysis
 
 ```
-React            FastAPI                    Anthropic         Postgres
+React            FastAPI                    Gemini            Postgres
   │                 │                           │                 │
   ├─ POST /students │                           │                 │
   │   {name, sem,   ├─ resolve curriculum ─────────────────────────▶
@@ -1196,17 +1217,31 @@ Two implementations of one formula. Contain it with a shared fixture.
 
 ```bash
 DATABASE_URL=postgresql+psycopg://postgres.<ref>:<pw>@aws-0-<region>.pooler.supabase.com:5432/postgres
+# Local dev and tests: any non-"postgres..." URL runs on SQLite. DATABASE_URL=sqlite:///./dev.db
+
+# --- model provider (DECISIONS #39, #45, #46) ---
+LLM_PROVIDER=gemini                   # the only thing that selects the client class
+GEMINI_API_KEY=                       # free from Google AI Studio, no card
+GEMINI_MODEL=gemini-3.6-flash         # pinned, never a "-latest" alias; 2.5-flash is unusable
+
+# Declared fallback only. Not read while LLM_PROVIDER=gemini.
 ANTHROPIC_API_KEY=sk-ant-...
 ANTHROPIC_MODEL=claude-sonnet-4-6
+
 ANALYSIS_MAX_TOKENS=16000
 ANALYSIS_RETRY_MAX_TOKENS=24000
 DEMO_MODE=false
-DEMO_STUDENT_NAME=Ayesha
-DEMO_REPO_URL=https://github.com/<you>/anchor-demo-project
+DEMO_STUDENT_NAME=Ayesha              # matched case-insensitively (DECISIONS #41)
+# The repo demo_review.json was generated against. Changing it without regenerating that
+# fixture means the demo submit path silently falls through to a live review.
+DEMO_REPO_URL=https://github.com/Umer-prog/cached-product-search-api
 GITHUB_TOKEN=ghp_...                  # classic token, public_repo scope is enough; 5000 req/h
 REVIEW_PASS_RATIO=0.6
 CORS_ORIGINS=http://localhost:5173,https://anchor.vercel.app
 ```
+
+Every key except `DATABASE_URL` has a default in `app/config.py`, so the API boots without the
+AI lane's key — Salman and Wahab never needed it to run the backend.
 
 **`frontend/.env`**
 
@@ -1273,7 +1308,7 @@ Three files, all fast, all on things that fail silently.
 | `test_parity.py` + `scoring.test.ts` | Python/TS agreement on the shared **v4** fixture |
 | `test_project_review.py` | `ProjectOut` rejects 2 or 5 criteria, 1 or 5 verifies, duplicates; `review_repo` validator rejects reordered/missing criteria and score 3; `passed` boundary at ceil(0.6 × max) for 3 and 4 criteria; `github.parse_github_url` accepts/rejects the obvious shapes |
 
-No integration tests, no E2E, no mocking Anthropic or GitHub (the CLIs are the integration test). Manual verification of the real flow from Day 3, and three times on the deployed URLs before the slot.
+No integration tests, no E2E, and no test ever calls the model provider or GitHub — every model call is faked at the `LLMClient` seam and GitHub is driven through `MockTransport` (the `run_*_cli.py` scripts are the integration test). Manual verification of the real flow from Day 3, and three times on the deployed URLs before the slot.
 
 ---
 

@@ -17,7 +17,7 @@ CASES: list[dict[str, Any]] = json.loads(FIXTURE.read_text())["cases"]
 
 
 def test_fixture_is_present_and_populated() -> None:
-    assert len(CASES) >= 12, f"{FIXTURE} has only {len(CASES)} cases"
+    assert len(CASES) >= 15, f"{FIXTURE} has only {len(CASES)} cases"
 
 
 @pytest.mark.parametrize("case", CASES, ids=[c["name"] for c in CASES])

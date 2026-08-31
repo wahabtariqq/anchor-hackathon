@@ -1,7 +1,7 @@
 # ANCHOR — Product Requirements Document (v4)
 
 **Hackathon build · 3 people · 3 days core + Day 4 for Prove It**
-**Stack:** FastAPI + React (Vite) + Postgres (Supabase) · Claude structured outputs · GitHub REST
+**Stack:** FastAPI + React (Vite) + Postgres (Supabase) · Gemini schema-constrained outputs · GitHub REST
 **Status:** Locked. Anything not in this document is out of scope.
 
 *v4 adds one feature (**Prove It**: targeted mini-project + public-repo review that verifies skills), changes the fit formula (self-report earns half, proof earns full), and closes the job-posting decision (hand-curated seed set, in only if ready by Day 2 morning). Everything else is v3. All v3 non-goals stay non-goals.*
@@ -107,7 +107,7 @@ Ticking a skill · loading the Roadmap · opening a role · reopening a Prove It
 | DB | **Postgres** (Supabase session pooler) | Direct SQLAlchemy |
 | Identity | **None.** Backend mints a student id; browser keeps it in `localStorage` | §5 |
 | Frontend | **React + Vite** + Tailwind + shadcn/ui | Card, Progress, Checkbox, Badge, Sheet, Input |
-| AI | `anthropic` Python SDK, structured outputs, three schemas | Server-side only |
+| AI | **Google Gemini free tier**, raw REST via `httpx`, schema-constrained decoding, three schemas | Server-side only. Changed from the `anthropic` SDK on Day 1 (DECISIONS #39, #45, #46); Claude stays pinned as the declared fallback |
 | Repo access | **GitHub REST API** with a `GITHUB_TOKEN` (5000 req/h; unauthenticated is 60/h and judges would hit it) | Trees API + raw file fetch. No clone. |
 | Deploy | Railway/Render (API) + Vercel (frontend) | Hello-worlds deployed on **Day 1** |
 
@@ -156,7 +156,11 @@ See TDD §4.4. Tables:
 
 ### 8.1 Analysis call
 
-Unchanged from v3 (`claude-sonnet-4-6`, structured outputs, 16k tokens with 24k retry, temperature 0.3, prompt in v3 §8.3, validators V1–V6). Only addition: if the seed set is adopted (§8.6), 3–5 relevant posting excerpts are appended as grounding context.
+`gemini-3.6-flash`, schema-constrained outputs, 16k tokens with a 24k retry, temperature 0.3, validators V1–V6. Provider changed from `claude-sonnet-4-6` on Day 1 (DECISIONS #39, #46); everything else is unchanged from v3.
+
+The prompt text this section defers to ("v3 §8.3") **does not exist** — §8.3 in this document is the repo review call and no v3 document is in the repo. `ai-working/prompts/analysis.md` was written from scratch against CONTRACT §1 and V1–V6, and should be reviewed as new work rather than as a transcription (DECISIONS #43).
+
+The seed-posting grounding context in §8.6 was **not** adopted — its deadline passed (DECISIONS #49), so no posting excerpts are appended.
 
 ### 8.2 Project generation call
 
