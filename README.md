@@ -17,16 +17,31 @@ A CS student picks the courses they've taken and a few interests. One analysis r
 
 ## Run
 
-```bash
-# backend
-cd backend && cp .env.example .env   # fill in DATABASE_URL, ANTHROPIC_API_KEY
-pip install -r requirements.txt
-python scripts/seed_db.py
-uvicorn app.main:app --reload --port 8000
+Nothing needs an account, a database server, or an API key to start — `.env.example` defaults
+to SQLite, and the frontend runs against the committed fixtures.
 
-# frontend
-cd frontend && cp .env.example .env  # VITE_USE_FIXTURE=true until Day 3
+```bash
+# backend  -> http://localhost:8000  (docs at /docs, readiness at /health)
+cd backend && cp .env.example .env   # SQLite by default; no key needed to boot
+pip install -r requirements.txt
+python scripts/seed_db.py            # creates dev.db and loads the 10 catalog courses
+uvicorn app.main:app --reload --port 8000
+pytest -q                            # 282 tests, no network calls
+
+# frontend -> http://localhost:5173
+cd frontend && cp .env.example .env  # VITE_USE_FIXTURE=true renders the committed fixtures
 npm install && npm run dev
+```
+
+**To exercise the real model calls** (`POST /api/analyze`, `GET /api/project`, `POST /api/submit`)
+set `GEMINI_API_KEY` in `backend/.env` — the provider is Google Gemini, see DECISIONS #39.
+Everything else, including the whole roadmap and scoring path, runs without it.
+`GITHUB_TOKEN` is only needed for `POST /api/submit` against a real repo.
+
+Check a running instance end to end:
+
+```bash
+cd backend && python scripts/smoke_deploy.py --url http://localhost:8000
 ```
 
 ## Deploy
