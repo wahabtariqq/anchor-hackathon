@@ -23,6 +23,17 @@ FIXTURES_DIR = Path(__file__).resolve().parents[2] / "contracts" / "fixtures"
 DEMO_FIXTURES = ("demo_analysis.json", "demo_project.json", "demo_review.json")
 
 
+def is_configured(value: str) -> bool:
+    """True only for a value that looks real.
+
+    `.env.example` ships placeholders like `sk-ant-...` and `ghp_...` so the file documents
+    the shape of each key. Copying it must not make the probe report a key as set — a false
+    green here is worse than no probe at all.
+    """
+    v = (value or "").strip()
+    return bool(v) and not v.endswith("...") and "<" not in v
+
+
 def missing_demo_fixtures() -> list[str]:
     return [name for name in DEMO_FIXTURES if not (FIXTURES_DIR / name).is_file()]
 
@@ -46,8 +57,8 @@ def readiness() -> dict[str, object]:
         # before flipping the switch on the day
         "demo_fixtures_present": not missing,
         "missing_demo_fixtures": missing,
-        "demo_repo_url_set": bool(settings.DEMO_REPO_URL),
-        "llm_key_set": bool(settings.GEMINI_API_KEY or settings.ANTHROPIC_API_KEY),
-        "github_token_set": bool(settings.GITHUB_TOKEN),
+        "demo_repo_url_set": is_configured(settings.DEMO_REPO_URL),
+        "llm_key_set": is_configured(settings.GEMINI_API_KEY) or is_configured(settings.ANTHROPIC_API_KEY),
+        "github_token_set": is_configured(settings.GITHUB_TOKEN),
         "cors_origins": [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()],
     }

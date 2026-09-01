@@ -12,7 +12,13 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.analysis.demo import FIXTURE as DEMO_ANALYSIS_FIXTURE
-from app.readiness import DEMO_FIXTURES, FIXTURES_DIR, missing_demo_fixtures, readiness
+from app.readiness import (
+    DEMO_FIXTURES,
+    FIXTURES_DIR,
+    is_configured,
+    missing_demo_fixtures,
+    readiness,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFIGS = {name: ROOT / name for name in ("Procfile", "render.yaml", "nixpacks.toml", "runtime.txt")}
@@ -80,6 +86,29 @@ def test_readiness_reports_the_deploy_critical_flags() -> None:
     ):
         assert key in body, f"/health lost {key}, which the smoke test reads"
     assert body["demo_fixtures_present"] is True
+
+
+@pytest.mark.parametrize("value", ["", "   ", "sk-ant-...", "ghp_...", "<pw>", "AIza...",
+                                   "https://github.com/<you>/anchor-demo-project"])
+def test_placeholders_do_not_count_as_configured(value: str) -> None:
+    """.env.example ships these verbatim; copying it must not turn the probe green."""
+    assert is_configured(value) is False
+
+
+@pytest.mark.parametrize("value", ["AIzaSyReal", "ghp_realtoken", "https://github.com/o/r"])
+def test_real_values_count_as_configured(value: str) -> None:
+    assert is_configured(value) is True
+
+
+def test_copying_env_example_does_not_fake_a_ready_deploy(monkeypatch: pytest.MonkeyPatch) -> None:
+    from app import readiness as module
+
+    monkeypatch.setattr(module.settings, "GEMINI_API_KEY", "", raising=False)
+    monkeypatch.setattr(module.settings, "ANTHROPIC_API_KEY", "sk-ant-...", raising=False)
+    monkeypatch.setattr(module.settings, "GITHUB_TOKEN", "ghp_...", raising=False)
+    body = readiness()
+    assert body["llm_key_set"] is False
+    assert body["github_token_set"] is False
 
 
 def test_readiness_never_leaks_a_secret(monkeypatch: pytest.MonkeyPatch) -> None:
