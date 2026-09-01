@@ -1,7 +1,8 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { getRoadmap, setProgress } from "@/lib/api";
+import { toast } from "sonner";
+import { getProject, getRoadmap, setProgress, submitRepo as apiSubmitRepo } from "@/lib/api";
 import { fitPercent } from "@/lib/scoring";
-import type { RoadmapResponse } from "@/lib/types";
+import type { ProjectResponse, ReviewResponse, RoadmapResponse } from "@/lib/types";
 
 interface AnalysisContextValue {
   data: RoadmapResponse | null;
@@ -10,6 +11,10 @@ interface AnalysisContextValue {
   checkedIds: Set<string>;
   verifiedIds: Set<string>;
   toggle: (skillId: string) => void;
+  projects: Map<string, ProjectResponse>;
+  reviews: Map<string, ReviewResponse>;
+  loadProject: (roleId: string) => Promise<void>;
+  submitRepo: (roleId: string, url: string) => Promise<void>;
   roleFit: Map<string, number>;
   openRoleSlug: string | null;
   setOpenRole: (slug: string | null) => void;
@@ -25,6 +30,11 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
   // Server-authoritative: seeded on load, then only ever replaced wholesale by a
   // passing /submit response (never merged, never toggled locally like checkedIds).
   const [verifiedIds, setVerifiedIds] = useState<Set<string>>(new Set());
+  // Display data only — never read by roleFit. Seeded from each role's own
+  // project/latest_review (already generated in an earlier session), then filled in
+  // lazily by loadProject/submitRepo.
+  const [projects, setProjects] = useState<Map<string, ProjectResponse>>(new Map());
+  const [reviews, setReviews] = useState<Map<string, ReviewResponse>>(new Map());
   const [openRoleSlug, setOpenRoleSlug] = useState<string | null>(null);
 
   useEffect(() => {
@@ -35,6 +45,8 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
         setData(res);
         setCheckedIds(new Set(res.skills.filter((s) => s.checked).map((s) => s.id)));
         setVerifiedIds(new Set(res.skills.filter((s) => s.verified).map((s) => s.id)));
+        setProjects(new Map(res.roles.filter((r) => r.project).map((r) => [r.id, r.project!])));
+        setReviews(new Map(res.roles.filter((r) => r.latest_review).map((r) => [r.id, r.latest_review!])));
       })
       .catch((err: unknown) => {
         if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load roadmap");
@@ -88,8 +100,21 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
         else reverted.delete(skillId);
         return reverted;
       });
-      // TODO (Day 3): surface a sonner toast here on revert.
+      toast.error("Couldn't save that — try again.");
     });
+  }
+
+  async function loadProject(roleId: string): Promise<void> {
+    if (projects.has(roleId)) return;
+    const project = await getProject(roleId);
+    setProjects((prev) => new Map(prev).set(roleId, project));
+  }
+
+  async function submitRepo(roleId: string, url: string): Promise<void> {
+    const res = await apiSubmitRepo({ role_id: roleId, repo_url: url });
+    setReviews((prev) => new Map(prev).set(roleId, res.review));
+    // Replace wholesale, never merge — this is the server's full verified set.
+    setVerifiedIds(new Set(res.verified_skill_ids));
   }
 
   const value: AnalysisContextValue = {
@@ -99,6 +124,10 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     checkedIds,
     verifiedIds,
     toggle,
+    projects,
+    reviews,
+    loadProject,
+    submitRepo,
     roleFit,
     openRoleSlug,
     setOpenRole: setOpenRoleSlug,

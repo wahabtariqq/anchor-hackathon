@@ -7,55 +7,32 @@ import type {
   RoadmapResponse,
   ProgressRequest,
   ProgressResponse,
+  ProjectResponse,
+  SubmitRequest,
+  SubmitResponse,
 } from "./types";
-
-import fixtureCourses from "@fixtures/courses.json";
-import fixtureRoadmap from "@fixtures/roadmap_response.json";
 
 export class ApiError extends Error {
   status: number;
+  /** The server's `{detail: "..."}` body, when it sent one (e.g. 422 repo messages). */
+  detail: string | null;
   constructor(status: number, body: string) {
-    super(`API error ${status}: ${body}`);
+    let detail: string | null = null;
+    try {
+      const parsed: unknown = JSON.parse(body);
+      if (parsed && typeof parsed === "object" && typeof (parsed as { detail?: unknown }).detail === "string") {
+        detail = (parsed as { detail: string }).detail;
+      }
+    } catch {
+      // body wasn't JSON — detail stays null, message below falls back to the raw text.
+    }
+    super(detail ?? `API error ${status}: ${body}`);
     this.status = status;
+    this.detail = detail;
   }
-}
-
-const USE_FIXTURE = import.meta.env.VITE_USE_FIXTURE === "true";
-const FIXTURE_DELAY_MS = 300;
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function fixtureResponse<T>(path: string, method: string): Promise<T> {
-  await delay(FIXTURE_DELAY_MS);
-
-  if (method === "GET" && path === "/api/courses") {
-    return fixtureCourses as unknown as T;
-  }
-  if (method === "GET" && path === "/api/roadmap") {
-    return fixtureRoadmap as unknown as T;
-  }
-  if (method === "POST" && path === "/api/students") {
-    return { student_id: "fixture-student" } as unknown as T;
-  }
-  if (method === "POST" && path === "/api/analyze") {
-    return { ok: true } as unknown as T;
-  }
-  if (method === "POST" && path === "/api/progress") {
-    return { ok: true } as unknown as T;
-  }
-
-  throw new ApiError(404, `No fixture handler for ${method} ${path}`);
 }
 
 async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const method = init.method ?? "GET";
-
-  if (USE_FIXTURE) {
-    return fixtureResponse<T>(path, method);
-  }
-
   const studentId = getStudentId();
   const res = await fetch(`${import.meta.env.VITE_API_URL}${path}`, {
     ...init,
@@ -91,6 +68,17 @@ export function getRoadmap(): Promise<RoadmapResponse> {
 
 export function setProgress(body: ProgressRequest): Promise<ProgressResponse> {
   return api<ProgressResponse>("/api/progress", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function getProject(roleId: string): Promise<ProjectResponse> {
+  return api<ProjectResponse>(`/api/project?role_id=${encodeURIComponent(roleId)}`);
+}
+
+export function submitRepo(body: SubmitRequest): Promise<SubmitResponse> {
+  return api<SubmitResponse>("/api/submit", {
     method: "POST",
     body: JSON.stringify(body),
   });
