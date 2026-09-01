@@ -10,10 +10,10 @@ from sqlmodel import SQLModel
 
 from app.config import settings
 from app.db import engine
+from app.readiness import readiness
 from app.routers import analyze, courses, progress, project, roadmap, students, submit
 
 logging.basicConfig(level=logging.INFO)
-
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
@@ -35,5 +35,5 @@ for module in (courses, students, analyze, roadmap, progress, project, submit):
 
 
 @app.get("/health")
-def health() -> dict[str, bool]:
-    return {"ok": True}
+def health() -> dict[str, object]:
+    return readiness()

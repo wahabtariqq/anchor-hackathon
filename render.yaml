@@ -1,0 +1,35 @@
+# Render blueprint. Deploy from the REPO ROOT — do not set a root directory of backend/,
+# or contracts/fixtures/ will not be on disk and DEMO_MODE fails at pitch time
+# (app/analysis/demo.py resolves it as parents[3]).
+#
+# The frontend is a separate Vercel project; see the deploy section in README.md.
+
+services:
+  - type: web
+    name: anchor-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.3
+
+      # --- must be set before the demo; sync:false means "prompt me, never commit it" ---
+      - key: DATABASE_URL          # Supabase SESSION pooler, port 5432, not 6543
+        sync: false
+      - key: GEMINI_API_KEY        # AI lane; without it /analyze 502s
+        sync: false
+      - key: GITHUB_TOKEN          # unauthenticated GitHub is 60 req/h — judge trials exhaust it
+        sync: false
+      - key: CORS_ORIGINS          # must include the deployed Vercel origin, comma-separated
+        sync: false
+
+      # --- demo path (PRD §12.1). DEMO_MODE=true only for the slot. ---
+      - key: DEMO_MODE
+        value: "true"
+      - key: DEMO_STUDENT_NAME
+        value: Ayesha
+      - key: DEMO_REPO_URL
+        value: https://github.com/Umer-prog/cached-product-search-api
