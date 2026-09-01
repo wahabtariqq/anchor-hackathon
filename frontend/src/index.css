@@ -32,19 +32,38 @@
     --anchor-ring-fill: 213 68% 50%;   /* #2a78d6 — FitRing fill */
     --anchor-ring-track: 213 78% 84%;  /* #b7d3f6 — FitRing unfilled track */
   }
-}
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --anchor-adjacent: 213 77% 56%;
-    --anchor-ring-fill: 213 77% 56%;
+  /* The app is dark-only (index.html sets class="dark" permanently, and App.tsx pins
+     next-themes to it) — this is the one theme the app actually renders. The :root
+     block above is kept as the source shadcn variables were generated from, not as a
+     reachable light mode. */
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+
+    /* anchor-design §2's dark step of the same ramp — good/critical are the reference
+       palette's pre-validated hexes for both surfaces, so they don't change here. */
+    --anchor-adjacent: 213 77% 56%;    /* #3987e5 */
+    --anchor-ring-fill: 213 77% 56%;   /* #3987e5 */
     --anchor-ring-track: 213 40% 25%;
   }
-}
-:root[data-theme="dark"] {
-  --anchor-adjacent: 213 77% 56%;
-  --anchor-ring-fill: 213 77% 56%;
-  --anchor-ring-track: 213 40% 25%;
 }
 
 @layer base {

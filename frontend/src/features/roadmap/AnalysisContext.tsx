@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { getProject, getRoadmap, setProgress, submitRepo as apiSubmitRepo } from "@/lib/api";
+import { setStudentName } from "@/lib/identity";
 import { fitPercent } from "@/lib/scoring";
 import type { ProjectResponse, ReviewResponse, RoadmapResponse } from "@/lib/types";
 
@@ -43,6 +44,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
       .then((res) => {
         if (cancelled) return;
         setData(res);
+        setStudentName(res.student.name);
         setCheckedIds(new Set(res.skills.filter((s) => s.checked).map((s) => s.id)));
         setVerifiedIds(new Set(res.skills.filter((s) => s.verified).map((s) => s.id)));
         setProjects(new Map(res.roles.filter((r) => r.project).map((r) => [r.id, r.project!])));

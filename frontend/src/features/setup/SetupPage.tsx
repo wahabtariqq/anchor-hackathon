@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { createStudent, getCourses } from "@/lib/api";
-import { setStudentId } from "@/lib/identity";
+import { setStudentId, setStudentName } from "@/lib/identity";
 import type {
   CatalogCourse,
   Interest,
@@ -168,6 +168,7 @@ export function SetupPage({ onComplete }: SetupPageProps) {
         courses,
       });
       setStudentId(student_id);
+      setStudentName(name.trim());
       onComplete?.(student_id);
     } catch (err: unknown) {
       setSubmitError(err instanceof Error ? err.message : "Could not start the analysis");

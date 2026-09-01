@@ -1,0 +1,30 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background: rounded square app-icon tile -->
+  <rect x="0" y="0" width="200" height="200" rx="44" fill="#16233F" />
+
+  <!-- Ring (target/goal) -->
+  <circle cx="100" cy="62" r="26" fill="none" stroke="#F7F7F4" stroke-width="11" />
+
+  <!-- Gap-progress arc accent -->
+  <path d="M 100 36 A 26 26 0 0 1 126 62"
+        fill="none" stroke="#C89B3C" stroke-width="11" stroke-linecap="round" />
+
+  <!-- Shaft -->
+  <rect x="90" y="86" width="20" height="98" rx="10" fill="#F7F7F4" />
+
+  <!-- Crossbar -->
+  <rect x="48" y="116" width="104" height="16" rx="8" fill="#F7F7F4" />
+
+  <!-- Flukes -->
+  <path d="M 100 182
+           C 100 206, 80 220, 52 216
+           C 63 211, 72 202, 74 191
+           L 90 191 Z" fill="#F7F7F4" />
+  <path d="M 100 182
+           C 100 206, 120 220, 148 216
+           C 137 211, 128 202, 126 191
+           L 110 191 Z" fill="#F7F7F4" />
+
+  <!-- Field-match marker -->
+  <circle cx="148" cy="216" r="7" fill="#C89B3C" />
+</svg>
