@@ -53,6 +53,7 @@ export function SignupPage() {
   return (
     <AuthCard
       title="Create your account"
+      subtitle="Create your account to get your personalized roadmap."
       footer={
         <>
           Already have one?{" "}

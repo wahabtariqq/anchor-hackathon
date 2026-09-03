@@ -31,6 +31,7 @@ export function LoginPage() {
   return (
     <AuthCard
       title="Log in"
+      subtitle="Welcome back — log in to see your roadmap."
       footer={
         <>
           New here?{" "}
@@ -42,7 +43,7 @@ export function LoginPage() {
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-1.5">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">Email address</Label>
           <Input
             id="email"
             type="email"
@@ -64,12 +65,9 @@ export function LoginPage() {
           />
         </div>
         {error && <p className="text-xs text-anchor-critical">{error}</p>}
-        <Button type="submit" className="w-full" disabled={submitting}>
+        <Button type="submit" className="w-full" size="lg" disabled={submitting}>
           {submitting ? "Logging in…" : "Log in"}
         </Button>
-        <p className="text-center text-xs text-muted-foreground">
-          Demo account: ayesha@example.com (any password)
-        </p>
       </form>
     </AuthCard>
   );

@@ -57,7 +57,7 @@ export function AppShell() {
     <div className="flex min-h-screen">
       <aside className="fixed inset-y-0 left-0 flex w-[232px] flex-col border-r bg-card" aria-label="Primary">
         <div className="flex h-14 items-center gap-2 px-5">
-          <img src="/anchor-icon.svg" alt="" className="h-6 w-6 rounded-md" />
+          <img src="/anchor-icon.svg" alt="" className="h-6 w-auto" />
           <span className="font-display text-sm font-semibold tracking-wide">ANCHOR</span>
         </div>
         <nav className="flex-1 space-y-0.5 px-3 py-2">
