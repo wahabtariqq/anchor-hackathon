@@ -45,7 +45,7 @@ export function ProfilePage() {
           </div>
           <div>
             <p className="text-xs uppercase tracking-wide text-muted-foreground">Semester</p>
-            <p className="mt-0.5 font-medium">{user?.semester ?? data?.student.semester ?? "—"}</p>
+            <p className="mt-0.5 font-medium">{data?.student.semester ?? "—"}</p>
           </div>
           <div>
             <p className="text-xs uppercase tracking-wide text-muted-foreground">Account created</p>

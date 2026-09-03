@@ -8,18 +8,15 @@ const STEPS: { key: OnboardingStep; label: string }[] = [
   { key: "analysis", label: "Analysis" },
 ];
 
-// The same order as this list (Courses -> Interests -> Analysis) is a display grouping only —
-// SetupPage itself renders courses and interests as one continuous form (PRD-V2 §4.2 changes no
-// behavior), so "interests" never lights up as active on its own; it and "courses" both read as
-// the current step while step === "setup".
+const ORDER: Record<OnboardingStep, number> = { courses: 0, interests: 1, analysis: 2 };
+
 export function StepHeader({ step }: { step: OnboardingStep }) {
+  const current = ORDER[step];
   return (
     <ol className="mx-auto flex max-w-4xl items-center gap-3 px-8 pt-8 text-sm">
       {STEPS.map((s, i) => {
-        const isDone =
-          (step === "interests" && s.key === "courses") ||
-          (step === "analysis" && s.key !== "analysis");
-        const isActive = s.key === step || (step === "interests" && s.key === "courses");
+        const isDone = ORDER[s.key] < current;
+        const isActive = s.key === step;
         return (
           <li key={s.key} className="flex items-center gap-3">
             {i > 0 && <span className="h-px w-8 bg-border" aria-hidden />}
@@ -33,7 +30,7 @@ export function StepHeader({ step }: { step: OnboardingStep }) {
                 className={cn(
                   "flex h-5 w-5 items-center justify-center rounded-full border text-xs",
                   isDone && "border-anchor-good bg-anchor-good/10 text-anchor-good",
-                  isActive && !isDone && "border-foreground",
+                  isActive && !isDone && "border-primary bg-primary/10 text-primary",
                 )}
               >
                 {i + 1}

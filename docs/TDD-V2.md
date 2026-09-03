@@ -90,7 +90,8 @@ anchor/
     │   │   └── api.ts                 # Authorization: Bearer instead of X-Student-Id; 401 → clear token, /login
     │   ├── features/
     │   │   ├── auth/                  # AuthCard (shared card layout), LoginPage, SignupPage
-    │   │   ├── onboarding/            # OnboardingRoute + StepHeader, wraps existing SetupPage + AnalyzingPage
+    │   │   ├── onboarding/            # OnboardingRoute + StepHeader; SetupPage now split into real
+    │   │   │                          #   Courses/Interests steps (see §7.2) + unmodified AnalyzingPage
     │   │   ├── dashboard/             # DashboardPage, StatCards, FitChart, NextActions, ActivityFeed
     │   │   ├── skills/                # SkillsPage, StatusPill (no separate SkillTable — one inline list)
     │   │   ├── projects/              # ProjectsPage, ProjectCard, SubmissionHistory
@@ -147,7 +148,9 @@ class User(SQLModel, table=True):
     email: str = Field(unique=True, index=True)     # stored lowercased
     password_hash: str
     name: str
-    semester: int
+    # NOT semester — corrected 2026-09-04. Semester belongs to Student (below), asked once
+    # during onboarding's Courses step, not at signup — the original draft put it on both,
+    # which is exactly the "asked twice" bug direct user feedback caught.
     created_at: datetime = Field(default_factory=now)
     last_seen_at: datetime = Field(default_factory=now)
 
@@ -275,8 +278,7 @@ def signup(body: SignupRequest, db: Session = Depends(get_session)):
     email = body.email.strip().lower()
     if db.exec(select(User).where(User.email == email)).first():
         raise HTTPException(409, "Email already registered")
-    user = User(email=email, password_hash=bcrypt.hash(body.password),
-                name=body.name, semester=body.semester)
+    user = User(email=email, password_hash=bcrypt.hash(body.password), name=body.name)
     db.add(user); db.commit()
 
     if body.claim_student_id:
@@ -285,7 +287,10 @@ def signup(body: SignupRequest, db: Session = Depends(get_session)):
             student.user_id = user.id
             db.add(student); db.commit()
 
-    return AuthResponse(token=issue_session(db, user), user=UserOut.from_row(user))
+    # No session issued here (corrected 2026-09-04) — signup only ever creates the account.
+    # The client always sends the student to /login next; a session is established by an
+    # actual login, signup included. This is a product decision, not a security one.
+    return {"user": UserOut.from_row(user)}
 
 @router.post("/login")
 def login(body: LoginRequest, db: Session = Depends(get_session)):
@@ -438,23 +443,37 @@ This is the **only** net-new backend surface the Projects screen needs (PRD-V2 �
 
 ### 5.1 Signup with claim-on-signup
 
+**Corrected 2026-09-04:** signup no longer issues a session — see the `POST /signup` handler in
+§4.4 and PRD-V2 §4.1. The flow now always routes through an actual login:
+
 ```
 Browser (has V1 anchor:student_id in localStorage, or doesn't)
    │
-   ├─ POST /api/auth/signup {email, password, name, semester, claim_student_id?}
+   ├─ POST /api/auth/signup {email, password, name, claim_student_id?}
    │       claim_student_id = localStorage's anchor:student_id, read once at signup time
    │
    FastAPI  ├─ create User, bcrypt-hash password
             ├─ if claim_student_id: Student.user_id = user.id  (only if unclaimed)
-            ├─ issue_session → token
             │
+   ◀────────┤ { user }                                    (no token)
+   │
+   ├─ lib/auth.ts clears anchor:student_id (claimed or not — it's spent); does NOT store a session
+   └─ → /login, with the email prefilled
+
+Browser
+   │
+   ├─ POST /api/auth/login {email, password}
+   FastAPI  └─ issue_session → token
    ◀────────┤ { token, user }
    │
-   ├─ lib/auth.ts stores token; clears anchor:student_id (claimed or not — it's spent)
-   └─ → /onboarding if no analysis yet, else → /
+   ├─ lib/auth.ts stores the token
+   └─ → /onboarding if this account has no analysis yet, else → /
 ```
 
-Login **never** claims — only signup reads `claim_student_id`, matching PRD-V2 §4.1.
+Login **never** claims — only signup reads `claim_student_id`, matching PRD-V2 §4.1. Whether an
+account lands on `/onboarding` or `/` after login depends on that specific account's own state
+(claimed-at-signup, or a previously completed onboarding) — never on a single global flag, since
+two different accounts on the same browser must be told apart.
 
 ### 5.2 Tick → event + snapshot (extends TDD v4 §5.2)
 
@@ -499,11 +518,13 @@ All under `/api`, all requiring `Authorization: Bearer <token>` except `/auth/si
 
 ### `POST /auth/signup` → 200
 
+**No `semester`, no `token` in the response — corrected 2026-09-04, see §4.4/§5.1.**
+
 ```json
 { "email": "ayesha@example.com", "password": "at-least-8-chars", "name": "Ayesha",
-  "semester": 4, "claim_student_id": "stu_9f…" }
+  "claim_student_id": "stu_9f…" }
 ```
-→ `{ "token": "…", "user": { "id": "usr_1a", "email": "…", "name": "Ayesha", "semester": 4 } }`
+→ `{ "user": { "id": "usr_1a", "email": "…", "name": "Ayesha", "created_at": "…" } }`
 Errors: `409` email already registered.
 
 ### `POST /auth/login` → 200
@@ -511,7 +532,9 @@ Errors: `409` email already registered.
 ```json
 { "email": "ayesha@example.com", "password": "…" }
 ```
-→ same shape as signup. Errors: `401` "Wrong email or password" (never which) · `429` rate-limited.
+→ `{ "token": "…", "user": { "id": "usr_1a", "email": "…", "name": "Ayesha", "created_at": "…" } }`
+— the only auth response that carries a token; only a login (signup included, one hop later)
+establishes a session. Errors: `401` "Wrong email or password" (never which) · `429` rate-limited.
 
 ### `POST /auth/logout` → 200 `{ "ok": true }` · `POST /auth/logout_all` → 200 `{ "ok": true }`
 
@@ -633,14 +656,36 @@ PRD-V2 §4.5 requires the Skills screen's ticking to use "the same optimistic pa
 — that only works if `/roadmap` and `/skills` share one `AnalysisContext` instance instead of each
 fetching and re-deriving their own. `RoadmapPage.tsx` no longer wraps itself in `AnalysisProvider`.
 
-`/onboarding` renders the existing `SetupPage` and `AnalyzingPage` components, wrapped in a step
-header (Courses → Interests → Analysis) that just reads which one is active. One small, necessary
-addition beyond "no behavioural change" (PRD-V2 §4.2): `AnalyzingPage` gained an optional
+`/onboarding` renders `SetupPage` and `AnalyzingPage`, wrapped in a step header (Courses →
+Interests → Analysis) that tracks which one is actually active — `OnboardingStep` now has three
+real values, and `StepHeader` has no more "Interests lights up together with Courses" special
+case. `AnalyzingPage` is unmodified beyond one small, necessary addition: an optional
 `onSuccess?: () => void` prop — mirroring the `onComplete` prop `SetupPage` already had — called
 instead of its hardcoded `navigate("/roadmap")` when supplied. Without it, `OnboardingRoute` had
 no way to mark the account onboarded before navigating, and `RequireAuth` would bounce the student
 straight back to `/onboarding` in a redirect loop. Omitting the prop preserves `AnalyzingPage`'s
 exact V1 behavior.
+
+**`SetupPage` itself is *not* unmodified — corrected 2026-09-04, direct user feedback that the
+original "one long form, 3-step header only decorative" design was wrong:**
+
+- Takes a `step: "courses" | "interests"` prop and renders only that half; all state
+  (catalog, selections, custom courses, interests) lives in one component instance that persists
+  across the step transition, so nothing is lost going back and forth. `onContinue`/`onBack` swap
+  the step; the interests step's "Analyze my path" button is what used to be the single submit.
+- The "Your name" field is gone — the account's name (`lib/auth.ts`'s `getUser()`) is sent to
+  `POST /api/students` directly. Semester stays, now the only field at the top of the Courses step.
+- `CourseCard.tsx` gained a full-outline preview (a "Read full outline" toggle, viewable whether
+  or not the course is picked) and, for any catalog course carrying `curriculum_variants`, an
+  outline picker (Standard / each named variant / "Write my own") — replacing the old
+  always-available-but-hidden single override textarea. `CourseSelection` changed shape from
+  `{ semester_tag, override }` to `{ semester_tag, outline, customText }`, where `outline` is
+  `"default"`, `"custom"`, or a variant id; `resolveOverride()` in `SetupPage.tsx` turns that into
+  the same `curriculum_override` string the request already sent. A selected variant's or the
+  custom text's resolved content is always shown back, read-only for variants, editable for
+  custom — "what will be analyzed" is never a guess. A catalog course picking "Write my own" is
+  held to the same `MIN_CUSTOM_CURRICULUM_CHARS` (50) the fully-custom "add a course not listed"
+  path already enforced; before this it wasn't validated at all.
 
 ### 7.3 New screens — component shape, not full spec
 

@@ -8,7 +8,7 @@ import type { AuthResponse, LoginRequest, SignupRequest, UserOut } from "./types
 
 const TOKEN_KEY = "anchor:token";
 const USER_KEY = "anchor:user";
-const ONBOARDED_KEY = "anchor:onboarded";
+const ONBOARDED_IDS_KEY = "anchor:onboarded_ids";
 const ACCOUNTS_KEY = "anchor:mock_accounts";
 
 export class AuthError extends Error {
@@ -40,15 +40,34 @@ function setUser(user: UserOut): void {
   localStorage.setItem(USER_KEY, JSON.stringify(user));
 }
 
-/** Whether this account has a completed analysis — drives RequireAuth's /onboarding redirect
- *  (TDD-V2 §5.5's "current_student finds no student → 404 → /onboarding" rule, simulated). */
-export function isOnboarded(): boolean {
-  return localStorage.getItem(ONBOARDED_KEY) === "1";
+// Onboarded status is tracked per account id (not a single global flag) — a login must be able
+// to tell a brand-new account (no analysis yet → /onboarding) apart from a returning one
+// (→ Dashboard). The demo account is seeded as already-onboarded so logging in with it lands
+// straight on the Dashboard, matching what it's there to demo.
+function getOnboardedIds(): string[] {
+  try {
+    const raw = localStorage.getItem(ONBOARDED_IDS_KEY);
+    return raw ? (JSON.parse(raw) as string[]) : ["usr_demo"];
+  } catch {
+    return ["usr_demo"];
+  }
 }
 
-export function setOnboarded(value: boolean): void {
-  if (value) localStorage.setItem(ONBOARDED_KEY, "1");
-  else localStorage.removeItem(ONBOARDED_KEY);
+/** Whether the given (or, if omitted, currently logged-in) account has a completed analysis —
+ *  drives RequireAuth's /onboarding redirect (TDD-V2 §5.5's "current_student finds no student →
+ *  404 → /onboarding" rule, simulated). */
+export function isOnboarded(userId?: string): boolean {
+  const id = userId ?? getUser()?.id;
+  if (!id) return false;
+  return getOnboardedIds().includes(id);
+}
+
+export function setOnboarded(value: boolean, userId?: string): void {
+  const id = userId ?? getUser()?.id;
+  if (!id) return;
+  const ids = getOnboardedIds();
+  const next = value ? Array.from(new Set([...ids, id])) : ids.filter((x) => x !== id);
+  localStorage.setItem(ONBOARDED_IDS_KEY, JSON.stringify(next));
 }
 
 // ---- fixture-only mock account store ----
@@ -61,7 +80,6 @@ const DEMO_ACCOUNT: UserOut = {
   id: "usr_demo",
   email: "ayesha@example.com",
   name: "Ayesha",
-  semester: 4,
   created_at: new Date().toISOString(),
 };
 
@@ -90,7 +108,10 @@ function issueSession(user: UserOut): AuthResponse {
   return { token, user };
 }
 
-export async function signup(body: Omit<SignupRequest, "claim_student_id">): Promise<AuthResponse> {
+/** Creates the account only — does NOT establish a session. Signup intentionally always sends
+ *  the student to /login to sign in for real, rather than auto-logging them in (product
+ *  decision, not a contract change: a real POST /signup would still return a usable token). */
+export async function signup(body: Omit<SignupRequest, "claim_student_id">): Promise<UserOut> {
   const email = body.email.trim().toLowerCase();
   const accounts = getAccounts();
   if (accounts.some((a) => a.email === email)) {
@@ -101,18 +122,18 @@ export async function signup(body: Omit<SignupRequest, "claim_student_id">): Pro
     id: randomId("usr"),
     email,
     name: body.name.trim(),
-    semester: body.semester,
     created_at: new Date().toISOString(),
   };
   saveAccounts([...accounts, user]);
 
   // Claim-on-signup (TDD-V2 §5.1): a V1 anonymous student id, if present, is spent here either
-  // way — claiming it means this account already has an analysis, so onboarding is skipped.
+  // way — claiming it means this account already has an analysis, so onboarding will be skipped
+  // once they actually log in.
   const claimId = getStudentId();
   clearStudentId();
-  setOnboarded(Boolean(claimId));
+  if (claimId) setOnboarded(true, user.id);
 
-  return issueSession(user);
+  return user;
 }
 
 export async function login(body: LoginRequest): Promise<AuthResponse> {
@@ -122,7 +143,6 @@ export async function login(body: LoginRequest): Promise<AuthResponse> {
   // since the mock store holds no credentials, but the copy stays honest about what a real
   // backend would say either way.
   if (!account) throw new AuthError(401, "Wrong email or password");
-  setOnboarded(true); // a returning account has necessarily finished onboarding already
   return issueSession(account);
 }
 

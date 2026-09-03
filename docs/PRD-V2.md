@@ -82,13 +82,15 @@ This replaces V1's current router (`frontend/src/app/router.tsx`: `/`, `/setup`,
 
 ### 4.1 `/login` and `/signup`
 
-Centered card on a dark backdrop with some restraint-level brand presence (wordmark + the one-line pitch). Email, password, one button, link to the other page, inline errors ("Wrong email or password" — never which one). Signup adds name + semester. On signup success → `/onboarding`. On login → `/` (or `/onboarding` if no analysis).
+Centered card on a dark backdrop with some restraint-level brand presence (a big logo lockup + a short in-card subtitle, no separate tagline line). Email, password, one button, link to the other page, inline errors ("Wrong email or password" — never which one). **Corrected (2026-09-04):** signup asks name + email + password only — semester is asked once, during onboarding's Courses step, not here (it belongs to the `Student` record, not the `User` account; asking it twice was the original draft's mistake). **Signup never auto-logs in** — success → `/login` (email prefilled), not `/onboarding` directly; a session is only ever established by an actual login, signup included. On login → `/` (or `/onboarding` if no analysis).
 
 **Claim-on-signup:** if V1's anonymous `student_id` is in `localStorage`, signup attaches that existing student (analysis, ticks, submissions) to the new account and clears the key. Returning V1 users keep their data. Login never claims.
 
 ### 4.2 `/onboarding`
 
-The V1 Setup + Analyzing flow, unchanged in behaviour, restyled as a 3-step header (Courses → Interests → Analysis) so it reads as onboarding, not a form. Completes → `/`.
+The V1 Setup + Analyzing flow, restyled as a real 3-step header (Courses → Interests → Analysis) — **corrected (2026-09-04): Courses and Interests are genuinely separate steps** with a Continue/Back transition between them (state persists across the transition), not one continuous scrolling form with the header only decorating it. The "Your name" field is gone — the account's name (from signup) is reused, never asked twice. Semester is asked once here, at the top of the Courses step. Completes → `/`.
+
+**Course outline selection, redesigned (2026-09-04) on direct feedback that the old single-outline-per-course flow wasn't good enough:** every catalog course's full outline is viewable on demand (a "Read full outline" toggle — not just the 2-line preview), whether or not the course is picked yet. Once picked, a course with more than one authored outline shows an outline picker — **Standard** plus one or more named alternates (e.g. "Applied Data Engineering Track") representing a different instructor's or track's version of the same course code — plus **"Write my own"**, which reveals a free-text box. Whichever is chosen, the resolved outline text is shown back, read-only, so what will be analyzed is never a guess. This costs no new backend surface: picking a named alternate just sets the same `curriculum_override` a hand-typed override already used (`docs/CONTRACT.md`'s `StudentCourseInput`, unchanged) — the catalog gained an optional `curriculum_variants` list per course, nothing else.
 
 ### 4.3 `/` Dashboard — the reason V2 exists
 

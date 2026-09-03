@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { createStudent, getCourses } from "@/lib/api";
+import { getUser } from "@/lib/auth";
 import { setStudentId, setStudentName } from "@/lib/identity";
 import type {
   CatalogCourse,
@@ -14,13 +15,13 @@ import type {
   SemesterTag,
   StudentCourseInput,
 } from "@/lib/types";
-import { CourseCard, type CourseSelection } from "./CourseCard";
+import { CourseCard, CUSTOM_OUTLINE, DEFAULT_OUTLINE, type CourseSelection } from "./CourseCard";
 import { InterestChips } from "./InterestChips";
 
 const MIN_COURSES = 3;
 const MAX_COURSES = 6;
 const MIN_INTERESTS = 2;
-const MIN_CUSTOM_CHARS = 50;      // mirrors MIN_CUSTOM_CURRICULUM_CHARS in backend/app/schemas.py
+const MIN_CUSTOM_CHARS = 50; // mirrors MIN_CUSTOM_CURRICULUM_CHARS in backend/app/schemas.py
 
 interface CustomCourse {
   key: number;
@@ -30,17 +31,29 @@ interface CustomCourse {
 }
 
 interface SetupPageProps {
-  /** Called with the new student id once it is stored. The router owns the redirect to
-   *  /analyzing, which is where POST /api/analyze is fired from (TDD §5.1). */
+  /** Which half of the form is showing — courses+semester, or interests. Courses and Interests
+   *  are real, separate steps (OnboardingRoute owns which one); this component just renders the
+   *  half asked for, over state that persists across both since it's the same component
+   *  instance either way. */
+  step: "courses" | "interests";
+  onContinue: () => void;
+  onBack: () => void;
+  /** Called with the new student id once it is stored — fires from the interests step's
+   *  "Analyze my path" button. */
   onComplete?: (studentId: string) => void;
 }
 
-export function SetupPage({ onComplete }: SetupPageProps) {
+function resolveOverride(course: CatalogCourse, selection: CourseSelection): string | undefined {
+  if (selection.outline === DEFAULT_OUTLINE) return undefined;
+  if (selection.outline === CUSTOM_OUTLINE) return selection.customText.trim() || undefined;
+  return course.curriculum_variants?.find((v) => v.id === selection.outline)?.text;
+}
+
+export function SetupPage({ step, onContinue, onBack, onComplete }: SetupPageProps) {
   const [catalog, setCatalog] = useState<CatalogCourse[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
-  const [name, setName] = useState("");
   const [semester, setSemester] = useState("4");
   const [selections, setSelections] = useState<Record<string, CourseSelection>>({});
   const [customCourses, setCustomCourses] = useState<CustomCourse[]>([]);
@@ -70,10 +83,6 @@ export function SetupPage({ onComplete }: SetupPageProps) {
   const semesterNumber = Number(semester);
   const semesterValid = Number.isInteger(semesterNumber) && semesterNumber >= 1 && semesterNumber <= 12;
 
-  // PRD §10.1 mandates a disabled submit button, so a validation error must never be gated
-  // behind a click nobody can make. Course rows report live as soon as they have any content;
-  // the header fields wait for a submit attempt, and the summary under the button always says
-  // what is still missing.
   const customErrors = customCourses.map((course) => {
     if (!course.name.trim()) return "Give the course a name.";
     if (course.curriculum_text.trim().length < MIN_CUSTOM_CHARS) {
@@ -82,20 +91,31 @@ export function SetupPage({ onComplete }: SetupPageProps) {
     return null;
   });
 
+  // A catalog course with "Write my own" picked needs the same minimum as a fully custom course
+  // — a near-empty override would otherwise reach the analysis call unvalidated.
+  const outlineErrors = (catalog ?? [])
+    .filter((c) => selections[c.id]?.outline === CUSTOM_OUTLINE)
+    .map((c) => {
+      const len = selections[c.id].customText.trim().length;
+      return len < MIN_CUSTOM_CHARS ? `${c.code}: paste at least ${MIN_CUSTOM_CHARS} characters (${len} so far).` : null;
+    })
+    .filter((m): m is string => Boolean(m));
+
   const problems = {
-    name: name.trim() ? null : "Enter your name.",
     semester: semesterValid ? null : "Semester must be a number between 1 and 12.",
     courses:
       courseCount < MIN_COURSES
         ? `Pick at least ${MIN_COURSES} courses (${courseCount} so far).`
         : null,
+    custom: customErrors.some(Boolean) ? "Finish the courses you added below." : null,
+    outline: outlineErrors.length > 0 ? outlineErrors[0] : null,
     interests:
       interests.length < MIN_INTERESTS
         ? `Pick at least ${MIN_INTERESTS} interests (${interests.length} so far).`
         : null,
-    custom: customErrors.some(Boolean) ? "Finish the courses you added below." : null,
   };
-  const ready = !Object.values(problems).some(Boolean);
+  const coursesReady = !problems.semester && !problems.courses && !problems.custom && !problems.outline;
+  const ready = coursesReady && !problems.interests;
 
   const grouped = useMemo(() => {
     const label = (tag: SemesterTag) => {
@@ -114,7 +134,7 @@ export function SetupPage({ onComplete }: SetupPageProps) {
     setSelections((prev) => {
       const next = { ...prev };
       if (next[courseId]) delete next[courseId];
-      else next[courseId] = { semester_tag: "past", override: null };
+      else next[courseId] = { semester_tag: "past", outline: DEFAULT_OUTLINE, customText: "" };
       return next;
     });
   }
@@ -135,6 +155,13 @@ export function SetupPage({ onComplete }: SetupPageProps) {
     setCustomCourses((prev) => prev.map((c) => (c.key === key ? { ...c, ...patch } : c)));
   }
 
+  function handleContinue() {
+    setShowErrors(true);
+    if (!coursesReady) return;
+    setShowErrors(false);
+    onContinue();
+  }
+
   async function submit() {
     setShowErrors(true);
     if (!ready || submitting) return;
@@ -144,7 +171,7 @@ export function SetupPage({ onComplete }: SetupPageProps) {
         .filter((course) => selections[course.id])
         .map((course) => {
           const selection = selections[course.id];
-          const override = selection.override?.trim();
+          const override = resolveOverride(course, selection);
           return {
             course_id: course.id,
             semester_tag: selection.semester_tag,
@@ -162,13 +189,14 @@ export function SetupPage({ onComplete }: SetupPageProps) {
     setSubmitError(null);
     try {
       const { student_id } = await createStudent({
-        name: name.trim(),
+        name: getUser()?.name ?? "",
         semester: semesterNumber,
         interests,
         courses,
       });
       setStudentId(student_id);
-      setStudentName(name.trim());
+      const accountName = getUser()?.name;
+      if (accountName) setStudentName(accountName);
       onComplete?.(student_id);
     } catch (err: unknown) {
       setSubmitError(err instanceof Error ? err.message : "Could not start the analysis");
@@ -177,41 +205,61 @@ export function SetupPage({ onComplete }: SetupPageProps) {
     }
   }
 
+  if (step === "interests") {
+    return (
+      <div className="mx-auto max-w-4xl space-y-6 p-8">
+        <header className="space-y-1">
+          <h1 className="text-2xl font-semibold">What are you into?</h1>
+          <p className="text-sm text-muted-foreground">
+            Pick at least two — this steers which of the eight roles float to the top.
+          </p>
+        </header>
+
+        <section className="space-y-3">
+          <InterestChips selected={interests} onToggle={toggleInterest} />
+          {showErrors && problems.interests && (
+            <p className="text-xs text-anchor-critical">{problems.interests}</p>
+          )}
+        </section>
+
+        <Separator />
+
+        <section className="flex items-center justify-between">
+          <Button variant="outline" onClick={onBack}>
+            ← Back to courses
+          </Button>
+          <div className="space-y-1 text-right">
+            <Button size="lg" disabled={!ready || submitting} onClick={submit}>
+              {submitting ? "Starting…" : "Analyze my path"}
+            </Button>
+            {submitError && <p className="text-xs text-anchor-critical">{submitError}</p>}
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-8">
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold">Where are you standing?</h1>
         <p className="text-sm text-muted-foreground">
-          Tell us what you've studied and what interests you. One analysis, eight roles ranked by
-          how far along you already are.
+          Tell us what you've studied. One analysis, eight roles ranked by how far along you
+          already are.
         </p>
       </header>
 
-      <section className="grid grid-cols-[1fr_8rem] gap-4">
-        <div className="space-y-1.5">
-          <Label htmlFor="name">Your name</Label>
-          <Input
-            id="name"
-            value={name}
-            placeholder="Ayesha"
-            onChange={(event) => setName(event.target.value)}
-          />
-          {showErrors && problems.name && (
-            <p className="text-xs text-anchor-critical">{problems.name}</p>
-          )}
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="semester">Semester</Label>
-          <Input
-            id="semester"
-            inputMode="numeric"
-            value={semester}
-            onChange={(event) => setSemester(event.target.value)}
-          />
-          {showErrors && problems.semester && (
-            <p className="text-xs text-anchor-critical">{problems.semester}</p>
-          )}
-        </div>
+      <section className="max-w-[8rem] space-y-1.5">
+        <Label htmlFor="semester">Semester</Label>
+        <Input
+          id="semester"
+          inputMode="numeric"
+          value={semester}
+          onChange={(event) => setSemester(event.target.value)}
+        />
+        {showErrors && problems.semester && (
+          <p className="text-xs text-anchor-critical">{problems.semester}</p>
+        )}
       </section>
 
       <Separator />
@@ -261,7 +309,8 @@ export function SetupPage({ onComplete }: SetupPageProps) {
                 disabled={atLimit && !selections[course.id]}
                 onToggle={() => toggleCourse(course.id)}
                 onTagChange={(semester_tag) => patchSelection(course.id, { semester_tag })}
-                onOverrideChange={(override) => patchSelection(course.id, { override })}
+                onOutlineChange={(outline) => patchSelection(course.id, { outline })}
+                onCustomTextChange={(customText) => patchSelection(course.id, { customText })}
               />
             ))}
           </div>
@@ -333,30 +382,20 @@ export function SetupPage({ onComplete }: SetupPageProps) {
         {showErrors && problems.courses && (
           <p className="text-xs text-anchor-critical">{problems.courses}</p>
         )}
-      </section>
-
-      <Separator />
-
-      <section className="space-y-3">
-        <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-          What interests you
-        </h2>
-        <InterestChips selected={interests} onToggle={toggleInterest} />
-        {showErrors && problems.interests && (
-          <p className="text-xs text-anchor-critical">{problems.interests}</p>
+        {showErrors && problems.outline && (
+          <p className="text-xs text-anchor-critical">{problems.outline}</p>
         )}
       </section>
 
       <Separator />
 
       <section className="space-y-2">
-        <Button size="lg" disabled={!ready || submitting} onClick={submit}>
-          {submitting ? "Starting…" : "Analyze my path"}
+        <Button size="lg" onClick={handleContinue}>
+          Continue
         </Button>
-        {submitError && <p className="text-xs text-anchor-critical">{submitError}</p>}
-        {!ready && (
+        {showErrors && !coursesReady && (
           <p className="text-xs text-muted-foreground">
-            {[problems.name, problems.semester, problems.courses, problems.interests, problems.custom]
+            {[problems.semester, problems.courses, problems.custom, problems.outline]
               .filter(Boolean)
               .join(" ")}
           </p>

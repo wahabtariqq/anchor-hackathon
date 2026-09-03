@@ -19,11 +19,21 @@ export type Interest = (typeof INTERESTS)[number];
 
 // ---- GET /api/courses ----
 
+/** A named alternate outline for a catalog course — e.g. a different instructor's syllabus for
+ *  the same course code. Picking one sets the same curriculum_override StudentCourseInput
+ *  already supports; no contract change needed (docs/DECISIONS.md v2 course-outline entry). */
+export interface CurriculumVariant {
+  id: string;
+  label: string;
+  text: string;
+}
+
 export interface CatalogCourse {
   id: string;
   code: string;
   name: string;
   curriculum_text: string;
+  curriculum_variants?: CurriculumVariant[];
 }
 
 export interface CoursesResponse {
@@ -164,7 +174,6 @@ export interface SignupRequest {
   email: string;
   password: string;
   name: string;
-  semester: number;
   claim_student_id?: string;
 }
 
@@ -173,11 +182,13 @@ export interface LoginRequest {
   password: string;
 }
 
+// semester lives on Student, not User — asked once, during onboarding, not at signup
+// (docs/DECISIONS.md v2 signup-flow entry). Corrects an earlier TDD-V2 §4.2 draft that put it
+// on both.
 export interface UserOut {
   id: string;
   email: string;
   name: string;
-  semester: number;
   created_at: string;
 }
 
