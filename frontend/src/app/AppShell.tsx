@@ -20,8 +20,8 @@ const NAV_ITEMS = [
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   cn(
-    "flex items-center gap-2.5 rounded-token-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground motion-reduce:transition-none",
-    isActive && "bg-accent text-foreground",
+    "flex items-center gap-2.5 rounded-token-md border-l-2 border-transparent px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground motion-reduce:transition-none",
+    isActive && "border-primary bg-primary/10 text-foreground",
   );
 
 function initials(name: string): string {

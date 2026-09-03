@@ -36,27 +36,36 @@
   /* The app is dark-only (index.html sets class="dark" permanently, and App.tsx pins
      next-themes to it) — this is the one theme the app actually renders. The :root
      block above is kept as the source shadcn variables were generated from, not as a
-     reachable light mode. */
+     reachable light mode.
+
+     Palette redone (2026-09-04) per PRD-V2 §8: distinct near-black base vs. raised card
+     surface, one hover step, and ONE brand accent (the existing anchor-adjacent/ring-fill
+     blue, #3987e5) driving primary buttons, focus rings, and active nav — instead of the
+     stock shadcn slate theme, where background/card/popover were identical and
+     secondary/muted/accent/border/input were also all identical to each other (that
+     collapse of six distinct roles into two flat surfaces is what read as "mono colored").
+     Neutrals are tinted slightly toward the brand hue (H222) rather than pure gray — a
+     dark UI reads more considered when its grays aren't neutral. */
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --background: 222 26% 6%;          /* #090b0f — near-black base */
+    --foreground: 210 30% 96%;         /* soft off-white, not pure white */
+    --card: 222 22% 10%;               /* #14171d — raised surface, distinct from base */
+    --card-foreground: 210 30% 96%;
+    --popover: 222 22% 11%;
+    --popover-foreground: 210 30% 96%;
+    --primary: 213 77% 56%;            /* #3987e5 — the one brand accent, not white */
+    --primary-foreground: 210 40% 98%;
+    --secondary: 222 18% 15%;
+    --secondary-foreground: 210 30% 96%;
+    --muted: 222 16% 13%;
+    --muted-foreground: 218 12% 65%;
+    --accent: 222 24% 17%;             /* one hover step above card */
+    --accent-foreground: 210 30% 96%;
+    --destructive: 0 70% 46%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --border: 222 16% 19%;
+    --input: 222 16% 19%;
+    --ring: 213 77% 56%;               /* focus rings match the brand accent */
 
     /* anchor-design §2's dark step of the same ramp — good/critical are the reference
        palette's pre-validated hexes for both surfaces, so they don't change here. */

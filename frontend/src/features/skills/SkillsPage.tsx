@@ -118,7 +118,12 @@ export function SkillsPage() {
                       }}
                     />
                   ) : (
-                    <Checkbox id={inputId} checked={state === "ticked"} onCheckedChange={() => toggle(s.id)} />
+                    // covered-full falls through to here too — checked, matching SkillRow.tsx.
+                    <Checkbox
+                      id={inputId}
+                      checked={state === "ticked" || state === "covered-full"}
+                      onCheckedChange={() => toggle(s.id)}
+                    />
                   )}
                 </div>
                 <div className="min-w-0 flex-1 space-y-1">

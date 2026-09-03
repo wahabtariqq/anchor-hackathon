@@ -646,7 +646,7 @@ exact V1 behavior.
 
 PRD-V2 §4.3–§4.7 already specifies what each screen shows; this section is only the technical shape.
 
-- **`features/dashboard/`** — `DashboardPage` fetches `/api/dashboard` once on mount (same "one fetch" rule). `FitChart` renders `snapshots` as an SVG line — **no new charting dependency**: `FitRing` already proves an inline-SVG approach works for this codebase (TDD v4 §7.3), and a 3-line time series is a `<polyline>` with a scaled x/y, not a library job. Colors are the `dataviz` skill's validated categorical palette, dark-mode slots 1-3 (blue/orange/aqua), not a new ad hoc choice. If a richer chart is wanted later, that's a `contract:`-style note in `docs/DECISIONS.md`, not a default. **Current numbers** (top-role fit, verified/checked counts) read live off the shared `AnalysisContext`, never off the fetched payload — see §7.5 for why. `<svg>` needs `preserveAspectRatio="none"` plus a fixed CSS height (`h-40`, matching the viewBox height) — without it, the box scales to the viewBox's aspect ratio at full container width and renders far taller than intended.
+- **`features/dashboard/`** — `DashboardPage` fetches `/api/dashboard` once on mount (same "one fetch" rule). `FitChart` renders `snapshots` as an SVG line — **no new charting dependency**: `FitRing` already proves an inline-SVG approach works for this codebase (TDD v4 §7.3), and a 3-line time series is a `<polyline>` with a scaled x/y, not a library job. Colors are the `dataviz` skill's validated categorical palette, dark-mode slots 1-3 (blue/orange/aqua), not a new ad hoc choice. If a richer chart is wanted later, that's a `contract:`-style note in `docs/DECISIONS.md`, not a default. Gridlines + `%` labels and a per-series gradient fill were added on top of the bare polylines (DECISIONS #72/#73) — the fill hugs each line at a fixed depth rather than washing down to the 0% baseline, since three lines sitting close together (a typical case) blend into a muddy overlap otherwise. **Current numbers** (top-role fit, verified/checked counts) read live off the shared `AnalysisContext`, never off the fetched payload — see §7.5 for why. The `<svg>`'s `viewBox`/`width`/`height` are set to the container's **measured** pixel width (`ResizeObserver`), not a fixed constant scaled via `preserveAspectRatio="none"` — that non-uniform stretch (DECISIONS #75) turned round markers into ~2.2×-wide ellipses and warped the gridline text, reading as a scaled bitmap rather than crisp vector UI. Measuring the container keeps one SVG unit equal to one CSS pixel on both axes.
 - **`features/skills/`** — `SkillsPage` fetches `/api/skills` once; filter tabs and search are client-side `useMemo` over the returned array, no server round-trip per keystroke. Ticking reuses the exact optimistic path `RoleDrawer` already has (`toggle(skillId)` in `AnalysisContext`) — the Skills screen needs `AnalysisContext` mounted the same way the Roadmap page does, which is exactly what §7.2's provider lift is for. Status labels reuse `SkillRow.tsx`'s exported `skillState()` (DECISIONS #34's precedence), not a re-derived enum, so this screen can't disagree with the drawer about a skill's state. Built as one inline list rather than a separate `SkillTable` component — no table primitive exists elsewhere in this codebase, and introducing one for a single screen wasn't warranted.
 - **`features/projects/`** — `ProjectsPage` fetches `/api/projects` once; resubmit calls the existing `submitRepo(roleId, url)` context function unchanged, then refetches `/api/projects` (cheap, not on the hot animation path).
 - **`features/profile/`** — reads `user` out of an `AuthContext` (populated at login/signup, refreshed on load via a lightweight `/api/auth/me`-shaped read *or* simply re-derived from the JWT-less session by calling `/api/dashboard`'s `student` fields — pick whichever avoids a sixth endpoint; not prescribed further here, it's a one-screen decision). Logout / logout-everywhere call `lib/auth.ts`.
@@ -656,21 +656,32 @@ PRD-V2 §4.3–§4.7 already specifies what each screen shows; this section is o
 ```css
 /* src/styles/tokens.css — new, imported after index.css's existing color tokens */
 :root {
-  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;  /* decided 2026-09-04 */
+  --font-display: "Poppins", ui-sans-serif, system-ui, sans-serif;  /* decided 2026-09-04, revised same day */
   --text-display: 2.5rem; --text-heading: 1.25rem; --text-body: 0.9375rem; --text-caption: 0.75rem;
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px; --space-8: 32px;
   --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px;
 }
 ```
 
-**Font decided:** Space Grotesk, loaded via a `<link>` in `index.html` (weights 500/600/700), applied
+**Font decided:** Poppins, loaded via a `<link>` in `index.html` (weights 500/600/700), applied
 only to headings, fit %, and dashboard stat numerals (`font-display` Tailwind utility) — body text
-stays the system sans stack. Colors are **not** redefined here — `--anchor-good`/`--anchor-critical`/
-`--anchor-adjacent`/ring tokens already live in `index.css` and stay the single source for semantic
-color (PRD-V2 §0, §8). `tailwind.config.js` gains a matching `fontFamily.display`/`fontSize`
-extension pointing at these variables, the same pattern it already uses for the color tokens.
-Spacing was **not** extended — Tailwind's default 4px-increment scale already equals `--space-1..8`
-(`anchor-design` §4), so `p-1`/`p-4`/`p-6`/etc. already *are* the token scale.
+stays the system sans stack. (First shipped as Space Grotesk; swapped to Poppins same-day on
+direct user feedback — DECISIONS #63.) `tailwind.config.js` gains a matching
+`fontFamily.display`/`fontSize` extension pointing at these variables, the same pattern it already
+uses for the color tokens. Spacing was **not** extended — Tailwind's default 4px-increment scale
+already equals `--space-1..8` (`anchor-design` §4), so `p-1`/`p-4`/`p-6`/etc. already *are* the
+token scale.
+
+**Colors were revised beyond what this section originally shipped** (DECISIONS #72), on the same
+direct feedback ("too mono colored"): `index.css`'s `.dark` block now gives `--background`,
+`--card`, and `--popover` genuinely distinct values (the stock shadcn dark theme this app started
+from had all three identical, plus `--secondary`/`--muted`/`--accent`/`--border`/`--input` all
+identical to *each other* — six roles collapsed into two flat surfaces, which is what read as
+flat/gray), and `--primary`/`--ring` switched from near-white/gray to the existing brand blue
+(`213 77% 56%`, the same hue as `--anchor-adjacent`/`--anchor-ring-fill`) so buttons, focus rings,
+and the sidebar's active-nav indicator all carry the one accent PRD-V2 §8 already specified —
+that section described the intent in Stage 1 but the token values themselves were never actually
+changed from shadcn's defaults until this pass. `--anchor-*` semantic tokens are unchanged.
 
 ### 7.5 Interim frontend-only data — no backend yet (new section, 2026-09-04, Wahab)
 

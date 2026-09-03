@@ -65,9 +65,11 @@ export function SkillRow({ skill, weight, onToggle, variant = "row", className }
             }}
           />
         ) : (
+          // covered-full falls through to here too — checked, since it's already covered by
+          // coursework, not something still to tick.
           <Checkbox
             id={inputId}
-            checked={state === "ticked"}
+            checked={state === "ticked" || state === "covered-full"}
             onCheckedChange={() => onToggle?.(skill.id)}
           />
         )}

@@ -24,10 +24,10 @@ function Delta({ value }: { value: number }) {
 export function StatCards({ topRole, skillsVerified, verifiedDelta, skillsChecked, checkedDelta }: StatCardsProps) {
   return (
     <div className="grid grid-cols-3 gap-4">
-      <Card>
+      <Card className="border-primary/20 bg-gradient-to-br from-primary/10 to-transparent">
         <CardContent className="p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Top role fit</p>
-          <p className="font-display text-display">{topRole ? `${topRole.fit}%` : "—"}</p>
+          <p className="font-display text-display text-primary">{topRole ? `${topRole.fit}%` : "—"}</p>
           <p className="mt-1 truncate text-sm text-muted-foreground">
             {topRole?.title ?? "Complete your analysis"}
           </p>
@@ -36,7 +36,7 @@ export function StatCards({ topRole, skillsVerified, verifiedDelta, skillsChecke
       <Card>
         <CardContent className="p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Skills verified</p>
-          <p className="font-display text-display">{skillsVerified}</p>
+          <p className="font-display text-display text-anchor-good">{skillsVerified}</p>
           <div className="mt-1">
             <Delta value={verifiedDelta} />
           </div>

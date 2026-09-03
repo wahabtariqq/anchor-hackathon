@@ -4,10 +4,10 @@
  * slate vars in src/index.css stay the single source of truth (anchor-design skill §2). */
 
 :root {
-  /* Space Grotesk: headings, fit %, and dashboard stat numerals only — never body copy
+  /* Poppins: headings, fit %, and dashboard stat numerals only — never body copy
    * (anchor-design §3: "Numbers are the heroes"). Falls back to the system sans stack used
    * everywhere else so a slow font load never blocks a readable page. */
-  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Poppins", ui-sans-serif, system-ui, sans-serif;
 
   --text-display: 2.5rem;   /* dashboard greeting, top-level fit % */
   --text-heading: 1.25rem;  /* role/page titles */
