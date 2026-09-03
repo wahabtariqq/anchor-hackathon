@@ -33,8 +33,10 @@ export function ProveIt({ role, skillsById }: ProveItProps) {
   useEffect(() => {
     setLoadError(null);
     if (projects.has(role.id)) return;
-    loadProject(role.id).catch((err: unknown) => {
-      setLoadError(err instanceof ApiError ? err.message : "Couldn't design a project right now");
+    // TDD §11: /project's error state is always this fixed, friendly line — never the
+    // server's raw message (unlike /submit's 422, which does show the server's text).
+    loadProject(role.id).catch(() => {
+      setLoadError("Couldn't design a project right now");
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [role.id, reloadKey]);

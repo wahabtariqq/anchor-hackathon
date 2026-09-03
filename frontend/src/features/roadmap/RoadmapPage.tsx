@@ -17,6 +17,11 @@ function RoadmapContent() {
   const { data, loading, error, checkedIds, verifiedIds, roleFit, openRoleSlug, setOpenRole, toggle } =
     useAnalysis();
   const lastTrigger = useRef<HTMLElement | null>(null);
+  // Guards the write-effect below from clearing ?role= before the read-effect has had
+  // a chance to hydrate openRoleSlug from it — both effects fire on mount, and without
+  // this, the write-effect's first pass (openRoleSlug still null pre-hydration) wipes
+  // the query string out from under the read-effect's later, async-gated pass.
+  const hydratedFromUrl = useRef(false);
 
   // data.skills' own checked/verified fields are a load-time snapshot (they only seed
   // checkedIds/verifiedIds in AnalysisContext — see its useEffect). Every row and card
@@ -37,10 +42,12 @@ function RoadmapContent() {
     if (!data) return;
     const slug = new URLSearchParams(window.location.search).get("role");
     if (slug && data.roles.some((r) => r.slug === slug)) setOpenRole(slug);
+    hydratedFromUrl.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
 
   useEffect(() => {
+    if (!hydratedFromUrl.current) return;
     const params = new URLSearchParams(window.location.search);
     if (openRoleSlug) params.set("role", openRoleSlug);
     else params.delete("role");
