@@ -1,0 +1,27 @@
+/* V2 design tokens — docs/TDD-V2.md §3/§7.4, docs/PRD-V2.md §8.
+ * Type scale, spacing, and radii only. Colors are NOT redefined here — the ANCHOR semantic
+ * tokens (--anchor-good/--anchor-critical/--anchor-adjacent/--anchor-ring-*) and the shadcn
+ * slate vars in src/index.css stay the single source of truth (anchor-design skill §2). */
+
+:root {
+  /* Space Grotesk: headings, fit %, and dashboard stat numerals only — never body copy
+   * (anchor-design §3: "Numbers are the heroes"). Falls back to the system sans stack used
+   * everywhere else so a slow font load never blocks a readable page. */
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+
+  --text-display: 2.5rem;   /* dashboard greeting, top-level fit % */
+  --text-heading: 1.25rem;  /* role/page titles */
+  --text-body: 0.9375rem;   /* workhorse copy */
+  --text-caption: 0.75rem;  /* labels, meta */
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+}

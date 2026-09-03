@@ -1,0 +1,907 @@
+{
+  "skills": [
+    {
+      "id": "8fb9b06b-082a-4dc9-9237-6aaf8e6b141a",
+      "slug": "a-b-testing-and-experimentation",
+      "name": "A/B Testing & Experimentation",
+      "real_world": "Structuring split experiments measures the statistical significance of product design changes on conversion metrics.",
+      "coverage_depth": null,
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "3b538563-6549-414d-95d2-dfef1c38bc61",
+          "title": "Analytics Engineer"
+        }
+      ]
+    },
+    {
+      "id": "7f0b33c8-b275-40a7-9c8d-bff9be978c7d",
+      "slug": "asymptotic-analysis",
+      "name": "Asymptotic Analysis",
+      "real_world": "Estimating execution time scaling with Big-O notation before writing code prevents exponential complexity traps in production.",
+      "coverage_depth": "full",
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "be0e5401-47d7-49b8-a7d9-8400a6e2de32",
+          "title": "Machine Learning Engineer"
+        }
+      ]
+    },
+    {
+      "id": "06543280-1b3d-41ce-b52b-84632a270cfc",
+      "slug": "binary-tree-traversal",
+      "name": "Binary Tree Traversal",
+      "real_world": "Recursive and iterative tree traversals underpin abstract syntax tree parsing, file system iteration, and visual layout trees.",
+      "coverage_depth": "full",
+      "checked": false,
+      "verified": false,
+      "roles": []
+    },
+    {
+      "id": "0b163efa-060e-4fe5-9d98-9ded447caf17",
+      "slug": "ci-cd-pipeline-automation",
+      "name": "CI/CD Pipeline Automation",
+      "real_world": "Automating test runs and release deployments guarantees every pull request is validated before reaching production.",
+      "coverage_depth": null,
+      "checked": false,
+      "verified": false,
+      "roles": []
+    },
+    {
+      "id": "09d6ae1b-99a8-4748-9a3e-003fae427a0f",
+      "slug": "cache-strategy-design",
+      "name": "Cache Strategy Design",
+      "real_world": "Implementing Redis in-memory caching layers reduces primary database load and delivers rapid latency improvements.",
+      "coverage_depth": null,
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "14432559-21db-44a6-b6f9-654fb69b0f11",
+          "title": "Full-Stack Engineer"
+        },
+        {
+          "id": "af6ce528-7fed-43d4-b91c-ddef90749e4f",
+          "title": "Backend Engineer"
+        }
+      ]
+    },
+    {
+      "id": "d5f306b4-8454-45c7-9d41-f9797f17c212",
+      "slug": "client-side-state-management",
+      "name": "Client-Side State Management",
+      "real_world": "Managing state across component hierarchies keeps user interfaces responsive without executing redundant backend API requests.",
+      "coverage_depth": "full",
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "14432559-21db-44a6-b6f9-654fb69b0f11",
+          "title": "Full-Stack Engineer"
+        },
+        {
+          "id": "cf51c8ab-eb47-49fc-8ac5-e9ee1ecce95d",
+          "title": "AI Application Developer"
+        },
+        {
+          "id": "a27bfa84-e3d6-4b38-8df9-2903991153e2",
+          "title": "UX Engineer"
+        }
+      ]
+    },
+    {
+      "id": "c62f4ff7-6a20-4805-9846-09be57ce158c",
+      "slug": "cloud-infrastructure-provisioning",
+      "name": "Cloud Infrastructure Provisioning",
+      "real_world": "Configuring cloud virtual networks, storage buckets, and serverless compute supports scalable application deployment.",
+      "coverage_depth": null,
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "7b5fedcb-3fef-44e0-ae03-7618b88fc379",
+          "title": "Database Administrator"
+        },
+        {
+          "id": "8957fc68-1cd5-4100-be9c-9eedb17d03d4",
+          "title": "Data Engineer"
+        }
+      ]
+    },
+    {
+      "id": "29cb9edf-24f5-4f49-b54a-6da3c7c26cba",
+      "slug": "containerization-with-docker",
+      "name": "Containerization with Docker",
+      "real_world": "Packaging web application dependencies into lightweight Docker containers eliminates local platform configuration discrepancies.",
+      "coverage_depth": null,
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "be0e5401-47d7-49b8-a7d9-8400a6e2de32",
+          "title": "Machine Learning Engineer"
+        },
+        {
+          "id": "8957fc68-1cd5-4100-be9c-9eedb17d03d4",
+          "title": "Data Engineer"
+        }
+      ]
+    },
+    {
+      "id": "b9303ce8-e6e7-4744-9f59-8b0826f8df0e",
+      "slug": "data-pipeline-orchestration",
+      "name": "Data Pipeline Orchestration",
+      "real_world": "Coordinating multi-stage DAG data transformations ensures downstream analytics tables update reliably on scheduled batches.",
+      "coverage_depth": null,
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "8957fc68-1cd5-4100-be9c-9eedb17d03d4",
+          "title": "Data Engineer"
+        },
+        {
+          "id": "3b538563-6549-414d-95d2-dfef1c38bc61",
+          "title": "Analytics Engineer"
+        }
+      ]
+    },
+    {
+      "id": "69b3d30e-7ef6-4126-b882-027ffcd570fa",
+      "slug": "data-visualization-design",
+      "name": "Data Visualization Design",
+      "real_world": "Creating intuitive visual chart components helps business users interpret complex backend data metrics quickly.",
+      "coverage_depth": null,
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "3b538563-6549-414d-95d2-dfef1c38bc61",
+          "title": "Analytics Engineer"
+        }
+      ]
+    },
+    {
+      "id": "9ef51746-68d8-4e96-b8de-a1f628535894",
+      "slug": "data-warehousing-principles",
+      "name": "Data Warehousing Principles",
+      "real_world": "Designing star schemas in columnar analytical databases turns complex analytical queries into sub-second runs.",
+      "coverage_depth": null,
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "8957fc68-1cd5-4100-be9c-9eedb17d03d4",
+          "title": "Data Engineer"
+        },
+        {
+          "id": "3b538563-6549-414d-95d2-dfef1c38bc61",
+          "title": "Analytics Engineer"
+        }
+      ]
+    },
+    {
+      "id": "9dbe8ae3-a6ee-44ee-9f5c-04c7ccee8d02",
+      "slug": "database-indexing-strategies",
+      "name": "Database Indexing Strategies",
+      "real_world": "Choosing between B-Tree and hash indexes directly controls the trade-off between lookup latency and write throughput.",
+      "coverage_depth": "full",
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "af6ce528-7fed-43d4-b91c-ddef90749e4f",
+          "title": "Backend Engineer"
+        },
+        {
+          "id": "7b5fedcb-3fef-44e0-ae03-7618b88fc379",
+          "title": "Database Administrator"
+        },
+        {
+          "id": "8957fc68-1cd5-4100-be9c-9eedb17d03d4",
+          "title": "Data Engineer"
+        },
+        {
+          "id": "3b538563-6549-414d-95d2-dfef1c38bc61",
+          "title": "Analytics Engineer"
+        }
+      ]
+    },
+    {
+      "id": "c91478b2-8055-43f0-a499-cbc5f01c9de4",
+      "slug": "database-transaction-isolation",
+      "name": "Database Transaction Isolation",
+      "real_world": "Selecting appropriate ACID isolation levels prevents race conditions like dirty reads and non-repeatable reads under high traffic.",
+      "coverage_depth": "full",
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "af6ce528-7fed-43d4-b91c-ddef90749e4f",
+          "title": "Backend Engineer"
+        },
+        {
+          "id": "7b5fedcb-3fef-44e0-ae03-7618b88fc379",
+          "title": "Database Administrator"
+        }
+      ]
+    },
+    {
+      "id": "737d6b29-3883-40a1-9de1-e9d4a3c4f700",
+      "slug": "deep-learning-fundamentals",
+      "name": "Deep Learning Fundamentals",
+      "real_world": "Training feedforward multi-layer neural networks via backpropagation enables learning complex non-linear pattern representations.",
+      "coverage_depth": "partial",
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "be0e5401-47d7-49b8-a7d9-8400a6e2de32",
+          "title": "Machine Learning Engineer"
+        },
+        {
+          "id": "cf51c8ab-eb47-49fc-8ac5-e9ee1ecce95d",
+          "title": "AI Application Developer"
+        }
+      ]
+    },
+    {
+      "id": "ddfa5542-53f9-422a-81dd-38ccca10b43d",
+      "slug": "design-thinking-and-ideation",
+      "name": "Design Thinking & Ideation",
+      "real_world": "Translating ambiguous user feedback into clear product feature requirements bridges the gap between software and real needs.",
+      "coverage_depth": null,
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "a27bfa84-e3d6-4b38-8df9-2903991153e2",
+          "title": "UX Engineer"
+        },
+        {
+          "id": "3b538563-6549-414d-95d2-dfef1c38bc61",
+          "title": "Analytics Engineer"
+        }
+      ]
+    },
+    {
+      "id": "438d87cb-b01c-4f4f-a06f-f2f69d2542c5",
+      "slug": "dimensionality-reduction",
+      "name": "Dimensionality Reduction",
+      "real_world": "Applying Principal Component Analysis to high-dimensional data compresses redundant features while retaining signal.",
+      "coverage_depth": "full",
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "be0e5401-47d7-49b8-a7d9-8400a6e2de32",
+          "title": "Machine Learning Engineer"
+        }
+      ]
+    },
+    {
+      "id": "5e7502ea-042c-40a0-8adf-cfc9103aff38",
+      "slug": "dynamic-programming-optimization",
+      "name": "Dynamic Programming",
+      "real_world": "Breaking overlapping subproblems into memoized dynamic programming solutions converts exponential algorithms into polynomial-time operations.",
+      "coverage_depth": "full",
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "be0e5401-47d7-49b8-a7d9-8400a6e2de32",
+          "title": "Machine Learning Engineer"
+        },
+        {
+          "id": "8957fc68-1cd5-4100-be9c-9eedb17d03d4",
+          "title": "Data Engineer"
+        }
+      ]
+    },
+    {
+      "id": "2242822b-92b2-4637-9bc3-937c25c1063e",
+      "slug": "exploratory-data-analysis",
+      "name": "Exploratory Data Analysis",
+      "real_world": "Profiling raw datasets with statistical summaries uncovers missing values and data anomalies prior to model training.",
+      "coverage_depth": "full",
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "be0e5401-47d7-49b8-a7d9-8400a6e2de32",
+          "title": "Machine Learning Engineer"
+        },
+        {
+          "id": "8957fc68-1cd5-4100-be9c-9eedb17d03d4",
+          "title": "Data Engineer"
+        },
+        {
+          "id": "3b538563-6549-414d-95d2-dfef1c38bc61",
+          "title": "Analytics Engineer"
+        }
+      ]
+    },
+    {
+      "id": "f39e87f0-c7b4-4a01-93ad-c1492e5ed70f",
+      "slug": "feature-engineering-and-scaling",
+      "name": "Feature Engineering & Scaling",
+      "real_world": "Standardizing numerical features and one-hot encoding categorical variables prevents gradient descent from diverging.",
+      "coverage_depth": "full",
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "be0e5401-47d7-49b8-a7d9-8400a6e2de32",
+          "title": "Machine Learning Engineer"
+        },
+        {
+          "id": "3b538563-6549-414d-95d2-dfef1c38bc61",
+          "title": "Analytics Engineer"
+        }
+      ]
+    },
+    {
+      "id": "e9e0a034-acc1-43bd-9063-d01470f93c2d",
+      "slug": "frontend-component-architecture",
+      "name": "Frontend Component Architecture",
+      "real_world": "Structuring user interfaces into modular, stateful components prevents duplicate frontend code and unmaintainable UI logic.",
+      "coverage_depth": "full",
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "14432559-21db-44a6-b6f9-654fb69b0f11",
+          "title": "Full-Stack Engineer"
+        },
+        {
+          "id": "cf51c8ab-eb47-49fc-8ac5-e9ee1ecce95d",
+          "title": "AI Application Developer"
+        },
+        {
+          "id": "a27bfa84-e3d6-4b38-8df9-2903991153e2",
+          "title": "UX Engineer"
+        }
+      ]
+    },
+    {
+      "id": "d7d6bc07-2d86-40fc-8df6-7551425fe2e6",
+      "slug": "fullstack-application-deployment",
+      "name": "Full-Stack Application Deployment",
+      "real_world": "Configuring environment secrets and web hosting platforms enables smooth delivery of live full-stack services.",
+      "coverage_depth": "full",
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "14432559-21db-44a6-b6f9-654fb69b0f11",
+          "title": "Full-Stack Engineer"
+        },
+        {
+          "id": "7b5fedcb-3fef-44e0-ae03-7618b88fc379",
+          "title": "Database Administrator"
+        },
+        {
+          "id": "cf51c8ab-eb47-49fc-8ac5-e9ee1ecce95d",
+          "title": "AI Application Developer"
+        }
+      ]
+    },
+    {
+      "id": "a09f4780-1fdc-444b-b14b-60c386139e50",
+      "slug": "graph-search-algorithms",
+      "name": "Graph Search Algorithms",
+      "real_world": "Graph traversals like BFS and DFS calculate shortest delivery routes and resolve complex package build dependencies.",
+      "coverage_depth": "full",
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "af6ce528-7fed-43d4-b91c-ddef90749e4f",
+          "title": "Backend Engineer"
+        },
+        {
+          "id": "8957fc68-1cd5-4100-be9c-9eedb17d03d4",
+          "title": "Data Engineer"
+        }
+      ]
+    },
+    {
+      "id": "6d894cac-c206-4f09-8be4-000675432885",
+      "slug": "http-protocol-fundamentals",
+      "name": "HTTP Protocol Fundamentals",
+      "real_world": "Configuring HTTP headers, status codes, and CORS rules resolves cross-origin resource sharing errors on frontend fetches.",
+      "coverage_depth": "full",
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "14432559-21db-44a6-b6f9-654fb69b0f11",
+          "title": "Full-Stack Engineer"
+        },
+        {
+          "id": "af6ce528-7fed-43d4-b91c-ddef90749e4f",
+          "title": "Backend Engineer"
+        },
+        {
+          "id": "cf51c8ab-eb47-49fc-8ac5-e9ee1ecce95d",
+          "title": "AI Application Developer"
+        },
+        {
+          "id": "a27bfa84-e3d6-4b38-8df9-2903991153e2",
+          "title": "UX Engineer"
+        }
+      ]
+    },
+    {
+      "id": "d017a279-8fea-4462-a62f-bd4e44799102",
+      "slug": "hash-table-design",
+      "name": "Hash Table Design",
+      "real_world": "Selecting robust hash functions and collision resolution strategies keeps key-value lookup performance at true O(1) time.",
+      "coverage_depth": "full",
+      "checked": false,
+      "verified": false,
+      "roles": []
+    },
+    {
+      "id": "f5479247-3230-4c11-b0b7-c3f4a20406bf",
+      "slug": "interaction-design-patterns",
+      "name": "Interaction Design Patterns",
+      "real_world": "Applying micro-interactions and explicit UI feedback states prevents user confusion during multi-step web workflows.",
+      "coverage_depth": null,
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "a27bfa84-e3d6-4b38-8df9-2903991153e2",
+          "title": "UX Engineer"
+        }
+      ]
+    },
+    {
+      "id": "d4d1fc6f-5df5-4254-a898-50b1c1a99b26",
+      "slug": "logging-and-observability",
+      "name": "Logging & Observability",
+      "real_world": "Instrumenting structured application logging and metrics collection allows rapid root-cause diagnosis of active production incidents.",
+      "coverage_depth": "partial",
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "af6ce528-7fed-43d4-b91c-ddef90749e4f",
+          "title": "Backend Engineer"
+        },
+        {
+          "id": "7b5fedcb-3fef-44e0-ae03-7618b88fc379",
+          "title": "Database Administrator"
+        },
+        {
+          "id": "8957fc68-1cd5-4100-be9c-9eedb17d03d4",
+          "title": "Data Engineer"
+        }
+      ]
+    },
+    {
+      "id": "30a04ff4-a379-4a09-8221-098eba0dca37",
+      "slug": "ml-hyperparameter-tuning",
+      "name": "ML Hyperparameter Tuning",
+      "real_world": "Systematically searching learning rates and regularization weights prevents model underfitting and convergence failures.",
+      "coverage_depth": "full",
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "be0e5401-47d7-49b8-a7d9-8400a6e2de32",
+          "title": "Machine Learning Engineer"
+        }
+      ]
+    },
+    {
+      "id": "b79e23a6-0819-4581-84cf-8a72897b9701",
+      "slug": "ml-model-evaluation",
+      "name": "ML Model Evaluation",
+      "real_world": "Evaluating precision-recall curves and F1-scores prevents false confidence on heavily imbalanced datasets.",
+      "coverage_depth": "full",
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "be0e5401-47d7-49b8-a7d9-8400a6e2de32",
+          "title": "Machine Learning Engineer"
+        },
+        {
+          "id": "cf51c8ab-eb47-49fc-8ac5-e9ee1ecce95d",
+          "title": "AI Application Developer"
+        }
+      ]
+    },
+    {
+      "id": "c45a4ae9-fb45-4c50-a6c5-6c267f7936fc",
+      "slug": "model-deployment-and-serving",
+      "name": "Model Deployment & Serving",
+      "real_world": "Deploying machine learning models as containerized microservices enables real-time low-latency inference endpoints.",
+      "coverage_depth": null,
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "be0e5401-47d7-49b8-a7d9-8400a6e2de32",
+          "title": "Machine Learning Engineer"
+        }
+      ]
+    },
+    {
+      "id": "ac27ace1-1873-426b-873f-1d5f6056901b",
+      "slug": "nosql-data-modeling",
+      "name": "NoSQL Data Modeling",
+      "real_world": "Designing document and key-value schemas based on read access patterns optimizes low-latency query workloads.",
+      "coverage_depth": "partial",
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "7b5fedcb-3fef-44e0-ae03-7618b88fc379",
+          "title": "Database Administrator"
+        },
+        {
+          "id": "cf51c8ab-eb47-49fc-8ac5-e9ee1ecce95d",
+          "title": "AI Application Developer"
+        },
+        {
+          "id": "8957fc68-1cd5-4100-be9c-9eedb17d03d4",
+          "title": "Data Engineer"
+        }
+      ]
+    },
+    {
+      "id": "42d6f566-4133-42d4-952a-8e04c553bad2",
+      "slug": "prompt-engineering-and-llm-integration",
+      "name": "Prompt Engineering & LLM Integration",
+      "real_world": "Crafting contextual system prompts and integrating LLM APIs allows products to process dynamic natural language commands.",
+      "coverage_depth": null,
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "cf51c8ab-eb47-49fc-8ac5-e9ee1ecce95d",
+          "title": "AI Application Developer"
+        }
+      ]
+    },
+    {
+      "id": "d00b5919-f124-4a2a-85f9-80e4d325bc71",
+      "slug": "rest-api-design",
+      "name": "REST API Design",
+      "real_world": "Structuring clear HTTP REST endpoints with predictable request schemas makes backend services easy for frontends to integrate.",
+      "coverage_depth": "full",
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "14432559-21db-44a6-b6f9-654fb69b0f11",
+          "title": "Full-Stack Engineer"
+        },
+        {
+          "id": "be0e5401-47d7-49b8-a7d9-8400a6e2de32",
+          "title": "Machine Learning Engineer"
+        },
+        {
+          "id": "af6ce528-7fed-43d4-b91c-ddef90749e4f",
+          "title": "Backend Engineer"
+        },
+        {
+          "id": "cf51c8ab-eb47-49fc-8ac5-e9ee1ecce95d",
+          "title": "AI Application Developer"
+        },
+        {
+          "id": "a27bfa84-e3d6-4b38-8df9-2903991153e2",
+          "title": "UX Engineer"
+        }
+      ]
+    },
+    {
+      "id": "6c860875-0a31-4d4a-9b1e-83c7cde1235a",
+      "slug": "real-time-event-streaming",
+      "name": "Real-Time Event Streaming",
+      "real_world": "Establishing persistent WebSocket connections enables instantaneous dynamic updates in live collaborative applications.",
+      "coverage_depth": "partial",
+      "checked": false,
+      "verified": false,
+      "roles": []
+    },
+    {
+      "id": "9186be2a-3680-4ed9-a993-8e3718862efe",
+      "slug": "relational-schema-normalization",
+      "name": "Relational Schema Normalization",
+      "real_world": "Normalizing database tables up to BCNF eliminates duplicate storage and protects system data integrity from write anomalies.",
+      "coverage_depth": "full",
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "af6ce528-7fed-43d4-b91c-ddef90749e4f",
+          "title": "Backend Engineer"
+        },
+        {
+          "id": "7b5fedcb-3fef-44e0-ae03-7618b88fc379",
+          "title": "Database Administrator"
+        },
+        {
+          "id": "8957fc68-1cd5-4100-be9c-9eedb17d03d4",
+          "title": "Data Engineer"
+        },
+        {
+          "id": "3b538563-6549-414d-95d2-dfef1c38bc61",
+          "title": "Analytics Engineer"
+        }
+      ]
+    },
+    {
+      "id": "a06f1a73-3688-49d4-b1a1-169c3bea0c2a",
+      "slug": "responsive-css-layout",
+      "name": "Responsive CSS Layout",
+      "real_world": "Utilizing Flexbox and CSS Grid guarantees application interfaces adapt fluidly across mobile screens and desktop displays.",
+      "coverage_depth": "full",
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "14432559-21db-44a6-b6f9-654fb69b0f11",
+          "title": "Full-Stack Engineer"
+        },
+        {
+          "id": "a27bfa84-e3d6-4b38-8df9-2903991153e2",
+          "title": "UX Engineer"
+        }
+      ]
+    },
+    {
+      "id": "d1c14d2b-af07-4bce-9583-fd9ce1572923",
+      "slug": "sql-query-optimization",
+      "name": "SQL Query Optimization",
+      "real_world": "Cutting a 4-second dashboard query to 40ms is usually achieved by adding targeted composite indexes and rewriting expensive joins.",
+      "coverage_depth": "full",
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "14432559-21db-44a6-b6f9-654fb69b0f11",
+          "title": "Full-Stack Engineer"
+        },
+        {
+          "id": "af6ce528-7fed-43d4-b91c-ddef90749e4f",
+          "title": "Backend Engineer"
+        },
+        {
+          "id": "7b5fedcb-3fef-44e0-ae03-7618b88fc379",
+          "title": "Database Administrator"
+        },
+        {
+          "id": "8957fc68-1cd5-4100-be9c-9eedb17d03d4",
+          "title": "Data Engineer"
+        },
+        {
+          "id": "3b538563-6549-414d-95d2-dfef1c38bc61",
+          "title": "Analytics Engineer"
+        }
+      ]
+    },
+    {
+      "id": "f47de82e-a782-43a3-9f4d-0f2771f3164c",
+      "slug": "supervised-model-training",
+      "name": "Supervised Model Training",
+      "real_world": "Fitting classifiers and regressors on tagged datasets requires carefully balancing model capacity against generalization error.",
+      "coverage_depth": "full",
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "be0e5401-47d7-49b8-a7d9-8400a6e2de32",
+          "title": "Machine Learning Engineer"
+        },
+        {
+          "id": "cf51c8ab-eb47-49fc-8ac5-e9ee1ecce95d",
+          "title": "AI Application Developer"
+        }
+      ]
+    },
+    {
+      "id": "bf2a47fe-c588-4493-9d7a-3150b652fa09",
+      "slug": "system-architecture-design",
+      "name": "System Architecture Design",
+      "real_world": "Architecting decoupled microservices and event queues prevents single points of software failure under sudden traffic surges.",
+      "coverage_depth": null,
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "af6ce528-7fed-43d4-b91c-ddef90749e4f",
+          "title": "Backend Engineer"
+        },
+        {
+          "id": "7b5fedcb-3fef-44e0-ae03-7618b88fc379",
+          "title": "Database Administrator"
+        }
+      ]
+    },
+    {
+      "id": "03ee25e3-1b5c-49d3-a969-787ef78b9733",
+      "slug": "ui-design-systems-and-tokens",
+      "name": "UI Design Systems & Tokens",
+      "real_world": "Establishing standardized color, spacing, and typography design tokens guarantees visual consistency across multi-team web apps.",
+      "coverage_depth": null,
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "a27bfa84-e3d6-4b38-8df9-2903991153e2",
+          "title": "UX Engineer"
+        }
+      ]
+    },
+    {
+      "id": "17fb88f2-e861-4d2c-b573-2375e048b0a9",
+      "slug": "unit-and-integration-testing",
+      "name": "Unit & Integration Testing",
+      "real_world": "Writing automated component and API test suites catches application regressions before software reaches production.",
+      "coverage_depth": null,
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "14432559-21db-44a6-b6f9-654fb69b0f11",
+          "title": "Full-Stack Engineer"
+        },
+        {
+          "id": "7b5fedcb-3fef-44e0-ae03-7618b88fc379",
+          "title": "Database Administrator"
+        },
+        {
+          "id": "a27bfa84-e3d6-4b38-8df9-2903991153e2",
+          "title": "UX Engineer"
+        }
+      ]
+    },
+    {
+      "id": "5e999332-a3bf-4f28-b374-b93dcadba10d",
+      "slug": "usability-testing-and-evaluation",
+      "name": "Usability Testing & Evaluation",
+      "real_world": "Observing real users navigate task workflows highlights non-intuitive UI elements and conversion bottlenecks.",
+      "coverage_depth": null,
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "cf51c8ab-eb47-49fc-8ac5-e9ee1ecce95d",
+          "title": "AI Application Developer"
+        },
+        {
+          "id": "a27bfa84-e3d6-4b38-8df9-2903991153e2",
+          "title": "UX Engineer"
+        }
+      ]
+    },
+    {
+      "id": "a921feca-ccfd-4616-ac26-47dce99a26bf",
+      "slug": "user-research-and-persona-mapping",
+      "name": "User Research & Persona Mapping",
+      "real_world": "Conducting user interviews uncovers workflows and pain points before engineering teams waste effort on unused features.",
+      "coverage_depth": null,
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "3b538563-6549-414d-95d2-dfef1c38bc61",
+          "title": "Analytics Engineer"
+        }
+      ]
+    },
+    {
+      "id": "517c35f7-ade2-4a05-8333-c711b1adf44b",
+      "slug": "vector-embeddings-and-search",
+      "name": "Vector Embeddings & Search",
+      "real_world": "Generating unstructured data vector embeddings enables semantic similarity search for modern AI search platforms.",
+      "coverage_depth": null,
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "cf51c8ab-eb47-49fc-8ac5-e9ee1ecce95d",
+          "title": "AI Application Developer"
+        }
+      ]
+    },
+    {
+      "id": "fe854d49-0e92-41d9-bd29-5db127950f84",
+      "slug": "version-control-with-git",
+      "name": "Version Control with Git",
+      "real_world": "Branching, committing, and resolving merge conflicts cleanly enables engineering teams to collaborate without code overwrites.",
+      "coverage_depth": null,
+      "checked": false,
+      "verified": false,
+      "roles": []
+    },
+    {
+      "id": "19f75a0e-690a-4f36-9b29-edf2873072b9",
+      "slug": "web-accessibility-compliance",
+      "name": "Web Accessibility Compliance",
+      "real_world": "Adding ARIA labels and semantic HTML markup ensures visually impaired users navigate web applications via screen readers.",
+      "coverage_depth": "partial",
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "14432559-21db-44a6-b6f9-654fb69b0f11",
+          "title": "Full-Stack Engineer"
+        },
+        {
+          "id": "a27bfa84-e3d6-4b38-8df9-2903991153e2",
+          "title": "UX Engineer"
+        },
+        {
+          "id": "3b538563-6549-414d-95d2-dfef1c38bc61",
+          "title": "Analytics Engineer"
+        }
+      ]
+    },
+    {
+      "id": "3e5a897d-cb01-4631-909c-147e544c34ba",
+      "slug": "web-authentication-and-sessions",
+      "name": "Web Authentication & Sessions",
+      "real_world": "Issuing signed JWT tokens or secure session cookies protects application endpoints from unauthorized access.",
+      "coverage_depth": "full",
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "14432559-21db-44a6-b6f9-654fb69b0f11",
+          "title": "Full-Stack Engineer"
+        },
+        {
+          "id": "af6ce528-7fed-43d4-b91c-ddef90749e4f",
+          "title": "Backend Engineer"
+        }
+      ]
+    },
+    {
+      "id": "6b781f19-48a3-4de9-93ab-90dd9915066f",
+      "slug": "web-security-hardening",
+      "name": "Web Security Hardening",
+      "real_world": "Sanitizing user inputs prevents cross-site scripting, SQL injection, and request forgery vulnerabilities in public applications.",
+      "coverage_depth": "partial",
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "14432559-21db-44a6-b6f9-654fb69b0f11",
+          "title": "Full-Stack Engineer"
+        },
+        {
+          "id": "af6ce528-7fed-43d4-b91c-ddef90749e4f",
+          "title": "Backend Engineer"
+        },
+        {
+          "id": "7b5fedcb-3fef-44e0-ae03-7618b88fc379",
+          "title": "Database Administrator"
+        }
+      ]
+    },
+    {
+      "id": "1999e38b-e158-426c-b0ac-f4669bab84ee",
+      "slug": "wireframing-and-prototyping",
+      "name": "Wireframing & Prototyping",
+      "real_world": "Creating interactive low-fidelity prototypes validates user navigation flows before writing frontend production code.",
+      "coverage_depth": null,
+      "checked": false,
+      "verified": false,
+      "roles": [
+        {
+          "id": "a27bfa84-e3d6-4b38-8df9-2903991153e2",
+          "title": "UX Engineer"
+        }
+      ]
+    }
+  ]
+}

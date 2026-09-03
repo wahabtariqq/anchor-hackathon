@@ -47,7 +47,7 @@ export function FitRing({
         />
       </svg>
       {showLabel && (
-        <span className={cn("absolute text-sm font-semibold", labelClassName)}>{clamped}%</span>
+        <span className={cn("absolute font-display text-sm font-semibold", labelClassName)}>{clamped}%</span>
       )}
     </div>
   );

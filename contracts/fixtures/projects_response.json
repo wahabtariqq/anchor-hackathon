@@ -1,0 +1,96 @@
+{
+  "projects": [
+    {
+      "project": {
+        "id": "proj_fullstack_1",
+        "role_id": "14432559-21db-44a6-b6f9-654fb69b0f11",
+        "title": "Task Board API + Client",
+        "spec": "Build a small task-tracking app: a REST API backed by a database, and a frontend that consumes it. Users can create boards, add tasks, and mark them done without a full page reload.",
+        "criteria": [
+          "Implements token-based authentication with at least one protected route",
+          "Exposes a documented REST API for creating, reading, updating, and deleting tasks",
+          "Frontend updates task state optimistically, without a full page reload"
+        ],
+        "verifies": [
+          "e9e0a034-acc1-43bd-9063-d01470f93c2d",
+          "d00b5919-f124-4a2a-85f9-80e4d325bc71",
+          "3e5a897d-cb01-4631-909c-147e544c34ba"
+        ]
+      },
+      "submissions": [
+        {
+          "id": "sub_fullstack_1",
+          "repo_url": "https://github.com/ayesha-dev/task-board",
+          "total": 6,
+          "max_total": 6,
+          "passed": true,
+          "created_at": "2026-08-29T20:05:00Z",
+          "criteria_scores": [
+            {
+              "criterion": "Implements token-based authentication with at least one protected route",
+              "score": 2,
+              "note": "JWT issued on login and verified via middleware on /tasks routes."
+            },
+            {
+              "criterion": "Exposes a documented REST API for creating, reading, updating, and deleting tasks",
+              "score": 2,
+              "note": "Clean REST surface — GET/POST/PATCH/DELETE /api/tasks, documented in the README."
+            },
+            {
+              "criterion": "Frontend updates task state optimistically, without a full page reload",
+              "score": 2,
+              "note": "Task list re-renders from local state immediately; the API call happens in the background."
+            }
+          ],
+          "feedback": "Solid, idiomatic implementation — the optimistic update path in particular is well done."
+        }
+      ]
+    },
+    {
+      "project": {
+        "id": "proj_ml_1",
+        "role_id": "be0e5401-47d7-49b8-a7d9-8400a6e2de32",
+        "title": "Customer Churn Classifier",
+        "spec": "Train a classifier that predicts customer churn from a tabular dataset, and serve it behind a minimal prediction endpoint.",
+        "criteria": [
+          "Trains a supervised model on a labeled dataset with a documented train/test split",
+          "Reports precision, recall, and F1 rather than accuracy alone",
+          "Exposes the trained model behind a prediction endpoint"
+        ],
+        "verifies": [
+          "f47de82e-a782-43a3-9f4d-0f2771f3164c",
+          "b79e23a6-0819-4581-84cf-8a72897b9701",
+          "c45a4ae9-fb45-4c50-a6c5-6c267f7936fc"
+        ]
+      },
+      "submissions": [
+        {
+          "id": "sub_ml_1",
+          "repo_url": "https://github.com/ayesha-dev/churn-classifier",
+          "total": 3,
+          "max_total": 6,
+          "passed": false,
+          "created_at": "2026-09-01T10:15:00Z",
+          "criteria_scores": [
+            {
+              "criterion": "Trains a supervised model on a labeled dataset with a documented train/test split",
+              "score": 2,
+              "note": "scikit-learn RandomForestClassifier with an 80/20 stratified split — clean and reproducible."
+            },
+            {
+              "criterion": "Reports precision, recall, and F1 rather than accuracy alone",
+              "score": 1,
+              "note": "F1 is computed but never printed or logged anywhere; precision/recall are absent."
+            },
+            {
+              "criterion": "Exposes the trained model behind a prediction endpoint",
+              "score": 0,
+              "note": "No serving code found — the model is trained and pickled, but nothing exposes it over HTTP."
+            }
+          ],
+          "feedback": "The modeling half is strong. Add a small prediction endpoint (even a single Flask/FastAPI route) to close the loop from training to serving."
+        }
+      ]
+    }
+  ]
+}

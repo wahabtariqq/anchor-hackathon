@@ -1,0 +1,45 @@
+{
+  "top_role": {
+    "id": "14432559-21db-44a6-b6f9-654fb69b0f11",
+    "title": "Full-Stack Engineer",
+    "fit_percent": 86
+  },
+  "skills_verified": 0,
+  "skills_checked": 0,
+  "verified_delta": 0,
+  "checked_delta": 0,
+  "snapshots": {
+    "14432559-21db-44a6-b6f9-654fb69b0f11": [
+      { "fit": 86, "at": "2026-08-25T14:00:00Z" },
+      { "fit": 86, "at": "2026-09-03T14:00:00Z" }
+    ],
+    "be0e5401-47d7-49b8-a7d9-8400a6e2de32": [
+      { "fit": 80, "at": "2026-08-25T14:00:00Z" },
+      { "fit": 80, "at": "2026-09-03T14:00:00Z" }
+    ],
+    "af6ce528-7fed-43d4-b91c-ddef90749e4f": [
+      { "fit": 77, "at": "2026-08-25T14:00:00Z" },
+      { "fit": 77, "at": "2026-09-03T14:00:00Z" }
+    ]
+  },
+  "next_actions": [
+    {
+      "role_id": "14432559-21db-44a6-b6f9-654fb69b0f11",
+      "label": "Learn Cache Strategy Design",
+      "kind": "tick"
+    },
+    {
+      "role_id": "be0e5401-47d7-49b8-a7d9-8400a6e2de32",
+      "label": "Learn Model Deployment & Serving",
+      "kind": "tick"
+    },
+    {
+      "role_id": "af6ce528-7fed-43d4-b91c-ddef90749e4f",
+      "label": "Learn System Architecture Design",
+      "kind": "tick"
+    }
+  ],
+  "recent_events": [
+    { "text": "Completed your ANCHOR analysis — 8 roles ranked", "at": "2026-08-25T14:00:00Z" }
+  ]
+}

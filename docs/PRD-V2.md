@@ -3,6 +3,9 @@
 **"From a form to a product" · 3 people · 2 days, after V1's core is frozen**
 **Baseline:** V1 complete (analysis → roadmap → ticks → Prove It), dark mode, single-flow UI, three screens only.
 **Status:** Proposed. This is the planned continuation of `docs/PRD.md` §16 ("v2 — README only, do not build [yet]"); it is not yet team-ratified the way `docs/PRD.md` is Locked.
+**Frontend status (2026-09-04):** all five screens plus the shell and design pass (§3, §4, §8) are
+built, frontend-only against fixtures ahead of the backend lane — see `docs/TDD-V2.md` §7.5 for
+what that means and its integration seam. Backend (§5-§7, §11's Backend list) has not started.
 
 *Why V2: V1 proves the engine, but it reads as a one-shot form — you fill it in, you see a result, you leave. Nothing invites you back. V2's single job is to make ANCHOR a place a student returns to: an account they log into, a dashboard that shows what changed since last time, and screens that feel like an application, not a wizard. No new AI work. The engine is done; V2 is identity, memory, and skin.*
 
@@ -101,6 +104,8 @@ No new computation anywhere here — everything derives from existing tables plu
 ### 4.4 `/roadmap`
 
 V1's two-column roadmap and drawer, functionally untouched, restyled with the token system: consistent card treatment, refined fit rings, the adjacent section clearly differentiated, the "what moved" strip kept. The drawer still opens in place; `?role=` still works. **Do not rebuild this screen; re-skin it.**
+
+One removal, not a rebuild: V1's "Start over" header button (`clearStudentId()` → `/setup`) is gone — `/setup` isn't a top-level route in V2, and §2 already lists re-analysis ("Start over") as V3 scope, so the button had nowhere left to send a student.
 
 ### 4.5 `/skills`
 

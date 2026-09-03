@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { clearStudentId } from "@/lib/identity";
 import type { RoadmapRole, RoadmapSkill } from "@/lib/types";
-import { AnalysisProvider, useAnalysis } from "./AnalysisContext";
+import { useAnalysis } from "./AnalysisContext";
 import { RoleCard } from "./RoleCard";
 import { RoleDrawer } from "./RoleDrawer";
 import { WhatMoved } from "./WhatMoved";
@@ -13,7 +11,11 @@ import { WhatMoved } from "./WhatMoved";
 const CARD_H = 132;
 const CARD_GAP = 12;
 
-function RoadmapContent() {
+// AnalysisProvider now wraps the whole authenticated route group (app/router.tsx), lifted out
+// of this component so /skills shares the same live checkedIds/verifiedIds/roleFit with zero
+// refetch (TDD-V2 §7.2). Re-skinned per PRD-V2 §4.4 — the re-sort math, drawer, and ProveIt
+// states below are untouched.
+export function RoadmapPage() {
   const { data, loading, error, checkedIds, verifiedIds, roleFit, openRoleSlug, setOpenRole, toggle } =
     useAnalysis();
   const lastTrigger = useRef<HTMLElement | null>(null);
@@ -84,33 +86,21 @@ function RoadmapContent() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-8">
-      <header className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-semibold">
-            {data.student.name} · Semester {data.student.semester}
-          </h1>
-          <div className="mt-1 flex flex-wrap gap-1.5">
-            {data.student.interests.map((interest) => (
-              <Badge key={interest} variant="outline" className="text-xs font-normal">
-                {interest}
-              </Badge>
-            ))}
-          </div>
+      <header>
+        <h1 className="font-display text-heading">
+          {data.student.name} · Semester {data.student.semester}
+        </h1>
+        <div className="mt-1 flex flex-wrap gap-1.5">
+          {data.student.interests.map((interest) => (
+            <Badge key={interest} variant="outline" className="text-xs font-normal">
+              {interest}
+            </Badge>
+          ))}
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            clearStudentId();
-            window.location.href = "/setup";
-          }}
-        >
-          Start over
-        </Button>
       </header>
 
-      <div className="grid grid-cols-[1fr_28rem] items-start gap-6">
-        <div className="space-y-6">
+      <div className="grid grid-cols-[minmax(0,1fr)_28rem] items-start gap-6">
+        <div className="min-w-0 space-y-6">
           <section className="space-y-3">
             <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
               Your closest paths
@@ -155,7 +145,7 @@ function RoadmapContent() {
           )}
         </div>
 
-        <div className="sticky top-8" style={{ minHeight: coreRoles.length * CARD_H }}>
+        <div className="sticky top-8 min-w-0" style={{ minHeight: coreRoles.length * CARD_H }}>
           {openRole_ ? (
             <RoleDrawer
               role={openRole_}
@@ -172,15 +162,5 @@ function RoadmapContent() {
         </div>
       </div>
     </div>
-  );
-}
-
-// AnalysisProvider is scoped here for now; per anchor-frontend skill it should not wrap
-// Setup/Analyzing, which need no shared context.
-export function RoadmapPage() {
-  return (
-    <AnalysisProvider>
-      <RoadmapContent />
-    </AnalysisProvider>
   );
 }

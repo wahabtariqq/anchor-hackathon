@@ -53,7 +53,21 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        "token-sm": "var(--radius-sm)",
+        "token-md": "var(--radius-md)",
+        "token-lg": "var(--radius-lg)",
       },
+      fontFamily: {
+        display: ["var(--font-display)"],
+      },
+      fontSize: {
+        display: ["var(--text-display)", { fontWeight: "600" }],
+        heading: ["var(--text-heading)", { fontWeight: "600" }],
+        body: ["var(--text-body)", { fontWeight: "400" }],
+        caption: ["var(--text-caption)", { fontWeight: "500" }],
+      },
+      // Spacing: Tailwind's default 4px-increment scale already equals --space-1..8
+      // (anchor-design §4) — p-1/p-2/p-3/p-4/p-6/p-8 ARE the token scale, no extension needed.
     },
   },
   plugins: [require("tailwindcss-animate")],

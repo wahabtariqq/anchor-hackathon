@@ -13,7 +13,15 @@ const STAGES = [
   { at: 70_000, text: "Writing your roadmap…" },
 ];
 
-export function AnalyzingPage() {
+interface AnalyzingPageProps {
+  /** Called instead of the default navigate("/roadmap") once the analysis completes (or a 409
+   *  finds one already exists) — lets a caller run a step of its own first, e.g. OnboardingRoute
+   *  marking the account onboarded before landing on the Dashboard. Omit for V1's original
+   *  behavior; mirrors the onComplete prop SetupPage already takes for the same reason. */
+  onSuccess?: () => void;
+}
+
+export function AnalyzingPage({ onSuccess }: AnalyzingPageProps = {}) {
   const navigate = useNavigate();
   const [stageIndex, setStageIndex] = useState(0);
   const [failed, setFailed] = useState(false);
@@ -39,13 +47,16 @@ export function AnalyzingPage() {
     // wrongly suppress the one real request's own result.
     analyze()
       .then(() => {
-        if (firedFor.current === attempt) navigate("/roadmap", { replace: true });
+        if (firedFor.current !== attempt) return;
+        if (onSuccess) onSuccess();
+        else navigate("/roadmap", { replace: true });
       })
       .catch((err: unknown) => {
         if (firedFor.current !== attempt) return;
         // 409 = analysis already exists (e.g. a reload landed here again) — not a failure.
         if (err instanceof ApiError && err.status === 409) {
-          navigate("/roadmap", { replace: true });
+          if (onSuccess) onSuccess();
+          else navigate("/roadmap", { replace: true });
           return;
         }
         setFailed(true);

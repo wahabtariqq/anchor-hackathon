@@ -44,7 +44,7 @@ export function RoleCard({ role, fit, skillsById, onClick, className }: RoleCard
       <CardContent className="flex items-start gap-4 p-4">
         <FitRing percent={fit} size={48} strokeWidth={4} labelClassName="text-sm font-semibold" />
         <div className="min-w-0 flex-1">
-          <h3 className="truncate text-base font-semibold">{role.title}</h3>
+          <h3 className="truncate font-display text-base font-semibold">{role.title}</h3>
           <p className="truncate text-sm text-muted-foreground">{role.one_liner}</p>
           <p className="mt-1 text-xs text-muted-foreground">
             {covered} of {total} skills covered

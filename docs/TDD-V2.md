@@ -4,6 +4,12 @@
 **Stack:** unchanged — FastAPI + SQLModel + Postgres/SQLite · React + Vite + Tailwind + shadcn/ui. No new AI stack; `backend/app/analysis/` is frozen (PRD-V2 §2 non-goals).
 **Audience:** the same three engineers who built V1 — Salman, Umer, Wahab
 **Status:** Design proposed, not yet locked. Mirrors `docs/TDD.md`'s section shape so the two documents read side by side.
+**Frontend lane status (2026-09-04):** Wahab's side of §12's build order is done — all five new
+screens, the shell, the token pass, and the roadmap re-skin — built **frontend-only,
+fixture-backed** ahead of the backend lane, per §7.5 below. Salman's and Umer's backend lanes
+(`user`/`session`/`event`/`fit_snapshot`, `/api/auth/*`, `/api/dashboard`, `/api/skills`,
+`/api/projects`) have not started; §7.5 documents the frontend-only interim and its integration
+seam.
 
 *V2 adds: real accounts (`user`, `session`), an append-only `event` log, `fit_snapshot` history, four new screens (Dashboard, Skills, Projects, Profile) plus Login/Signup behind an app shell, and a design-token pass. It does **not** touch `backend/app/analysis/`, the three model calls, the fit formula, or the roadmap response shape — those are frozen exactly as TDD v4 left them.*
 
@@ -69,20 +75,24 @@ anchor/
 │   └── tests/
 │       ├── test_auth.py               # signup, login, bad password, expiry, claim-on-signup, rate limit
 │       └── test_events.py             # tick/untick/submission/pass write the right rows; snapshot only on change
-└── frontend/
-    ├── src/
+└── frontend/                          # ← BUILT (2026-09-04, Wahab) — frontend-only, fixture-backed;
+    ├── src/                          #   see §7.5 for what that means and the corrections below
     │   ├── app/
-    │   │   ├── router.tsx             # + /login /signup /dashboard /skills /projects /profile
+    │   │   ├── router.tsx             # + /login /signup /dashboard /skills /projects /profile; /onboarding
+    │   │   │                          #   is its OWN top-level route, NOT nested under AppShell — see §7.2
     │   │   ├── AppShell.tsx           # rebuilt: sidebar + topbar, replaces the current top-bar-only shell
-    │   │   └── RequireAuth.tsx        # route guard: no token → /login
+    │   │   └── RequireAuth.tsx        # route guard: no token → /login; no analysis yet → /onboarding
     │   ├── lib/
-    │   │   ├── auth.ts                # token storage + login/signup/logout calls (extends identity.ts's pattern)
+    │   │   ├── auth.ts                # token + cached user + onboarded flag + a mock account store
+    │   │   │                          #   (extends identity.ts's pattern) — see §7.5, /api/auth/* doesn't exist yet
+    │   │   ├── eventLog.ts            # NEW, not in the original plan — frontend-only Event/FitSnapshot
+    │   │   │                          #   simulation so the Dashboard reacts without a backend; see §7.5
     │   │   └── api.ts                 # Authorization: Bearer instead of X-Student-Id; 401 → clear token, /login
     │   ├── features/
-    │   │   ├── auth/                  # LoginPage, SignupPage
-    │   │   ├── onboarding/            # wraps existing SetupPage + AnalyzingPage behind a 3-step header
+    │   │   ├── auth/                  # AuthCard (shared card layout), LoginPage, SignupPage
+    │   │   ├── onboarding/            # OnboardingRoute + StepHeader, wraps existing SetupPage + AnalyzingPage
     │   │   ├── dashboard/             # DashboardPage, StatCards, FitChart, NextActions, ActivityFeed
-    │   │   ├── skills/                # SkillsPage, SkillTable, StatusPill
+    │   │   ├── skills/                # SkillsPage, StatusPill (no separate SkillTable — one inline list)
     │   │   ├── projects/              # ProjectsPage, ProjectCard, SubmissionHistory
     │   │   └── profile/               # ProfilePage
     │   └── styles/tokens.css          # new: type scale, spacing, radii (colors already exist in index.css)
@@ -575,15 +585,30 @@ Same "one `fetch`, no React Query" rule as v4 (`frontend/CLAUDE.md`) — the onl
 
 ### 7.2 App shell and routing
 
+**Corrected from the original draft (2026-09-04, Wahab):** the code sample this section originally
+shipped nested `/onboarding` *inside* the `RequireAuth><AppShell>` group, which silently
+contradicts PRD-V2 §3's "`/onboarding (post-signup, no sidebar: …)`" — a sidebar-wrapped route
+cannot be a no-sidebar route. Implementation follows the PRD: `/onboarding` is its own top-level
+route, sitting behind `RequireAuth` but never inside `AppShell`.
+
 ```tsx
 // app/router.tsx — delta from TDD v4 §3
 export const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
   { path: "/signup", element: <SignupPage /> },
   {
-    element: <RequireAuth><AppShell /></RequireAuth>,     // AppShell now renders the sidebar + topbar
+    path: "/onboarding",
+    element: <RequireAuth><OnboardingRoute /></RequireAuth>,   // no AppShell — PRD-V2 §3, "no sidebar"
+  },
+  {
+    element: (
+      <RequireAuth>
+        <AnalysisProvider>                                     {/* lifted here — see below */}
+          <AppShell />                                          {/* AppShell now renders the sidebar + topbar */}
+        </AnalysisProvider>
+      </RequireAuth>
+    ),
     children: [
-      { path: "/onboarding", element: <OnboardingRoute /> },   // wraps SetupPage + AnalyzingPage, 3-step header
       { path: "/", element: <DashboardPage /> },
       { path: "/roadmap", element: <RoadmapPage /> },           // unchanged component, re-skinned only
       { path: "/skills", element: <SkillsPage /> },
@@ -594,16 +619,35 @@ export const router = createBrowserRouter([
 ]);
 ```
 
-`RequireAuth` checks `getToken()`; absent → redirect `/login`. `AppShell.tsx` is rebuilt: 232px fixed sidebar (logo, nav items with active-route highlight, divider, Profile), topbar with page title + user chip → menu (Profile, Log out). The current minimal top-bar-only shell (which has an explicit "no nav links, no login" comment tied to v4's PRD §10) is replaced outright — that comment described v4 scope, not a permanent constraint.
+`RequireAuth` checks `getToken()`; absent → redirect `/login`. Token present but no analysis yet
+(`isOnboarded()` false) and not already on `/onboarding` → redirect `/onboarding`. `AppShell.tsx`
+is rebuilt: 232px fixed sidebar (logo, nav items with active-route highlight, divider, Profile),
+topbar with page title (read from each route's `handle: { title }`) + user chip → menu (Profile,
+Log out). The current minimal top-bar-only shell (which has an explicit "no nav links, no login"
+comment tied to v4's PRD §10) is replaced outright — that comment described v4 scope, not a
+permanent constraint.
 
-`/onboarding` renders the existing `SetupPage` and `AnalyzingPage` components unmodified, wrapped in a step header (Courses → Interests → Analysis) that just reads which one is active — no behavioural change to either component, per PRD-V2 §4.2.
+**New, not in the original draft: `AnalysisProvider` is lifted** from being scoped inside
+`RoadmapPage.tsx` (TDD v4's pattern) up to wrap the whole `AppShell`-nested route group above.
+PRD-V2 §4.5 requires the Skills screen's ticking to use "the same optimistic path as the drawer"
+— that only works if `/roadmap` and `/skills` share one `AnalysisContext` instance instead of each
+fetching and re-deriving their own. `RoadmapPage.tsx` no longer wraps itself in `AnalysisProvider`.
+
+`/onboarding` renders the existing `SetupPage` and `AnalyzingPage` components, wrapped in a step
+header (Courses → Interests → Analysis) that just reads which one is active. One small, necessary
+addition beyond "no behavioural change" (PRD-V2 §4.2): `AnalyzingPage` gained an optional
+`onSuccess?: () => void` prop — mirroring the `onComplete` prop `SetupPage` already had — called
+instead of its hardcoded `navigate("/roadmap")` when supplied. Without it, `OnboardingRoute` had
+no way to mark the account onboarded before navigating, and `RequireAuth` would bounce the student
+straight back to `/onboarding` in a redirect loop. Omitting the prop preserves `AnalyzingPage`'s
+exact V1 behavior.
 
 ### 7.3 New screens — component shape, not full spec
 
 PRD-V2 §4.3–§4.7 already specifies what each screen shows; this section is only the technical shape.
 
-- **`features/dashboard/`** — `DashboardPage` fetches `/api/dashboard` once on mount (same "one fetch" rule). `FitChart` renders `snapshots` as an SVG line — **no new charting dependency**: `FitRing` already proves an inline-SVG approach works for this codebase (TDD v4 §7.3), and a 3-line time series is a `<polyline>` with a scaled x/y, not a library job. If a richer chart is wanted later, that's a `contract:`-style note in `docs/DECISIONS.md`, not a default.
-- **`features/skills/`** — `SkillsPage` fetches `/api/skills` once; filter tabs and search are client-side `useMemo` over the returned array, no server round-trip per keystroke. Ticking reuses the exact optimistic path `RoleDrawer` already has (`toggle(skillId)` in `AnalysisContext`) — the Skills screen needs `AnalysisContext` mounted the same way the Roadmap page does.
+- **`features/dashboard/`** — `DashboardPage` fetches `/api/dashboard` once on mount (same "one fetch" rule). `FitChart` renders `snapshots` as an SVG line — **no new charting dependency**: `FitRing` already proves an inline-SVG approach works for this codebase (TDD v4 §7.3), and a 3-line time series is a `<polyline>` with a scaled x/y, not a library job. Colors are the `dataviz` skill's validated categorical palette, dark-mode slots 1-3 (blue/orange/aqua), not a new ad hoc choice. If a richer chart is wanted later, that's a `contract:`-style note in `docs/DECISIONS.md`, not a default. **Current numbers** (top-role fit, verified/checked counts) read live off the shared `AnalysisContext`, never off the fetched payload — see §7.5 for why. `<svg>` needs `preserveAspectRatio="none"` plus a fixed CSS height (`h-40`, matching the viewBox height) — without it, the box scales to the viewBox's aspect ratio at full container width and renders far taller than intended.
+- **`features/skills/`** — `SkillsPage` fetches `/api/skills` once; filter tabs and search are client-side `useMemo` over the returned array, no server round-trip per keystroke. Ticking reuses the exact optimistic path `RoleDrawer` already has (`toggle(skillId)` in `AnalysisContext`) — the Skills screen needs `AnalysisContext` mounted the same way the Roadmap page does, which is exactly what §7.2's provider lift is for. Status labels reuse `SkillRow.tsx`'s exported `skillState()` (DECISIONS #34's precedence), not a re-derived enum, so this screen can't disagree with the drawer about a skill's state. Built as one inline list rather than a separate `SkillTable` component — no table primitive exists elsewhere in this codebase, and introducing one for a single screen wasn't warranted.
 - **`features/projects/`** — `ProjectsPage` fetches `/api/projects` once; resubmit calls the existing `submitRepo(roleId, url)` context function unchanged, then refetches `/api/projects` (cheap, not on the hot animation path).
 - **`features/profile/`** — reads `user` out of an `AuthContext` (populated at login/signup, refreshed on load via a lightweight `/api/auth/me`-shaped read *or* simply re-derived from the JWT-less session by calling `/api/dashboard`'s `student` fields — pick whichever avoids a sixth endpoint; not prescribed further here, it's a one-screen decision). Logout / logout-everywhere call `lib/auth.ts`.
 
@@ -612,14 +656,64 @@ PRD-V2 §4.3–§4.7 already specifies what each screen shows; this section is o
 ```css
 /* src/styles/tokens.css — new, imported after index.css's existing color tokens */
 :root {
-  --font-display: /* pick one distinctive numeral/heading face */;
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;  /* decided 2026-09-04 */
   --text-display: 2.5rem; --text-heading: 1.25rem; --text-body: 0.9375rem; --text-caption: 0.75rem;
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px; --space-8: 32px;
   --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px;
 }
 ```
 
-Colors are **not** redefined here — `--anchor-good`/`--anchor-critical`/`--anchor-adjacent`/ring tokens already live in `index.css` and stay the single source for semantic color (PRD-V2 §0, §8). `tailwind.config.js` gains matching `spacing`/`borderRadius`/`fontSize` extensions pointing at these variables, the same pattern it already uses for the color tokens.
+**Font decided:** Space Grotesk, loaded via a `<link>` in `index.html` (weights 500/600/700), applied
+only to headings, fit %, and dashboard stat numerals (`font-display` Tailwind utility) — body text
+stays the system sans stack. Colors are **not** redefined here — `--anchor-good`/`--anchor-critical`/
+`--anchor-adjacent`/ring tokens already live in `index.css` and stay the single source for semantic
+color (PRD-V2 §0, §8). `tailwind.config.js` gains a matching `fontFamily.display`/`fontSize`
+extension pointing at these variables, the same pattern it already uses for the color tokens.
+Spacing was **not** extended — Tailwind's default 4px-increment scale already equals `--space-1..8`
+(`anchor-design` §4), so `p-1`/`p-4`/`p-6`/etc. already *are* the token scale.
+
+### 7.5 Interim frontend-only data — no backend yet (new section, 2026-09-04, Wahab)
+
+Everything above assumes `/api/auth/*`, `/api/dashboard`, `/api/skills`, and `/api/projects`
+exist. They don't (PRD-V2 §0's audit) — Salman's and Umer's V2 lanes haven't started. Rather than
+block the whole frontend build on that, the frontend lane was built **frontend-only,
+fixture-backed**, the same `VITE_USE_FIXTURE` pattern TDD v4 used to build the Roadmap screen
+before the real backend existed (`lib/api.ts`'s `USE_FIXTURE` branch, restored — it had been
+deleted once V1's backend shipped — and extended to serve `contracts/fixtures/dashboard_response.json`,
+`skills_response.json`, `projects_response.json`, all newly authored from the existing demo
+student in `roadmap_response.json`).
+
+Two problems a static fixture alone doesn't solve, both solved by the same mechanism:
+
+- **`lib/auth.ts`** has no real endpoint to call at all (not "fixture vs. real branch" — there's
+  nothing to branch to), so `signup`/`login`/`logout`/`logoutAll` are fully local: a small mock
+  account store in `localStorage`, seeded with the demo account (`ayesha@example.com`, any
+  password logs in). Swapping in real `POST /api/auth/*` later means rewriting these four function
+  bodies; every caller (`LoginPage`, `SignupPage`, `RequireAuth`) keeps the same signatures.
+- **The Dashboard would look dead** — PRD-V2 §1 frames the whole feature as "a reason to return,"
+  and a chart that never moves after a real tick undercuts that on first use. `lib/eventLog.ts`
+  (new, not in the original plan) is a small `localStorage`-backed mirror of §4.2's `Event`/
+  `FitSnapshot` tables: `seedIfEmpty()` seeds it once from the dashboard fixture (so day one still
+  shows a history), then `AnalysisContext.toggle()`/`submitRepo()` call `recordTick`/
+  `recordSubmission`, and a `useEffect` diffing `roleFit` against a `useRef` of its previous value
+  — the same technique `WhatMoved.tsx` already uses — calls `recordSnapshotIfChanged` per role
+  whose fit actually moved. `GET /api/projects`'s fixture branch does the equivalent for
+  submission history, merging any live `recordSubmission` events in ahead of the seeded ones so a
+  resubmit shows up on refetch instead of vanishing. Verified live in the browser: ticking a skill
+  on `/roadmap` produces a new line in the Dashboard's activity feed and a new chart point on the
+  next visit, not just the static seed.
+
+Both are single-browser, `localStorage`-only — no cross-device sync, honestly, since there's no
+server. **The seam for real integration is exactly `lib/auth.ts` and `lib/api.ts`'s fixture
+branch** — when the real endpoints land, delete `eventLog.ts`, delete the mock account store, and
+swap each function body; no screen needs to change, matching this document's existing promise for
+the Roadmap screen (§7).
+
+One more small, deliberate deviation: `RoadmapPage.tsx`'s header lost its "Start over" button (it
+called `clearStudentId()` and routed to the retired `/setup`). PRD-V2 §2 lists "'Start over' (new
+analysis) is V3" as a non-goal — V2 has nowhere for it to go once `/setup` isn't a top-level route
+— so removing it is compliance with that non-goal, not a rebuild of the screen (§4.4 still holds:
+the re-sort math, drawer, and `ProveIt` states are untouched).
 
 ---
 

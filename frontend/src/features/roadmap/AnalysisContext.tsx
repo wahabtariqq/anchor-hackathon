@@ -1,6 +1,7 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { getProject, getRoadmap, setProgress, submitRepo as apiSubmitRepo } from "@/lib/api";
+import { recordSnapshotIfChanged, recordSubmission, recordTick } from "@/lib/eventLog";
 import { setStudentName } from "@/lib/identity";
 import { fitPercent } from "@/lib/scoring";
 import type { ProjectResponse, ReviewResponse, RoadmapResponse } from "@/lib/types";
@@ -84,6 +85,21 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     return m;
   }, [data, checkedIds, verifiedIds]);
 
+  // Simulated event/snapshot log (lib/eventLog.ts) — makes the V2 Dashboard react to real
+  // ticks/submissions without a backend. This effect reuses WhatMoved.tsx's own technique (diff
+  // against a ref of the previous roleFit map) to detect "what changed" and write one snapshot
+  // per role whose fit actually moved; the very first render has no previous map, so nothing is
+  // written on load, only on real change.
+  const prevRoleFit = useRef<Map<string, number> | null>(null);
+  useEffect(() => {
+    if (prevRoleFit.current) {
+      for (const [roleId, fit] of roleFit) {
+        recordSnapshotIfChanged(roleId, prevRoleFit.current.get(roleId), fit);
+      }
+    }
+    prevRoleFit.current = roleFit;
+  }, [roleFit]);
+
   function toggle(skillId: string) {
     const wasChecked = checkedIds.has(skillId);
 
@@ -93,6 +109,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
       else next.add(skillId);
       return next;
     });
+    recordTick(data?.skills.find((s) => s.id === skillId)?.name ?? skillId, !wasChecked);
 
     // Fire-and-forget: nothing awaits the network, the visual update is already committed above.
     setProgress({ skill_id: skillId, checked: !wasChecked }).catch(() => {
@@ -117,6 +134,13 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     setReviews((prev) => new Map(prev).set(roleId, res.review));
     // Replace wholesale, never merge — this is the server's full verified set.
     setVerifiedIds(new Set(res.verified_skill_ids));
+    recordSubmission(
+      data?.roles.find((r) => r.id === roleId)?.title ?? roleId,
+      url,
+      res.review.total,
+      res.review.max_total,
+      res.review.passed,
+    );
   }
 
   const value: AnalysisContextValue = {

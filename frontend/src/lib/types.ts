@@ -154,6 +154,119 @@ export interface ProgressResponse {
   ok: true;
 }
 
+// ---- V2 (docs/TDD-V2.md §6) — frontend-only fixture today, no real backend yet.
+// Copied verbatim from the TDD; not yet mirrored in backend/app/schemas.py or docs/CONTRACT.md.
+// A real integration PR must be titled `contract: …` and update both, per CLAUDE.md. ----
+
+// -- POST /api/auth/signup, /login --
+
+export interface SignupRequest {
+  email: string;
+  password: string;
+  name: string;
+  semester: number;
+  claim_student_id?: string;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface UserOut {
+  id: string;
+  email: string;
+  name: string;
+  semester: number;
+  created_at: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: UserOut;
+}
+
+// -- GET /api/dashboard --
+
+export interface SnapshotPoint {
+  fit: number;
+  at: string;
+}
+
+export type NextActionKind = "tick" | "project";
+
+export interface NextAction {
+  role_id: string;
+  label: string;
+  kind: NextActionKind;
+}
+
+export interface ActivityEvent {
+  text: string;
+  at: string;
+}
+
+export interface DashboardTopRole {
+  id: string;
+  title: string;
+  fit_percent: number;
+}
+
+export interface DashboardResponse {
+  top_role: DashboardTopRole | null;
+  skills_verified: number;
+  skills_checked: number;
+  verified_delta: number;
+  checked_delta: number;
+  snapshots: Record<string, SnapshotPoint[]>;
+  next_actions: NextAction[];
+  recent_events: ActivityEvent[];
+}
+
+// -- GET /api/skills --
+
+export interface SkillRoleRef {
+  id: string;
+  title: string;
+}
+
+export interface SkillInventoryRow {
+  id: string;
+  slug: string;
+  name: string;
+  real_world: string;
+  coverage_depth: Depth | null;
+  checked: boolean;
+  verified: boolean;
+  roles: SkillRoleRef[];
+}
+
+export interface SkillsResponse {
+  skills: SkillInventoryRow[];
+}
+
+// -- GET /api/projects --
+
+export interface SubmissionOut {
+  id: string;
+  repo_url: string;
+  total: number;
+  max_total: number;
+  passed: boolean;
+  created_at: string;
+  criteria_scores: CriterionScore[];
+  feedback: string;
+}
+
+export interface ProjectWithHistory {
+  project: ProjectResponse;
+  submissions: SubmissionOut[];
+}
+
+export interface ProjectsResponse {
+  projects: ProjectWithHistory[];
+}
+
 // ---- shared scoring input shape ----
 
 export interface ScoredSkillInput {

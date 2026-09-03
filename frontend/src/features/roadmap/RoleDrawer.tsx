@@ -56,7 +56,7 @@ export function RoleDrawer({ role, fit, skillsById, onToggleSkill, onClose, clas
           <h2
             ref={titleRef}
             tabIndex={-1}
-            className="text-lg font-semibold outline-none"
+            className="font-display text-lg font-semibold outline-none"
           >
             {role.title}
           </h2>
