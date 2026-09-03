@@ -1,13 +1,6 @@
-import { FolderKanban, LayoutDashboard, ListChecks, Map, User } from "lucide-react";
-import { NavLink, Outlet, useMatches, useNavigate } from "react-router-dom";
+import { FolderKanban, LayoutDashboard, ListChecks, LogOut, Map } from "lucide-react";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { getUser, logout } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
@@ -35,18 +28,15 @@ function initials(name: string): string {
   );
 }
 
-// V2 app shell (docs/TDD-V2.md §7.2): 232px fixed sidebar + topbar, on every authenticated
-// screen except /onboarding (PRD-V2 §3: "no sidebar" there — it stays outside this component).
-// Replaces the V1 top-bar-only shell; that shell's "no nav links" comment described V1 scope,
-// not a constraint that outlives it.
+// V2 app shell (docs/TDD-V2.md §7.2): 232px fixed sidebar, on every authenticated screen except
+// /onboarding (PRD-V2 §3: "no sidebar" there — it stays outside this component). No topbar
+// (removed per direct feedback — every screen already renders its own in-content heading, so a
+// second "Dashboard"/"Roadmap"/… title bar was redundant). The account row at the bottom (avatar +
+// name) is plain, non-interactive text — no /profile screen exists to link to (removed per direct
+// feedback); the red log-out icon next to it is the only interactive element there.
 export function AppShell() {
   const navigate = useNavigate();
-  const matches = useMatches();
   const user = getUser();
-
-  const title =
-    [...matches].reverse().find((m) => (m.handle as { title?: string } | undefined)?.title)
-      ?.handle as { title?: string } | undefined;
 
   async function handleLogout() {
     await logout();
@@ -68,36 +58,29 @@ export function AppShell() {
             </NavLink>
           ))}
         </nav>
-        <div className="border-t p-3">
-          <NavLink to="/profile" className={navLinkClass}>
-            <User className="h-4 w-4" aria-hidden />
-            Profile
-          </NavLink>
+        <div className="flex items-center gap-1 border-t p-3">
+          <div className="flex min-w-0 flex-1 items-center gap-2 px-2 py-1.5 text-sm font-medium text-foreground">
+            <Avatar className="h-7 w-7 shrink-0">
+              <AvatarFallback className="text-xs font-medium">
+                {user ? initials(user.name) : "?"}
+              </AvatarFallback>
+            </Avatar>
+            <span className="truncate">{user?.name ?? "Account"}</span>
+          </div>
+          <button
+            type="button"
+            onClick={handleLogout}
+            aria-label="Log out"
+            title="Log out"
+            className="shrink-0 rounded-token-md p-2 text-anchor-critical transition-colors hover:bg-anchor-critical/10"
+          >
+            <LogOut className="h-4 w-4" aria-hidden />
+          </button>
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col pl-[232px]">
-        <header className="flex h-14 shrink-0 items-center justify-between border-b px-6">
-          <h1 className="text-sm font-semibold">{title?.title ?? "ANCHOR"}</h1>
-          <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-2 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className="text-xs font-medium">
-                  {user ? initials(user.name) : "?"}
-                </AvatarFallback>
-              </Avatar>
-              {user && <span className="text-sm text-muted-foreground">{user.name}</span>}
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => navigate("/profile")}>Profile</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout}>Log out</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </header>
-        <main className="flex-1">
-          <Outlet />
-        </main>
+      <div className="min-w-0 flex-1 pl-[232px]">
+        <Outlet />
       </div>
     </div>
   );

@@ -150,7 +150,3 @@ export async function logout(): Promise<void> {
   clearToken();
   localStorage.removeItem(USER_KEY);
 }
-
-export async function logoutAll(): Promise<void> {
-  await logout();
-}

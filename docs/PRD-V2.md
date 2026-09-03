@@ -30,7 +30,12 @@ Before scoping V2, this section checks the assumptions above and everywhere belo
 
 ## 1. What changes in one paragraph
 
-A student signs up with email + password. After login they land on a **Dashboard** that answers "where am I and what's next" in five seconds. A **left sidebar** navigates between Dashboard, Roadmap, Skills, Projects, and Profile. Every tick and every submission is recorded as an **event**, and fit % is **snapshotted over time**, so the Dashboard can show a real progress chart — the thing that makes returning worthwhile. Everything persists under the user's account, on every device they log in from. The dark UI gets a proper design system pass so the five screens look like one product.
+A student signs up with email + password. After login they land on a **Dashboard** that answers "where am I and what's next" in five seconds. A **left sidebar** navigates between Dashboard, Roadmap, Skills, and Projects. Every tick and every submission is recorded as an **event**, and fit % is **snapshotted over time**, so the Dashboard can show a real progress chart — the thing that makes returning worthwhile. Everything persists under the user's account, on every device they log in from. The dark UI gets a proper design system pass so the four screens look like one product.
+
+~~A fifth screen, `/profile`, and a "Profile" sidebar item~~ — removed 2026-09-04, DECISIONS #85: no
+screen shows account info, and there is no self-serve password reset to point to from one either.
+Log out is a dedicated icon in the sidebar's account row (avatar + name, non-interactive text next
+to it).
 
 ---
 
@@ -49,7 +54,7 @@ A student signs up with email + password. After login they land on a **Dashboard
 ### Non-goals (V2 will fail if these creep in)
 
 - **No new model calls, no prompt changes, no re-analysis.** The V1 pipeline is frozen.
-- No OAuth / social login, no email verification, no password reset (Profile shows "contact us to reset" — V3)
+- No OAuth / social login, no email verification, no password reset, ~~(Profile shows "contact us to reset" — V3)~~ no account screen at all — removed 2026-09-04, DECISIONS #85
 - No teams, sharing, public profiles, notifications, or emails
 - No mobile layout (still desktop; the shell may collapse to icons at narrow widths but don't spend time on it)
 - No Postgres migration — see §0's footnote: Postgres/Supabase is already available and is `docs/PRD.md`'s stated deploy target; whether V2 stays on SQLite for local dev or deploys straight to the existing Postgres connection is an implementation choice, not new scope either way
@@ -61,17 +66,19 @@ A student signs up with email + password. After login they land on a **Dashboard
 ## 3. Information architecture
 
 ```
-Unauthenticated                    Authenticated (app shell: sidebar + topbar)
+Unauthenticated                    Authenticated (app shell: sidebar, no topbar)
 /login                             /            Dashboard
 /signup                            /roadmap     Roadmap (V1 two-column, restyled)
                                    /skills      Skill inventory
                                    /projects    Projects & submissions
-                                   /profile     Profile & account
 /onboarding  (post-signup, no sidebar: the V1 Setup + Analyzing flow, restyled as steps)
 ```
 
-**Sidebar** (fixed left, 232 px): logo · Dashboard · Roadmap · Skills · Projects · divider · Profile. Icons + labels, active route highlighted.
-**Topbar**: page title, right side = user chip (name, semester) → menu: Profile, Log out.
+**Sidebar** (fixed left, 232 px): logo · Dashboard · Roadmap · Skills · Projects · account row
+(avatar and name, non-interactive) and a log-out icon, at the bottom. Icons + labels, active route
+highlighted. No topbar — corrected 2026-09-04, DECISIONS #83; no `/profile` route or nav item —
+corrected 2026-09-04, DECISIONS #85 (original draft had both a topbar with a user-chip menu and a
+dedicated Profile screen; neither survived direct feedback).
 **Routing rule:** unauthenticated hit on any app route → `/login`. Authenticated user with no analysis yet → `/onboarding`. Authenticated with analysis → requested page.
 
 This replaces V1's current router (`frontend/src/app/router.tsx`: `/`, `/setup`, `/analyzing`, `/roadmap` only, no shell beyond a top bar) — see §12.
@@ -121,9 +128,15 @@ One card per generated project: role, title, spec (collapsed), verifies badges, 
 
 **The one real gap:** today's backend only exposes `GET /api/project?role_id=` — a single project for a single role. There is no endpoint that returns *all* of a student's projects and their full submission histories across every role, which this screen needs to render in one view. That's the only new backend surface this screen requires — see `GET /api/projects` in §7.
 
-### 4.7 `/profile`
+### 4.7 ~~`/profile`~~ — removed
 
-Name, email, semester (read-only), the analysed course list with codes, interests as chips, account created date. Buttons: **Log out** (also in topbar), **Log out everywhere** (revokes all sessions). Password reset: "V3 — contact us."
+~~Name, email, account created date, the analysed course list with codes, interests as chips.
+Buttons: Log out, Log out everywhere (revokes all sessions). Password reset: "V3 — contact us."~~
+The whole screen is gone — removed 2026-09-04, DECISIONS #85, direct feedback ("remove profile
+page"). Log out is a dedicated icon in the sidebar's account row (§3); there is no "log out
+everywhere" (it was never more than an alias for log out in this mock single-session store, so it
+had nowhere else to live once the screen holding it was cut) and no other surface shows account
+info.
 
 ---
 
@@ -211,7 +224,7 @@ Definition of done: put all five screens side by side — same surfaces, same ac
 |---|---|
 | C | Dashboard UI: stat cards + deltas, snapshot line chart, next-action cards (deep link opens the drawer), activity feed. Then the roadmap re-skin. |
 | B | Skills and Projects screens against Day 1's endpoints; ticking from `/skills` shares the drawer's optimistic path; Projects screen renders `GET /api/projects` history + resubmit via the existing `/api/submit` |
-| A | Profile screen, logout-everywhere, empty/skeleton states sweep, deploy, seed a fresh account and click every screen |
+| A | ~~Profile screen, logout-everywhere~~ (screen removed 2026-09-04, DECISIONS #85), empty/skeleton states sweep, deploy, seed a fresh account and click every screen |
 | All (last 2 h) | Cross-browser run of the whole loop: signup → onboarding → dashboard → roadmap tick → submit repo → dashboard shows the jump on the chart. **Freeze.** |
 
 **Cut order if Day 2 slips:** activity feed → skills search/filters → next-action cards (keep the chart — it *is* G3) → Projects screen collapses to a list. Never cut auth correctness or the snapshot writes; missing history can't be backfilled later.
@@ -247,13 +260,13 @@ Everything below does not exist yet (§0) and is net-new for V2, grouped by `CLA
 - `event` + `fit_snapshot` writes added to the existing `/progress` and `/submit` transactions
 
 **Frontend**
-- Sidebar + topbar app shell, replacing the current minimal `AppShell.tsx`
+- Sidebar app shell (no topbar — DECISIONS #83), replacing the current minimal `AppShell.tsx`
 - `/login`, `/signup` screens
 - `/onboarding` (restyle of existing Setup + Analyzing flow as 3 steps — behavior unchanged)
 - `/` Dashboard screen (stat cards, chart, next actions, activity feed)
 - `/skills` screen
 - `/projects` screen (§4.6)
-- `/profile` screen
+- ~~`/profile` screen~~ — removed, DECISIONS #85
 - Route guards + 401 → `/login` handling
 - Type-scale, spacing, and radii tokens alongside the color tokens that already exist
 

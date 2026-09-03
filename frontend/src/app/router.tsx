@@ -3,7 +3,6 @@ import { LoginPage } from "@/features/auth/LoginPage";
 import { SignupPage } from "@/features/auth/SignupPage";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { OnboardingRoute } from "@/features/onboarding/OnboardingRoute";
-import { ProfilePage } from "@/features/profile/ProfilePage";
 import { ProjectsPage } from "@/features/projects/ProjectsPage";
 import { AnalysisProvider } from "@/features/roadmap/AnalysisContext";
 import { RoadmapPage } from "@/features/roadmap/RoadmapPage";
@@ -35,11 +34,12 @@ export const router = createBrowserRouter([
       </RequireAuth>
     ),
     children: [
-      { path: "/", element: <DashboardPage />, handle: { title: "Dashboard" } },
-      { path: "/roadmap", element: <RoadmapPage />, handle: { title: "Roadmap" } },
-      { path: "/skills", element: <SkillsPage />, handle: { title: "Skills" } },
-      { path: "/projects", element: <ProjectsPage />, handle: { title: "Projects" } },
-      { path: "/profile", element: <ProfilePage />, handle: { title: "Profile" } },
+      // No per-route `handle: { title }` — that fed the topbar's title, which is gone (removed
+      // per direct feedback; each page already renders its own in-content heading).
+      { path: "/", element: <DashboardPage /> },
+      { path: "/roadmap", element: <RoadmapPage /> },
+      { path: "/skills", element: <SkillsPage /> },
+      { path: "/projects", element: <ProjectsPage /> },
     ],
   },
 ]);

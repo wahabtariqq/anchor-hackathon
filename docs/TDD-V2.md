@@ -11,7 +11,11 @@ fixture-backed** ahead of the backend lane, per §7.5 below. Salman's and Umer's
 `/api/projects`) have not started; §7.5 documents the frontend-only interim and its integration
 seam.
 
-*V2 adds: real accounts (`user`, `session`), an append-only `event` log, `fit_snapshot` history, four new screens (Dashboard, Skills, Projects, Profile) plus Login/Signup behind an app shell, and a design-token pass. It does **not** touch `backend/app/analysis/`, the three model calls, the fit formula, or the roadmap response shape — those are frozen exactly as TDD v4 left them.*
+*V2 adds: real accounts (`user`, `session`), an append-only `event` log, `fit_snapshot` history,
+~~four~~ three new screens (Dashboard, Skills, Projects — a fourth, Profile, was built then removed,
+DECISIONS #85) plus Login/Signup behind an app shell, and a design-token pass. It does **not** touch
+`backend/app/analysis/`, the three model calls, the fit formula, or the roadmap response shape —
+those are frozen exactly as TDD v4 left them.*
 
 ---
 
@@ -78,9 +82,9 @@ anchor/
 └── frontend/                          # ← BUILT (2026-09-04, Wahab) — frontend-only, fixture-backed;
     ├── src/                          #   see §7.5 for what that means and the corrections below
     │   ├── app/
-    │   │   ├── router.tsx             # + /login /signup /dashboard /skills /projects /profile; /onboarding
-    │   │   │                          #   is its OWN top-level route, NOT nested under AppShell — see §7.2
-    │   │   ├── AppShell.tsx           # rebuilt: sidebar + topbar, replaces the current top-bar-only shell
+    │   │   ├── router.tsx             # + /login /signup /dashboard /skills /projects; /onboarding is its
+    │   │   │                          #   OWN top-level route, NOT nested under AppShell — see §7.2
+    │   │   ├── AppShell.tsx           # rebuilt: sidebar only, no topbar (§7.2) — replaces the current top-bar-only shell
     │   │   └── RequireAuth.tsx        # route guard: no token → /login; no analysis yet → /onboarding
     │   ├── lib/
     │   │   ├── auth.ts                # token + cached user + onboarded flag + a mock account store
@@ -94,8 +98,8 @@ anchor/
     │   │   │                          #   Courses/Interests steps (see §7.2) + unmodified AnalyzingPage
     │   │   ├── dashboard/             # DashboardPage, StatCards, FitChart, NextActions, ActivityFeed
     │   │   ├── skills/                # SkillsPage, StatusPill (no separate SkillTable — one inline list)
-    │   │   ├── projects/              # ProjectsPage, ProjectCard, SubmissionHistory
-    │   │   └── profile/               # ProfilePage
+    │   │   └── projects/              # ProjectsPage, ProjectCard, SubmissionHistory
+    │   │                              #   (features/profile/ removed 2026-09-04 — DECISIONS #85)
     │   └── styles/tokens.css          # new: type scale, spacing, radii (colors already exist in index.css)
 ```
 
@@ -627,7 +631,7 @@ export const router = createBrowserRouter([
     element: (
       <RequireAuth>
         <AnalysisProvider>                                     {/* lifted here — see below */}
-          <AppShell />                                          {/* AppShell now renders the sidebar + topbar */}
+          <AppShell />                                          {/* sidebar only — no topbar, see §7.2 */}
         </AnalysisProvider>
       </RequireAuth>
     ),
@@ -636,7 +640,7 @@ export const router = createBrowserRouter([
       { path: "/roadmap", element: <RoadmapPage /> },           // unchanged component, re-skinned only
       { path: "/skills", element: <SkillsPage /> },
       { path: "/projects", element: <ProjectsPage /> },
-      { path: "/profile", element: <ProfilePage /> },
+      // no /profile — the screen was built then removed, DECISIONS #85
     ],
   },
 ]);
@@ -644,11 +648,33 @@ export const router = createBrowserRouter([
 
 `RequireAuth` checks `getToken()`; absent → redirect `/login`. Token present but no analysis yet
 (`isOnboarded()` false) and not already on `/onboarding` → redirect `/onboarding`. `AppShell.tsx`
-is rebuilt: 232px fixed sidebar (logo, nav items with active-route highlight, divider, Profile),
-topbar with page title (read from each route's `handle: { title }`) + user chip → menu (Profile,
-Log out). The current minimal top-bar-only shell (which has an explicit "no nav links, no login"
-comment tied to v4's PRD §10) is replaced outright — that comment described v4 scope, not a
-permanent constraint.
+is rebuilt: 232px fixed sidebar (logo, nav items with active-route highlight, an account row at
+the bottom). The current minimal top-bar-only shell (which has an explicit "no nav links, no
+login" comment tied to v4's PRD §10) is replaced outright — that comment described v4 scope, not
+a permanent constraint.
+
+**No topbar — corrected 2026-09-04, direct user feedback.** The original draft here specified a
+topbar (page title read from each route's `handle: { title }`, plus a user-chip → dropdown menu
+with Profile/Log out). It's removed outright: every screen already renders its own in-content
+heading (Dashboard's "Welcome back, …", Roadmap's student header, Skills'/Projects' own `<h1>`),
+so the topbar's title duplicated something already on the page. Its log-out job moves into the
+sidebar instead of a second chrome bar: a dedicated icon button (`lucide-react`'s `LogOut`, styled
+`text-anchor-critical` — red is a deliberate, one-off exception to `anchor-design`'s "critical is
+for missing-core badges only" rule, since a destructive action button is exactly the kind of place
+a status color is allowed to mean something different) next to a plain, non-interactive account row
+(avatar + name, no link) at the sidebar's bottom. The `DropdownMenu` component this replaced is no
+longer used anywhere; it's left in `components/ui/dropdown-menu.tsx` rather than deleted, in case a
+later screen needs one — shadcn output is meant to be added once and reused, not re-generated per
+feature. Route `handle: { title }` values are gone from `router.tsx` along with the topbar that
+read them.
+
+**`/profile` built, then removed — corrected 2026-09-04, DECISIONS #84 then #85.** The topbar's
+other job (a Profile link) briefly became a `NavLink` on the account name, then — direct feedback
+said not to make the name a button — its own item in `NAV_ITEMS`. Next message: "remove profile
+page" outright. So there is no Profile screen and no way to reach one: the account row is avatar +
+name as plain text, nothing more, and `features/profile/` is deleted. `logoutAll()` (`lib/auth.ts`)
+is deleted with it — it was only ever called from that screen's "Log out everywhere" button, and in
+this mock single-session store it did nothing `logout()` didn't already do.
 
 **New, not in the original draft: `AnalysisProvider` is lifted** from being scoped inside
 `RoadmapPage.tsx` (TDD v4's pattern) up to wrap the whole `AppShell`-nested route group above.
@@ -694,7 +720,7 @@ PRD-V2 §4.3–§4.7 already specifies what each screen shows; this section is o
 - **`features/dashboard/`** — `DashboardPage` fetches `/api/dashboard` once on mount (same "one fetch" rule). `FitChart` renders `snapshots` as an SVG line — **no new charting dependency**: `FitRing` already proves an inline-SVG approach works for this codebase (TDD v4 §7.3), and a 3-line time series is a `<polyline>` with a scaled x/y, not a library job. Colors are the `dataviz` skill's validated categorical palette, dark-mode slots 1-3 (blue/orange/aqua), not a new ad hoc choice. If a richer chart is wanted later, that's a `contract:`-style note in `docs/DECISIONS.md`, not a default. Gridlines + `%` labels and a per-series gradient fill were added on top of the bare polylines (DECISIONS #72/#73) — the fill hugs each line at a fixed depth rather than washing down to the 0% baseline, since three lines sitting close together (a typical case) blend into a muddy overlap otherwise. **Current numbers** (top-role fit, verified/checked counts) read live off the shared `AnalysisContext`, never off the fetched payload — see §7.5 for why. The `<svg>`'s `viewBox`/`width`/`height` are set to the container's **measured** pixel width (`ResizeObserver`), not a fixed constant scaled via `preserveAspectRatio="none"` — that non-uniform stretch (DECISIONS #75) turned round markers into ~2.2×-wide ellipses and warped the gridline text, reading as a scaled bitmap rather than crisp vector UI. Measuring the container keeps one SVG unit equal to one CSS pixel on both axes.
 - **`features/skills/`** — `SkillsPage` fetches `/api/skills` once; filter tabs and search are client-side `useMemo` over the returned array, no server round-trip per keystroke. Ticking reuses the exact optimistic path `RoleDrawer` already has (`toggle(skillId)` in `AnalysisContext`) — the Skills screen needs `AnalysisContext` mounted the same way the Roadmap page does, which is exactly what §7.2's provider lift is for. Status labels reuse `SkillRow.tsx`'s exported `skillState()` (DECISIONS #34's precedence), not a re-derived enum, so this screen can't disagree with the drawer about a skill's state. Built as one inline list rather than a separate `SkillTable` component — no table primitive exists elsewhere in this codebase, and introducing one for a single screen wasn't warranted.
 - **`features/projects/`** — `ProjectsPage` fetches `/api/projects` once; resubmit calls the existing `submitRepo(roleId, url)` context function unchanged, then refetches `/api/projects` (cheap, not on the hot animation path).
-- **`features/profile/`** — reads `user` out of an `AuthContext` (populated at login/signup, refreshed on load via a lightweight `/api/auth/me`-shaped read *or* simply re-derived from the JWT-less session by calling `/api/dashboard`'s `student` fields — pick whichever avoids a sixth endpoint; not prescribed further here, it's a one-screen decision). Logout / logout-everywhere call `lib/auth.ts`.
+- ~~**`features/profile/`**~~ — built, then removed outright, DECISIONS #85. Log out lives in `AppShell.tsx`'s sidebar instead (§7.2); there is no account-info screen and no `logoutAll()` (`lib/auth.ts`) — it had no caller left once the screen was cut.
 
 ### 7.4 Design tokens
 
@@ -829,7 +855,7 @@ Mirrors `docs/PRD-V2.md` §9, mapped onto the same three names as TDD v4 §14.
 |---|---|
 | **Salman** | `User`, `Session`, `LoginFailure` tables; bcrypt; `issue_session`/`current_user`/`current_student` in `app/auth.py`; `routers/auth.py` (signup/login/logout/logout_all); swap every existing router's `current_student` import; claim-on-signup; rate-limit check; storage/deploy config per §9 |
 | **Umer** | `Event`, `FitSnapshot` tables; `app/events.py` (`record_tick`, `record_submission`, `snapshot_changed_roles`); wire both into `routers/progress.py` and `routers/submit.py`'s existing transactions; `GET /api/dashboard`, `/api/skills`, `/api/projects` against a hand-written `contracts/fixtures/dashboard_response.json` |
-| **Wahab** | `tokens.css` + Tailwind extension (§7.4); `AppShell.tsx` rebuild (sidebar/topbar/user menu); `RequireAuth`; `/login`, `/signup` pages; `/onboarding` step wrapper around the existing Setup/Analyzing components |
+| **Wahab** | `tokens.css` + Tailwind extension (§7.4); `AppShell.tsx` rebuild (sidebar + account row, no topbar — §7.2); `RequireAuth`; `/login`, `/signup` pages; `/onboarding` step wrapper around the existing Setup/Analyzing components |
 
 **Exit criteria (matches PRD-V2 §9):** sign up in browser A, tick a skill, log in from browser B and see it. A V1 anchor:student_id claims correctly on signup. Every authenticated request 401s cleanly with no token, and the client lands on `/login`.
 
@@ -837,7 +863,7 @@ Mirrors `docs/PRD-V2.md` §9, mapped onto the same three names as TDD v4 §14.
 
 | Who | Work |
 |---|---|
-| **Wahab** | Dashboard UI (stat cards + deltas, `FitChart`, next-action cards deep-linking into the roadmap drawer, activity feed); Skills UI; Projects UI; Profile UI; Roadmap re-skin (re-skin only — TDD v4 §7.2–§7.4 untouched) |
+| **Wahab** | Dashboard UI (stat cards + deltas, `FitChart`, next-action cards deep-linking into the roadmap drawer, activity feed); Skills UI; Projects UI; ~~Profile UI~~ (built, then removed — DECISIONS #85); Roadmap re-skin (re-skin only — TDD v4 §7.2–§7.4 untouched) |
 | **Umer** | Iterate `/api/dashboard`, `/api/skills`, `/api/projects` shapes against Wahab's real UI needs; `test_events.py`, `test_dashboard.py` |
 | **Salman** | Deploy with the storage choice from §9 verified (log out, redeploy, log back in with data intact); `logout_all` end-to-end check; seed a fresh account and click every screen |
 | **All (last 2h)** | Cross-browser loop: signup → onboarding → dashboard → roadmap tick → submit repo → dashboard shows the jump on the chart. **Freeze.** |
