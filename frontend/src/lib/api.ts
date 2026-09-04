@@ -1,4 +1,4 @@
-import { getToken, clearToken } from "./auth";
+import { getToken, clearToken, setOnboarded } from "./auth";
 import { getLiveSubmissionsForRole } from "./eventLog";
 import type {
   CoursesResponse,
@@ -49,6 +49,12 @@ export class ApiError extends Error {
 // §0's audit). Delete this branch and the three V2 fixture imports above once the real
 // endpoints land — every function below keeps the same signature either way.
 const USE_FIXTURE = import.meta.env.VITE_USE_FIXTURE === "true";
+
+// The events/aggregation lane (docs/TDD-V2.md §4.5-§4.8) hasn't landed, so these three have no
+// real endpoint to call yet. They keep serving fixtures even with VITE_USE_FIXTURE=false, which
+// is what lets the rest of the app run against the real API today instead of waiting.
+// Delete this list — and the three fixture imports above — the day they ship.
+const PENDING_ENDPOINTS = ["/api/dashboard", "/api/skills", "/api/projects"];
 const FIXTURE_DELAY_MS = 250;
 
 function delay(ms: number): Promise<void> {
@@ -157,7 +163,7 @@ async function fixtureResponse<T>(path: string, method: string, body: string | n
 async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const method = init.method ?? "GET";
 
-  if (USE_FIXTURE) {
+  if (USE_FIXTURE || (method === "GET" && PENDING_ENDPOINTS.includes(path))) {
     return fixtureResponse<T>(path, method, typeof init.body === "string" ? init.body : null);
   }
 
@@ -176,7 +182,16 @@ async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     window.location.assign("/login");
     throw new ApiError(401, "Session expired");
   }
-  if (!res.ok) throw new ApiError(res.status, await res.text());
+  if (!res.ok) {
+    const error = new ApiError(res.status, await res.text());
+    // The server's "authenticated but not onboarded" answer. auth.ts caches that flag at login;
+    // this is what keeps it honest if it ever goes stale (analysis wiped, DB reset).
+    if (res.status === 404 && error.detail?.startsWith("No student profile yet")) {
+      setOnboarded(false);
+      if (window.location.pathname !== "/onboarding") window.location.assign("/onboarding");
+    }
+    throw error;
+  }
   return res.json();
 }
 
