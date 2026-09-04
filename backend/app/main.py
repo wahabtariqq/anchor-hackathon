@@ -1,4 +1,4 @@
-"""App factory: CORS, table creation, eight routers (TDD §10, TDD-V2 §4.4). Under 40 lines."""
+"""App factory: CORS, table creation, eleven routers (TDD §10, TDD-V2 §4.4-§4.8). Under 40 lines."""
 
 import logging
 from collections.abc import AsyncIterator
@@ -11,7 +11,19 @@ from sqlmodel import SQLModel
 from app.config import settings
 from app.db import engine
 from app.readiness import readiness
-from app.routers import analyze, auth, courses, progress, project, roadmap, students, submit
+from app.routers import (
+    analyze,
+    auth,
+    courses,
+    dashboard,
+    progress,
+    project,
+    projects,
+    roadmap,
+    skills,
+    students,
+    submit,
+)
 
 logging.basicConfig(level=logging.INFO)
 
@@ -30,7 +42,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-for module in (auth, courses, students, analyze, roadmap, progress, project, submit):
+for module in (auth, courses, students, analyze, roadmap, progress, project, submit,
+               dashboard, skills, projects):
     app.include_router(module.router)
 
 
