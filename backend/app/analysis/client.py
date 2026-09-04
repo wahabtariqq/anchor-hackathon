@@ -19,6 +19,7 @@ exactly like a bad prompt.
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any, Callable, Protocol
 
 import httpx
@@ -30,6 +31,14 @@ log = logging.getLogger(__name__)
 
 GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 REQUEST_TIMEOUT = 240.0  # the analysis call measured 55 s in S0; headroom, not a target
+
+# Pause before retrying a provider error (503 and friends). Measured, not guessed: an immediate
+# retry failed on 2 of 4 live review calls during one congested window, while the same key and
+# the same repo succeeded first try once a 20-30 s wait was introduced. 5 s is the compromise --
+# long enough to leave the instant the provider refused, short enough not to stretch a call the
+# student is already watching a progress bar for. If 503s survive this, raise it first.
+# Tests set it to 0 (see tests/conftest.py) so the suite never actually sleeps.
+PROVIDER_RETRY_BACKOFF_SECONDS = 5.0
 
 
 class AnalysisFailed(Exception):
@@ -227,8 +236,10 @@ def complete_validated(
     Exactly two attempts, ever. A third would triple the worst case of a call the Analyzing
     screen is already masking for a minute.
 
-    Three retryable failures, handled the same way:
-      * transport / HTTP (ProviderError) -- the free tier returns 503 under load
+    Three retryable failures:
+      * transport / HTTP (ProviderError) -- the free tier returns 503 under load. This one
+        waits PROVIDER_RETRY_BACKOFF_SECONDS before the retry; the other two do not, because
+        only a capacity failure is fixed by letting time pass.
       * finish_reason == "max_tokens" -- retried with the larger budget
       * validation failure -- the semantic rules the grammar cannot express
 
@@ -253,6 +264,13 @@ def complete_validated(
         except ProviderError as exc:
             last_error = exc
             log.warning("attempt %s: %s", attempt, exc)
+            # Wait before the retry -- and ONLY for this branch. A 503 is the provider shedding
+            # load, so the one thing that helps is not being in the same instant; retrying at
+            # once just re-enters the window that refused us. Truncation and validation are
+            # deterministic faults of the prompt, and waiting on those would add latency for
+            # nothing.
+            if attempt == 1 and PROVIDER_RETRY_BACKOFF_SECONDS:
+                time.sleep(PROVIDER_RETRY_BACKOFF_SECONDS)
             continue
 
         if finish == "max_tokens":
