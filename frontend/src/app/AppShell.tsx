@@ -13,7 +13,7 @@ const NAV_ITEMS = [
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   cn(
-    "flex items-center gap-2.5 rounded-token-md border-l-2 border-transparent px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground motion-reduce:transition-none",
+    "flex items-center gap-3 rounded-token-md border-l-2 border-transparent px-3 py-2.5 text-[15px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground motion-reduce:transition-none",
     isActive && "border-primary bg-primary/10 text-foreground",
   );
 
@@ -46,14 +46,14 @@ export function AppShell() {
   return (
     <div className="flex min-h-screen">
       <aside className="fixed inset-y-0 left-0 flex w-[232px] flex-col border-r bg-card" aria-label="Primary">
-        <div className="flex h-14 items-center gap-2 px-5">
-          <img src="/anchor-icon.svg" alt="" className="h-6 w-auto" />
-          <span className="font-display text-sm font-semibold tracking-wide">ANCHOR</span>
+        <div className="flex h-16 items-center gap-2.5 px-5">
+          <img src="/anchor-icon.svg" alt="" className="h-9 w-auto" />
+          <span className="font-display text-base font-semibold tracking-wide">ANCHOR</span>
         </div>
         <nav className="flex-1 space-y-0.5 px-3 py-2">
           {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
             <NavLink key={to} to={to} end={end} className={navLinkClass}>
-              <Icon className="h-4 w-4" aria-hidden />
+              <Icon className="h-5 w-5" aria-hidden />
               {label}
             </NavLink>
           ))}

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
+import { getUser } from "@/lib/auth";
 import type { RoadmapRole, RoadmapSkill } from "@/lib/types";
 import { useAnalysis } from "./AnalysisContext";
 import { RoleCard } from "./RoleCard";
@@ -83,12 +84,13 @@ export function RoadmapPage() {
   if (!data) return null;
 
   const openRole_ = data.roles.find((r) => r.slug === openRoleSlug) ?? null;
+  const user = getUser();
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-8">
       <header>
         <h1 className="font-display text-heading">
-          {data.student.name} · Semester {data.student.semester}
+          {user?.name ?? data.student.name} · Semester {data.student.semester}
         </h1>
         <div className="mt-1 flex flex-wrap gap-1.5">
           {data.student.interests.map((interest) => (

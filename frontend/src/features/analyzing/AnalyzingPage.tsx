@@ -67,8 +67,8 @@ export function AnalyzingPage({ onSuccess }: AnalyzingPageProps = {}) {
   if (failed) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-8 text-center">
-        <p className="text-lg font-medium">That took longer than expected.</p>
-        <p className="max-w-sm text-sm text-muted-foreground">
+        <p className="text-xl font-medium">That took longer than expected.</p>
+        <p className="max-w-sm text-base text-muted-foreground">
           The analysis didn't come back in time. Nothing was lost — try again.
         </p>
         <Button onClick={() => setAttempt((a) => a + 1)}>Try again</Button>
@@ -78,8 +78,8 @@ export function AnalyzingPage({ onSuccess }: AnalyzingPageProps = {}) {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-3 p-8 text-center">
-      <p className="text-lg font-medium">{STAGES[stageIndex].text}</p>
-      <p className="text-sm text-muted-foreground">This takes a minute — we're reading every course.</p>
+      <p className="text-xl font-medium">{STAGES[stageIndex].text}</p>
+      <p className="text-base text-muted-foreground">This takes a minute — we're reading every course.</p>
     </div>
   );
 }

@@ -45,7 +45,7 @@ export function RoleCard({ role, fit, skillsById, onClick, className }: RoleCard
         <FitRing percent={fit} size={48} strokeWidth={4} labelClassName="text-sm font-semibold" />
         <div className="min-w-0 flex-1">
           <h3 className="truncate font-display text-base font-semibold">{role.title}</h3>
-          <p className="truncate text-sm text-muted-foreground">{role.one_liner}</p>
+          <p className="truncate text-base text-muted-foreground">{role.one_liner}</p>
           <p className="mt-1 text-xs text-muted-foreground">
             {covered} of {total} skills covered
             {verifiedCount > 0 && <span className="text-anchor-good"> · {verifiedCount} verified</span>}

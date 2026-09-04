@@ -89,7 +89,7 @@ export function SkillRow({ skill, weight, onToggle, variant = "row", className }
           <span className="text-sm font-semibold">{skill.name}</span>
           <span className="text-xs uppercase tracking-wide text-muted-foreground">{weight}</span>
         </div>
-        <p className="text-sm text-muted-foreground">{skill.real_world}</p>
+        <p className="text-base text-muted-foreground">{skill.real_world}</p>
       </div>
     </div>
   );

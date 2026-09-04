@@ -60,7 +60,7 @@ export function RoleDrawer({ role, fit, skillsById, onToggleSkill, onClose, clas
           >
             {role.title}
           </h2>
-          <p className="mt-0.5 text-sm text-muted-foreground">{role.one_liner}</p>
+          <p className="mt-0.5 text-base text-muted-foreground">{role.one_liner}</p>
           {role.proximity === "adjacent" && role.bridge && (
             <p className="mt-2 text-sm italic text-muted-foreground">{role.bridge}</p>
           )}

@@ -34,8 +34,8 @@ export function AuthCard({ title, subtitle, children, footer }: AuthCardProps) {
           <img src="/anchor-logo.svg" alt="ANCHOR" className="h-12 w-auto sm:h-14" />
         </div>
         <div className="rounded-token-lg border bg-card p-8 shadow-2xl shadow-black/40">
-          <h2 className="text-xl font-semibold">{title}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
+          <h2 className="text-2xl font-semibold">{title}</h2>
+          <p className="mt-1 text-base text-muted-foreground">{subtitle}</p>
           <div className="mt-6">{children}</div>
         </div>
         {footer && <p className="text-center text-sm text-muted-foreground">{footer}</p>}

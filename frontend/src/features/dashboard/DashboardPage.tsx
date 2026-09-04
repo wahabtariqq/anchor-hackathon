@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAnalysis } from "@/features/roadmap/AnalysisContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getDashboard } from "@/lib/api";
+import { getUser } from "@/lib/auth";
 import {
   getDashboardBaseline,
   getEventsSince,
@@ -22,6 +23,7 @@ import { StatCards } from "./StatCards";
 export function DashboardPage() {
   const { data, loading, roleFit, checkedIds, verifiedIds } = useAnalysis();
   const [seeded, setSeeded] = useState(false);
+  const user = getUser();
 
   useEffect(() => {
     let cancelled = false;
@@ -92,8 +94,8 @@ export function DashboardPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-8 p-8">
       <header>
-        <h1 className="font-display text-heading">Welcome back, {data.student.name}</h1>
-        <p className="text-sm text-muted-foreground">Here's where you stand.</p>
+        <h1 className="font-display text-heading">Welcome back, {user?.name ?? data.student.name}</h1>
+        <p className="text-base text-muted-foreground">Here's where you stand.</p>
       </header>
 
       <StatCards

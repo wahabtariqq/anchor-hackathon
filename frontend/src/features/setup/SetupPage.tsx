@@ -209,8 +209,8 @@ export function SetupPage({ step, onContinue, onBack, onComplete }: SetupPagePro
     return (
       <div className="mx-auto max-w-4xl space-y-6 p-8">
         <header className="space-y-1">
-          <h1 className="text-2xl font-semibold">What are you into?</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-3xl font-semibold">What are you into?</h1>
+          <p className="text-base text-muted-foreground">
             Pick at least two — this steers which of the eight roles float to the top.
           </p>
         </header>
@@ -242,8 +242,8 @@ export function SetupPage({ step, onContinue, onBack, onComplete }: SetupPagePro
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-8">
       <header className="space-y-1">
-        <h1 className="text-2xl font-semibold">Where are you standing?</h1>
-        <p className="text-sm text-muted-foreground">
+        <h1 className="text-3xl font-semibold">Where are you standing?</h1>
+        <p className="text-base text-muted-foreground">
           Tell us what you've studied. One analysis, eight roles ranked by how far along you
           already are.
         </p>

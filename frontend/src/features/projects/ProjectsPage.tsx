@@ -36,7 +36,7 @@ export function ProjectsPage() {
     <div className="mx-auto max-w-4xl space-y-6 p-8">
       <header className="space-y-1">
         <h1 className="font-display text-heading">Projects</h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-base text-muted-foreground">
           Every project ANCHOR designed for you, and every repo you've submitted against it.
         </p>
       </header>

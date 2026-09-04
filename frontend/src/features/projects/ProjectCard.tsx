@@ -60,7 +60,7 @@ export function ProjectCard({ item, role, skillsById, onResubmitted }: ProjectCa
           </Button>
         </div>
 
-        {expanded && <p className="text-sm text-muted-foreground">{item.project.spec}</p>}
+        {expanded && <p className="text-base text-muted-foreground">{item.project.spec}</p>}
 
         <div className="flex flex-wrap gap-1.5">
           <span className="text-xs uppercase tracking-wide text-muted-foreground">Verifies:</span>

@@ -98,7 +98,7 @@ export function CourseCard({
           <h3 className="text-base font-semibold">{course.name}</h3>
           <span className="shrink-0 text-xs text-muted-foreground">{course.code}</span>
         </div>
-        <p className="line-clamp-2 text-sm text-muted-foreground">{course.curriculum_text}</p>
+        <p className="line-clamp-2 text-base text-muted-foreground">{course.curriculum_text}</p>
 
         {/* The full default outline, viewable on demand whether or not the course is picked
             yet — not just a two-line preview. */}

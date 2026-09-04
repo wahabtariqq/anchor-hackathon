@@ -74,7 +74,7 @@ export function SkillsPage() {
     <div className="mx-auto max-w-5xl space-y-6 p-8">
       <header className="space-y-1">
         <h1 className="font-display text-heading">Skills</h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-base text-muted-foreground">
           Every skill ANCHOR knows about you — one row, every role that needs it.
         </p>
       </header>
@@ -133,7 +133,7 @@ export function SkillsPage() {
                     </Label>
                     <StatusPill skill={s} />
                   </div>
-                  <p className="text-sm text-muted-foreground">{s.real_world}</p>
+                  <p className="text-base text-muted-foreground">{s.real_world}</p>
                   {s.roles.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 pt-1">
                       {s.roles.map((r) => (

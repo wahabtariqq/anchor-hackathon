@@ -47,7 +47,7 @@ function SubmissionRow({ submission }: { submission: SubmissionOut }) {
             <p className="pl-1 text-muted-foreground">{c.note}</p>
           </div>
         ))}
-        <p className="text-sm text-muted-foreground">{submission.feedback}</p>
+        <p className="text-base text-muted-foreground">{submission.feedback}</p>
         <p className="text-xs italic text-muted-foreground">Reviewed by reading the repo — nothing was run.</p>
       </CollapsibleContent>
     </Collapsible>

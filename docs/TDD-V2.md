@@ -728,7 +728,9 @@ PRD-V2 §4.3–§4.7 already specifies what each screen shows; this section is o
 /* src/styles/tokens.css — new, imported after index.css's existing color tokens */
 :root {
   --font-display: "Poppins", ui-sans-serif, system-ui, sans-serif;  /* decided 2026-09-04, revised same day */
-  --text-display: 2.5rem; --text-heading: 1.25rem; --text-body: 0.9375rem; --text-caption: 0.75rem;
+  --text-display: 3rem; --text-heading: 2rem; --text-body: 1rem; --text-caption: 0.8125rem;
+  /* was 2.5rem/1.25rem/0.9375rem/0.75rem, then --text-heading 1.5rem — bumped twice same day,
+     DECISIONS #87 then #88, both direct feedback */
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px; --space-8: 32px;
   --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px;
 }
@@ -742,6 +744,31 @@ direct user feedback — DECISIONS #63.) `tailwind.config.js` gains a matching
 uses for the color tokens. Spacing was **not** extended — Tailwind's default 4px-increment scale
 already equals `--space-1..8` (`anchor-design` §4), so `p-1`/`p-4`/`p-6`/etc. already *are* the
 token scale.
+
+**Type scale bumped app-wide** (2026-09-04, DECISIONS #87, direct feedback: "increase the entire
+app's text sizes, specially for main titles or main content"). Two changes together, not one: (1)
+the four `--text-*` tokens above moved up a step each — these already drove every page's `<h1>`
+(Dashboard/Roadmap/Skills/Projects, `font-display text-heading`) and the Dashboard's stat numerals
+(`font-display text-display`), so those got bigger for free. (2) Everything else on a "main title
+or main content" that predates the token system and still carries a raw Tailwind size — the
+Login/Signup card title, the onboarding step headings, role/course/project card titles, a role's
+one-liner and a skill's real-world description, project specs, submission feedback, and each page's
+subtitle line — moved up one Tailwind step by hand (`text-sm`→`text-base`, `text-base`→`text-lg`,
+etc.), file by file. Deliberately **not** touched: uppercase-tracking section eyebrows ("Progress,"
+"What now," "Your closest paths," …), badges, weight tags, dates, and error text — `anchor-design`
+§3's "labels recede, numbers/titles are heroes" rule means these stay small on purpose, and bumping
+them would blur the hierarchy the size increase is meant to sharpen.
+
+**Item-level titles corrected back down — same day, DECISIONS #89.** #87's "role/course/project
+card titles" step-up turned out too far: a role card's title (and a role's fit-ring numeral), a
+project card's title, a course card's title, the Prove It panel's project title, a skill's name in
+`SkillRow`/`SkillsPage`, a next-action card's label, and the Dashboard's top-role name under the fit
+% — all moved back down one Tailwind step from #87's bump (`text-lg`→`text-base`,
+`text-base`→`text-sm`, and the two `FitRing` numerals attached to role cards/drawer to match). Page
+`<h1>`s (still on `--text-heading`, further bumped in #88) and body-copy descriptions (a role's
+one-liner, a skill's real-world text, project specs, submission feedback) are untouched — the
+correction is scoped to item-level *names* inside a list of many, which read as too heavy once
+sitting under an even-bigger page title.
 
 **Colors were revised beyond what this section originally shipped** (DECISIONS #72), on the same
 direct feedback ("too mono colored"): `index.css`'s `.dark` block now gives `--background`,
@@ -796,6 +823,21 @@ called `clearStudentId()` and routed to the retired `/setup`). PRD-V2 §2 lists 
 analysis) is V3" as a non-goal — V2 has nowhere for it to go once `/setup` isn't a top-level route
 — so removing it is compliance with that non-goal, not a rebuild of the screen (§4.4 still holds:
 the re-sort math, drawer, and `ProveIt` states are untouched).
+
+**A second, sharper seam this interim mode exposes — corrected 2026-09-04, DECISIONS #88.** The
+`/api/students` fixture branch always returns `{student_id: "fixture-student"}` and `/api/roadmap`
+always returns the same static `roadmap_response.json`, regardless of what name was actually typed
+at signup or onboarding — there's no real backend yet to persist a per-account student. That's fine
+for `checkedIds`/`roleFit`/skills (the demo data those need to demonstrate), but `data.student.name`
+being the fixture's hardcoded "Ayesha" reads as a bug once the sidebar's account row started
+showing the *real* signed-in name (#83): a student named "Wahab Tariq" would see "Welcome back,
+Ayesha" on Dashboard and "Ayesha · Semester 4" on Roadmap right next to a sidebar that correctly
+says "Wahab Tariq." Fixed at the two call sites that greet-by-name — `DashboardPage.tsx`'s `<h1>`
+and `RoadmapPage.tsx`'s `<h1>` — by preferring `getUser()?.name` (the real authenticated account)
+over `data.student.name` (the fixture's), falling back to the fixture name only if `user` is
+somehow absent. `data.student.semester` and everything else keyed to the fixture (roles, skills,
+interests) is untouched — there's no equivalent "real" source for those yet, so the fixture stays
+authoritative for them until `/api/students` and `/api/roadmap` are real.
 
 ---
 

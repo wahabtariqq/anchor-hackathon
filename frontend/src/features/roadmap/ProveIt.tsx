@@ -95,7 +95,7 @@ export function ProveIt({ role, skillsById }: ProveItProps) {
         <div className="mt-2 space-y-3">
           <div>
             <p className="text-sm font-semibold">{project.title}</p>
-            <p className="mt-1 text-sm text-muted-foreground">{project.spec}</p>
+            <p className="mt-1 text-base text-muted-foreground">{project.spec}</p>
           </div>
 
           <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
