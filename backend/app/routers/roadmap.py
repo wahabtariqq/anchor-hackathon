@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, col, select
 
 from app.db import get_session
-from app.identity import current_student
+from app.auth import current_student
 from app.models import (
     Analysis,
     Coverage,

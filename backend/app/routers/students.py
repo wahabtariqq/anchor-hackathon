@@ -1,13 +1,18 @@
 """POST /api/students — create the student and their resolved course selections.
 
 Always creates a new Student: re-onboarding never updates or deletes (DECISIONS #8).
+
+V2: onboarding happens under an account, so the new row is attached to the caller
+(TDD-V2 §4.2 — user_id "is only set once, either by onboarding-under-an-account or by
+claim-on-signup"). Without this an account could never reach its own roadmap.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, col, select
 
+from app.auth import current_user
 from app.db import get_session
-from app.models import Course, Student, StudentCourse
+from app.models import Course, Student, StudentCourse, User
 from app.schemas import StudentCreateRequest, StudentCreateResponse
 
 router = APIRouter()
@@ -20,6 +25,7 @@ router = APIRouter()
 )
 def create_student(
     body: StudentCreateRequest,
+    user: User = Depends(current_user),
     session: Session = Depends(get_session),
 ) -> StudentCreateResponse:
     picked = [c.course_id for c in body.courses if c.course_id]
@@ -31,7 +37,12 @@ def create_student(
     if unknown:
         raise HTTPException(422, f"unknown course_id: {', '.join(unknown)}")
 
-    student = Student(name=body.name, semester=body.semester, interests=list(body.interests))
+    student = Student(
+        user_id=user.id,
+        name=body.name,
+        semester=body.semester,
+        interests=list(body.interests),
+    )
     session.add(student)
 
     custom_seen = 0

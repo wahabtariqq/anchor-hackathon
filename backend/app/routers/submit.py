@@ -17,7 +17,7 @@ from sqlmodel import Session, select
 from app.config import settings
 from app.db import get_session
 from app.github import RepoError, fetch_repo
-from app.identity import current_student
+from app.auth import current_student
 from app.models import Project, Skill, Student, Submission
 from app.persistence import verified_skill_ids
 from app.schemas import ReviewResponse, SubmitRequest, SubmitResponse

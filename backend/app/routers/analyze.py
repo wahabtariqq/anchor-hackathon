@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 
 from app.db import get_session
-from app.identity import current_student
+from app.auth import current_student
 from app.models import Analysis, Student, StudentCourse
 from app.persistence import persist_analysis
 from app.schemas import OkResponse

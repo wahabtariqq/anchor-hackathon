@@ -34,6 +34,14 @@ class Settings(BaseSettings):
     # app/github.py logs a warning on every unauthenticated fetch.
     GITHUB_TOKEN: str = ""
     REVIEW_PASS_RATIO: float = 0.6
+
+    # --- V2 auth (TDD-V2 §4.1) ---
+    SESSION_TTL_DAYS: int = 30
+    LOGIN_RATE_LIMIT: int = 10          # failed attempts per email per window
+    LOGIN_RATE_WINDOW_MIN: int = 15
+    # bcrypt work factor. 12 is ~300 ms per hash, which is the point; the test suite drops it
+    # so that creating dozens of accounts stays fast. Never lower it in a deployed environment.
+    BCRYPT_ROUNDS: int = 12
     CORS_ORIGINS: str = "http://localhost:5173"
 
 

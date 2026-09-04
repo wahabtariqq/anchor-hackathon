@@ -30,7 +30,7 @@ from app.analysis.project import generate_project
 from app.analysis.review import review_repo
 from app.github import RepoBundle
 from app.models import Project, Submission
-from tests.conftest import create_student, persist_demo_analysis
+from tests.conftest import auth_headers, create_student, persist_demo_analysis
 
 
 class OneShotClient:
@@ -100,7 +100,7 @@ def real_lane(monkeypatch: pytest.MonkeyPatch):
 
 
 def a_role(client: TestClient, student_id: str) -> dict[str, Any]:
-    return client.get("/api/roadmap", headers={"X-Student-Id": student_id}).json()["roles"][0]
+    return client.get("/api/roadmap", headers=auth_headers(student_id)).json()["roles"][0]
 
 
 def test_get_project_writes_a_row_from_a_real_ProjectOut(
@@ -112,7 +112,7 @@ def test_get_project_writes_a_row_from_a_real_ProjectOut(
     persist_demo_analysis(session, student_id)
     role = a_role(client, student_id)
 
-    res = client.get(f"/api/project?role_id={role['id']}", headers={"X-Student-Id": student_id})
+    res = client.get(f"/api/project?role_id={role['id']}", headers=auth_headers(student_id))
     assert res.status_code == 200, res.text
 
     payload = res.json()
@@ -131,7 +131,7 @@ def test_the_real_prompt_gets_the_states_the_router_computed(
     student_id = create_student(client)
     persist_demo_analysis(session, student_id)
     role = a_role(client, student_id)
-    client.get(f"/api/project?role_id={role['id']}", headers={"X-Student-Id": student_id})
+    client.get(f"/api/project?role_id={role['id']}", headers=auth_headers(student_id))
 
     states = real_lane["skills"]
     assert states, "the router passed no skills"
@@ -147,7 +147,7 @@ def test_a_full_submit_round_trip_stores_a_real_review(
     splats the result into `ReviewResponse(**stored, ...)`. A renamed field fails right here."""
     student_id = create_student(client)
     persist_demo_analysis(session, student_id)
-    headers = {"X-Student-Id": student_id}
+    headers = auth_headers(student_id)
     role = a_role(client, student_id)
     project = client.get(f"/api/project?role_id={role['id']}", headers=headers).json()
 
@@ -176,7 +176,7 @@ def test_the_review_prompt_carries_the_stored_projects_criteria(
     strings that survived all of it."""
     student_id = create_student(client)
     persist_demo_analysis(session, student_id)
-    headers = {"X-Student-Id": student_id}
+    headers = auth_headers(student_id)
     role = a_role(client, student_id)
     project = client.get(f"/api/project?role_id={role['id']}", headers=headers).json()
     client.post(
@@ -246,7 +246,7 @@ def test_the_demo_path_serves_both_caches_and_flips_the_badges(
     # this payload. Persisting anything else 502s on slug resolution, which is what caught the
     # first version of this test.
     persist_committed_analysis(session, student_id)
-    headers = {"X-Student-Id": student_id}
+    headers = auth_headers(student_id)
 
     before = client.get("/api/roadmap", headers=headers).json()
     # the demo project is served for the TOP-RANKED role only (routers/project.py:_demo_applies)

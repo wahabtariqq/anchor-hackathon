@@ -21,7 +21,7 @@ import app.routers.submit as submit_module
 from app.config import settings
 from app.github import MAX_FILE_BYTES, MAX_TOTAL_BYTES, RepoError, fetch_repo, parse_github_url
 from app.models import Project, Role, Submission
-from tests.conftest import create_student, persist_demo_analysis
+from tests.conftest import auth_headers, create_student, persist_demo_analysis
 
 # --------------------------------------------------------------------------- github.py
 
@@ -205,7 +205,7 @@ def ai_lane(monkeypatch: pytest.MonkeyPatch):
 
 
 def a_role(client: TestClient, session: Session, student_id: str) -> dict[str, Any]:
-    body = client.get("/api/roadmap", headers={"X-Student-Id": student_id}).json()
+    body = client.get("/api/roadmap", headers=auth_headers(student_id)).json()
     return body["roles"][0]
 
 
@@ -224,7 +224,7 @@ def test_project_is_503_until_the_ai_lane_exists(
     persist_demo_analysis(session, student_id)
     role = a_role(client, session, student_id)
 
-    res = client.get(f"/api/project?role_id={role['id']}", headers={"X-Student-Id": student_id})
+    res = client.get(f"/api/project?role_id={role['id']}", headers=auth_headers(student_id))
     assert res.status_code == 503
     assert res.json()["detail"] == "Project generation not available yet"
 
@@ -237,9 +237,9 @@ def test_project_404s_for_a_role_outside_this_students_analysis(
     persist_demo_analysis(session, theirs)
     their_role = a_role(client, session, theirs)
 
-    res = client.get(f"/api/project?role_id={their_role['id']}", headers={"X-Student-Id": mine})
+    res = client.get(f"/api/project?role_id={their_role['id']}", headers=auth_headers(mine))
     assert res.status_code == 404
-    res = client.get("/api/project?role_id=nope", headers={"X-Student-Id": mine})
+    res = client.get("/api/project?role_id=nope", headers=auth_headers(mine))
     assert res.status_code == 404
 
 
@@ -249,7 +249,7 @@ def test_project_generates_once_then_serves_the_cached_row(
     student_id = create_student(client)
     persist_demo_analysis(session, student_id)
     role = a_role(client, session, student_id)
-    headers = {"X-Student-Id": student_id}
+    headers = auth_headers(student_id)
 
     first = client.get(f"/api/project?role_id={role['id']}", headers=headers)
     assert first.status_code == 200, first.text
@@ -274,7 +274,7 @@ def test_project_rejects_verifies_outside_the_role(
     persist_demo_analysis(session, student_id)
     role = a_role(client, session, student_id)
 
-    res = client.get(f"/api/project?role_id={role['id']}", headers={"X-Student-Id": student_id})
+    res = client.get(f"/api/project?role_id={role['id']}", headers=auth_headers(student_id))
     assert res.status_code == 502
     assert session.exec(select(Project)).all() == [], "no row may be written for a bad project"
 
@@ -284,7 +284,7 @@ def test_skill_states_describe_what_the_student_already_has(
 ) -> None:
     student_id = create_student(client)
     persist_demo_analysis(session, student_id)
-    headers = {"X-Student-Id": student_id}
+    headers = auth_headers(student_id)
     body = client.get("/api/roadmap", headers=headers).json()
     depth = {s["id"]: s["coverage_depth"] for s in body["skills"]}
     # a role that actually has an uncovered skill, so there is something to tick
@@ -320,7 +320,7 @@ def test_submit_409s_before_a_project_exists(client: TestClient, session: Sessio
     res = client.post(
         "/api/submit",
         json={"role_id": role["id"], "repo_url": "https://github.com/o/r"},
-        headers={"X-Student-Id": student_id},
+        headers=auth_headers(student_id),
     )
     assert res.status_code == 409
     assert res.json()["detail"] == "Open the project first"
@@ -332,7 +332,7 @@ def test_a_repo_error_is_a_422_with_the_students_message(
     student_id = create_student(client)
     persist_demo_analysis(session, student_id)
     role = a_role(client, session, student_id)
-    headers = {"X-Student-Id": student_id}
+    headers = auth_headers(student_id)
     client.get(f"/api/project?role_id={role['id']}", headers=headers)
 
     def refuse(url: str) -> Any:
@@ -353,7 +353,7 @@ def test_a_review_failure_is_a_502(
     student_id = create_student(client)
     persist_demo_analysis(session, student_id)
     role = a_role(client, session, student_id)
-    headers = {"X-Student-Id": student_id}
+    headers = auth_headers(student_id)
     client.get(f"/api/project?role_id={role['id']}", headers=headers)
 
     def explode(project: Any, bundle: Any) -> Any:
@@ -372,7 +372,7 @@ def test_a_passing_submission_verifies_skills_and_raises_fit(
 ) -> None:
     student_id = create_student(client)
     persist_demo_analysis(session, student_id)
-    headers = {"X-Student-Id": student_id}
+    headers = auth_headers(student_id)
     before = client.get("/api/roadmap", headers=headers).json()
     role = before["roles"][0]
     project = client.get(f"/api/project?role_id={role['id']}", headers=headers).json()
@@ -403,7 +403,7 @@ def test_proof_on_an_uncovered_skill_raises_fit_across_every_role_that_needs_it(
     """The v4 mechanic: one repo, several cards move. Skills are shared, so proof propagates."""
     student_id = create_student(client)
     persist_demo_analysis(session, student_id)
-    headers = {"X-Student-Id": student_id}
+    headers = auth_headers(student_id)
     before = client.get("/api/roadmap", headers=headers).json()
     depth = {s["id"]: s["coverage_depth"] for s in before["skills"]}
 
@@ -433,7 +433,7 @@ def test_a_failing_submission_verifies_nothing_but_is_still_recorded(
     ai_lane["scores"] = [0, 1, 0]                     # 1 of 6, below the 0.6 ratio
     student_id = create_student(client)
     persist_demo_analysis(session, student_id)
-    headers = {"X-Student-Id": student_id}
+    headers = auth_headers(student_id)
     role = a_role(client, session, student_id)
     client.get(f"/api/project?role_id={role['id']}", headers=headers)
 
@@ -455,7 +455,7 @@ def test_verified_is_the_union_across_roles_and_attempts(
 ) -> None:
     student_id = create_student(client)
     persist_demo_analysis(session, student_id)
-    headers = {"X-Student-Id": student_id}
+    headers = auth_headers(student_id)
     body = client.get("/api/roadmap", headers=headers).json()
     first, second = body["roles"][0], body["roles"][1]
 
@@ -481,7 +481,7 @@ def test_a_later_failure_never_unverifies_an_earlier_pass(
 ) -> None:
     student_id = create_student(client)
     persist_demo_analysis(session, student_id)
-    headers = {"X-Student-Id": student_id}
+    headers = auth_headers(student_id)
     role = a_role(client, session, student_id)
     project = client.get(f"/api/project?role_id={role['id']}", headers=headers).json()
 
@@ -500,9 +500,9 @@ def test_a_later_failure_never_unverifies_an_earlier_pass(
     assert len(session.exec(select(Submission)).all()) == 2, "submissions are append-only"
 
 
-def test_submit_requires_a_student(client: TestClient) -> None:
+def test_submit_requires_a_session(client: TestClient) -> None:
     res = client.post("/api/submit", json={"role_id": "x", "repo_url": "https://github.com/o/r"})
-    assert res.status_code == 404
+    assert res.status_code == 401
 
 
 def test_the_pass_threshold_is_the_configured_ratio(
@@ -511,7 +511,7 @@ def test_the_pass_threshold_is_the_configured_ratio(
     # 4 of 6 = 0.667 >= 0.6 passes; 3 of 6 = 0.5 does not
     student_id = create_student(client)
     persist_demo_analysis(session, student_id)
-    headers = {"X-Student-Id": student_id}
+    headers = auth_headers(student_id)
     roles = client.get("/api/roadmap", headers=headers).json()["roles"]
 
     ai_lane["scores"] = [2, 2, 0]

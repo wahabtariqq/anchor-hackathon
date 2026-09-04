@@ -5,11 +5,14 @@ the trickiest code in the lane and §12 leaves both uncovered. Everything here i
 hits real HTTP + real SQL, no mocks.
 """
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session, select
 
 from app.models import Coverage, Progress, Skill, Student, StudentCourse
 from tests.conftest import (
+    auth_headers,
+    create_account,
     DEMO_STUDENT,
     create_student as create_demo,
     make_analysis,
@@ -101,26 +104,61 @@ def test_student_validation_rejects(client: TestClient) -> None:
         "blank name": {"name": "   "},
         "semester 0": {"semester": 0},
     }
+    _, headers = create_account(client)
     for label, override in cases.items():
-        res = client.post("/api/students", json={**DEMO_STUDENT, **override})
+        res = client.post("/api/students", json={**DEMO_STUDENT, **override}, headers=headers)
         assert res.status_code == 422, f"{label} was accepted: {res.status_code} {res.text}"
 
 
 # ---- identity ----
 
 
-def test_missing_or_unknown_student_id_is_404(client: TestClient) -> None:
-    for headers in ({}, {"X-Student-Id": "not-a-real-id"}):
-        for call in (
-            lambda: client.get("/api/roadmap", headers=headers),
-            lambda: client.post("/api/analyze", headers=headers),
-            lambda: client.post(
-                "/api/progress", json={"skill_id": "x", "checked": True}, headers=headers
-            ),
-        ):
-            res = call()
-            assert res.status_code == 404, res.text
-            assert res.json()["detail"] == "Unknown student — start over"
+def _protected_calls(client: TestClient, headers: dict[str, str]):
+    return (
+        lambda: client.get("/api/roadmap", headers=headers),
+        lambda: client.post("/api/analyze", headers=headers),
+        lambda: client.post("/api/progress", json={"skill_id": "x", "checked": True}, headers=headers),
+        lambda: client.get("/api/project?role_id=x", headers=headers),
+        lambda: client.post("/api/submit", json={"role_id": "x", "repo_url": "u"}, headers=headers),
+        lambda: client.post("/api/students", json=DEMO_STUDENT, headers=headers),
+    )
+
+
+@pytest.mark.parametrize(
+    "headers",
+    [{}, {"Authorization": "not-a-bearer"}, {"Authorization": "Bearer "}, {"Authorization": "Bearer nope"}],
+    ids=["no header", "wrong scheme", "empty token", "unknown token"],
+)
+def test_every_protected_route_401s_without_a_valid_token(
+    client: TestClient, headers: dict[str, str]
+) -> None:
+    for call in _protected_calls(client, headers):
+        assert call().status_code == 401
+
+
+def test_an_authenticated_user_with_no_student_gets_404_not_401(client: TestClient) -> None:
+    """The frontend routes this to /onboarding, so it must not read as a broken session."""
+    _, headers = create_account(client)
+    res = client.get("/api/roadmap", headers=headers)
+    assert res.status_code == 404
+    assert res.json()["detail"] == "No student profile yet — complete onboarding"
+
+
+def test_an_expired_session_is_401(client: TestClient, session: Session) -> None:
+    from datetime import datetime, timedelta, timezone
+
+    from app.models import Session as SessionRow
+
+    student_id = create_demo(client)
+    headers = auth_headers(student_id)
+    assert client.get("/api/roadmap", headers=headers).status_code == 404      # authenticated, no analysis
+
+    row = session.exec(select(SessionRow)).first()
+    assert row is not None
+    row.expires_at = datetime.now(timezone.utc) - timedelta(seconds=1)
+    session.add(row)
+    session.commit()
+    assert client.get("/api/roadmap", headers=headers).status_code == 401
 
 
 # ---- POST /api/analyze ----
@@ -129,16 +167,21 @@ def test_missing_or_unknown_student_id_is_404(client: TestClient) -> None:
 def test_analyze_is_409_once_an_analysis_exists(client: TestClient, session: Session) -> None:
     student_id = create_demo(client)
     analyse(session, student_id)
-    res = client.post("/api/analyze", headers={"X-Student-Id": student_id})
+    res = client.post("/api/analyze", headers=auth_headers(student_id))
     assert res.status_code == 409
     assert res.json()["detail"] == "Analysis already exists"
 
 
 def test_analyze_is_422_for_a_student_with_no_courses(client: TestClient, session: Session) -> None:
-    bare = Student(name="No Courses", semester=1, interests=["Security", "Mobile"])
+    from app.models import User
+
+    _, headers = create_account(client)
+    user = session.exec(select(User)).first()
+    assert user is not None
+    bare = Student(user_id=user.id, name="No Courses", semester=1, interests=["Security", "Mobile"])
     session.add(bare)
     session.commit()
-    res = client.post("/api/analyze", headers={"X-Student-Id": bare.id})
+    res = client.post("/api/analyze", headers=headers)
     assert res.status_code == 422
     assert res.json()["detail"] == "Student has no courses"
 
@@ -163,7 +206,7 @@ def test_persistence_drops_unknown_codes_and_duplicate_pairs(
 
 def test_roadmap_is_404_before_an_analysis(client: TestClient) -> None:
     student_id = create_demo(client)
-    res = client.get("/api/roadmap", headers={"X-Student-Id": student_id})
+    res = client.get("/api/roadmap", headers=auth_headers(student_id))
     assert res.status_code == 404
     assert res.json()["detail"] == "No analysis yet"
 
@@ -171,7 +214,7 @@ def test_roadmap_is_404_before_an_analysis(client: TestClient) -> None:
 def test_roadmap_payload(client: TestClient, session: Session) -> None:
     student_id = create_demo(client)
     analyse(session, student_id)
-    body = client.get("/api/roadmap", headers={"X-Student-Id": student_id}).json()
+    body = client.get("/api/roadmap", headers=auth_headers(student_id)).json()
 
     assert set(body) == {"student", "skills", "roles", "courses"}
     assert body["student"] == {
@@ -198,7 +241,7 @@ def test_roadmap_payload(client: TestClient, session: Session) -> None:
 def test_roadmap_collapses_coverage_to_the_best_depth(client: TestClient, session: Session) -> None:
     student_id = create_demo(client)
     analyse(session, student_id)
-    body = client.get("/api/roadmap", headers={"X-Student-Id": student_id}).json()
+    body = client.get("/api/roadmap", headers=auth_headers(student_id)).json()
     by_slug = {s["slug"]: s for s in body["skills"]}
 
     # skill-30 is covered partial-then-full, skill-31 full-then-partial: both are "full"
@@ -215,7 +258,7 @@ def test_roadmap_collapses_coverage_to_the_best_depth(client: TestClient, sessio
 def test_roadmap_is_ordered_deterministically(client: TestClient, session: Session) -> None:
     student_id = create_demo(client)
     analyse(session, student_id)
-    headers = {"X-Student-Id": student_id}
+    headers = auth_headers(student_id)
     body = client.get("/api/roadmap", headers=headers).json()
 
     assert body["roles"] == sorted(body["roles"], key=lambda r: (-r["fit_percent"], r["rank"]))
@@ -235,7 +278,7 @@ def test_roadmap_fit_matches_the_scoring_module(client: TestClient, session: Ses
 
     student_id = create_demo(client)
     analyse(session, student_id)
-    body = client.get("/api/roadmap", headers={"X-Student-Id": student_id}).json()
+    body = client.get("/api/roadmap", headers=auth_headers(student_id)).json()
     depth = {s["id"]: s["coverage_depth"] for s in body["skills"]}
     checked = {s["id"] for s in body["skills"] if s["checked"]}
     verified = {s["id"] for s in body["skills"] if s["verified"]}
@@ -261,7 +304,7 @@ def test_roadmap_fit_matches_the_scoring_module(client: TestClient, session: Ses
 def test_progress_is_idempotent_both_ways(client: TestClient, session: Session) -> None:
     student_id = create_demo(client)
     analyse(session, student_id)
-    headers = {"X-Student-Id": student_id}
+    headers = auth_headers(student_id)
     skill_id = client.get("/api/roadmap", headers=headers).json()["skills"][0]["id"]
 
     for _ in range(2):
@@ -281,10 +324,10 @@ def test_progress_rejects_a_skill_from_another_analysis(client: TestClient, sess
     mine, theirs = create_demo(client), create_demo(client)
     analyse(session, mine)
     analyse(session, theirs)
-    their_skill = client.get("/api/roadmap", headers={"X-Student-Id": theirs}).json()["skills"][0]["id"]
+    their_skill = client.get("/api/roadmap", headers=auth_headers(theirs)).json()["skills"][0]["id"]
 
     res = client.post(
-        "/api/progress", json={"skill_id": their_skill, "checked": True}, headers={"X-Student-Id": mine}
+        "/api/progress", json={"skill_id": their_skill, "checked": True}, headers=auth_headers(mine)
     )
     assert res.status_code == 404
     assert session.exec(select(Progress)).all() == []
@@ -293,7 +336,7 @@ def test_progress_rejects_a_skill_from_another_analysis(client: TestClient, sess
 def test_ticking_a_skill_raises_fit_and_can_reorder_roles(client: TestClient, session: Session) -> None:
     student_id = create_demo(client)
     analyse(session, student_id)
-    headers = {"X-Student-Id": student_id}
+    headers = auth_headers(student_id)
     before = client.get("/api/roadmap", headers=headers).json()
 
     depth = {s["id"]: s["coverage_depth"] for s in before["skills"]}
