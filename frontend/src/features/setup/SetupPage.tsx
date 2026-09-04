@@ -15,7 +15,9 @@ import type {
   SemesterTag,
   StudentCourseInput,
 } from "@/lib/types";
-import { CourseCard, CUSTOM_OUTLINE, DEFAULT_OUTLINE, type CourseSelection } from "./CourseCard";
+import { CourseDetailModal } from "./CourseDetailModal";
+import { CourseTile } from "./CourseTile";
+import { CUSTOM_OUTLINE, DEFAULT_OUTLINE, type CourseSelection } from "./courseSelection";
 import { InterestChips } from "./InterestChips";
 
 const MIN_COURSES = 3;
@@ -58,6 +60,9 @@ export function SetupPage({ step, onContinue, onBack, onComplete }: SetupPagePro
   const [selections, setSelections] = useState<Record<string, CourseSelection>>({});
   const [customCourses, setCustomCourses] = useState<CustomCourse[]>([]);
   const [interests, setInterests] = useState<Interest[]>([]);
+  /** Which catalog course's detail dialog is open — null when closed. Picking, editing outline/
+   *  semester, and removing a catalog course all happen in CourseDetailModal now, not inline. */
+  const [openCourseId, setOpenCourseId] = useState<string | null>(null);
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -130,19 +135,31 @@ export function SetupPage({ step, onContinue, onBack, onComplete }: SetupPagePro
     return { past: label("past"), current: label("current") };
   }, [catalog, selections, customCourses]);
 
-  function toggleCourse(courseId: string) {
-    setSelections((prev) => {
-      const next = { ...prev };
-      if (next[courseId]) delete next[courseId];
-      else next[courseId] = { semester_tag: "past", outline: DEFAULT_OUTLINE, customText: "" };
-      return next;
-    });
+  function saveCourseSelection(courseId: string, selection: CourseSelection) {
+    setSelections((prev) => ({ ...prev, [courseId]: selection }));
+    setOpenCourseId(null);
   }
 
-  function patchSelection(courseId: string, patch: Partial<CourseSelection>) {
-    setSelections((prev) =>
-      prev[courseId] ? { ...prev, [courseId]: { ...prev[courseId], ...patch } } : prev,
-    );
+  function removeCourseSelection(courseId: string) {
+    setSelections((prev) => {
+      const next = { ...prev };
+      delete next[courseId];
+      return next;
+    });
+    setOpenCourseId(null);
+  }
+
+  function summaryFor(course: CatalogCourse): string | null {
+    const selection = selections[course.id];
+    if (!selection) return null;
+    const when = selection.semester_tag === "past" ? "Previous semester" : "Current semester";
+    const outline =
+      selection.outline === DEFAULT_OUTLINE
+        ? "Standard outline"
+        : selection.outline === CUSTOM_OUTLINE
+          ? "Your own outline"
+          : (course.curriculum_variants?.find((v) => v.id === selection.outline)?.label ?? "Standard outline");
+    return `${when} · ${outline}`;
   }
 
   function toggleInterest(interest: Interest) {
@@ -292,78 +309,92 @@ export function SetupPage({ step, onContinue, onBack, onComplete }: SetupPagePro
         )}
 
         {!catalog && !loadError && (
-          <div className="grid grid-cols-2 items-start gap-3">
-            {Array.from({ length: 6 }, (_, i) => (
-              <Skeleton key={i} className="h-28 w-full" />
+          <div className="grid grid-cols-3 gap-2.5">
+            {Array.from({ length: 9 }, (_, i) => (
+              <Skeleton key={i} className="h-24 w-full" />
             ))}
           </div>
         )}
 
+        {/* A fixed-size grid of tiles — clicking one opens CourseDetailModal, where picking,
+            outline/semester, and removing all happen. Nothing in this grid ever grows or
+            reflows: a tile's own size never depends on whether it's selected, only its border
+            and the one-line summary shown once it's configured. */}
         {catalog && (
-          <div className="grid grid-cols-2 items-start gap-3">
+          <div className="grid grid-cols-3 gap-2.5">
             {catalog.map((course) => (
-              <CourseCard
+              <CourseTile
                 key={course.id}
                 course={course}
-                selection={selections[course.id] ?? null}
+                selected={Boolean(selections[course.id])}
+                summary={summaryFor(course)}
                 disabled={atLimit && !selections[course.id]}
-                onToggle={() => toggleCourse(course.id)}
-                onTagChange={(semester_tag) => patchSelection(course.id, { semester_tag })}
-                onOutlineChange={(outline) => patchSelection(course.id, { outline })}
-                onCustomTextChange={(customText) => patchSelection(course.id, { customText })}
+                onOpen={() => setOpenCourseId(course.id)}
               />
             ))}
           </div>
         )}
 
-        {customCourses.map((course, index) => (
-          <Card key={course.key}>
-            <CardContent className="space-y-2 p-4">
-              <div className="flex items-center gap-2">
-                <Input
-                  value={course.name}
-                  placeholder="Course name, e.g. Human-Computer Interaction"
-                  onChange={(event) => patchCustom(course.key, { name: event.target.value })}
-                />
-                <div className="flex shrink-0 gap-1">
-                  {(["past", "current"] as const).map((tag) => (
-                    <button
-                      key={tag}
-                      type="button"
-                      onClick={() => patchCustom(course.key, { semester_tag: tag })}
-                      className={
-                        course.semester_tag === tag
-                          ? "rounded-md border border-foreground/40 px-2 py-1 text-xs font-medium"
-                          : "rounded-md border border-transparent px-2 py-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+        <CourseDetailModal
+          course={catalog?.find((c) => c.id === openCourseId) ?? null}
+          existingSelection={openCourseId ? (selections[openCourseId] ?? null) : null}
+          onClose={() => setOpenCourseId(null)}
+          onSave={(selection) => openCourseId && saveCourseSelection(openCourseId, selection)}
+          onRemove={() => openCourseId && removeCourseSelection(openCourseId)}
+        />
+
+        {customCourses.length > 0 && (
+          <div className="space-y-3 pt-1">
+            {customCourses.map((course, index) => (
+              <Card key={course.key}>
+                <CardContent className="space-y-2 p-4">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={course.name}
+                      placeholder="Course name, e.g. Human-Computer Interaction"
+                      onChange={(event) => patchCustom(course.key, { name: event.target.value })}
+                    />
+                    <div className="flex shrink-0 gap-1">
+                      {(["past", "current"] as const).map((tag) => (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => patchCustom(course.key, { semester_tag: tag })}
+                          className={
+                            course.semester_tag === tag
+                              ? "rounded-md border border-foreground/40 px-2 py-1 text-xs font-medium"
+                              : "rounded-md border border-transparent px-2 py-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+                          }
+                        >
+                          {tag === "past" ? "Previous" : "Current"}
+                        </button>
+                      ))}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        setCustomCourses((prev) => prev.filter((c) => c.key !== course.key))
                       }
                     >
-                      {tag === "past" ? "Previous" : "Current"}
-                    </button>
-                  ))}
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() =>
-                    setCustomCourses((prev) => prev.filter((c) => c.key !== course.key))
-                  }
-                >
-                  Remove
-                </Button>
-              </div>
-              <Textarea
-                rows={4}
-                value={course.curriculum_text}
-                placeholder="Paste the course outline — topics, projects, anything the syllabus lists…"
-                onChange={(event) => patchCustom(course.key, { curriculum_text: event.target.value })}
-              />
-              {customErrors[index] &&
-                (showErrors || Boolean(course.name.trim() || course.curriculum_text.trim())) && (
-                  <p className="text-xs text-anchor-critical">{customErrors[index]}</p>
-                )}
-            </CardContent>
-          </Card>
-        ))}
+                      Remove
+                    </Button>
+                  </div>
+                  <Textarea
+                    rows={4}
+                    value={course.curriculum_text}
+                    placeholder="Paste the course outline — topics, projects, anything the syllabus lists…"
+                    onChange={(event) => patchCustom(course.key, { curriculum_text: event.target.value })}
+                  />
+                  {customErrors[index] &&
+                    (showErrors || Boolean(course.name.trim() || course.curriculum_text.trim())) && (
+                      <p className="text-xs text-anchor-critical">{customErrors[index]}</p>
+                    )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
 
         <Button
           variant="outline"
