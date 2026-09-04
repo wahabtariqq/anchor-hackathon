@@ -21,6 +21,12 @@ pydantic-settings==2.15.0
 # change rather than a dependency scramble on Day 3. Do not remove without #39 changing.
 anthropic==1.1.0
 
+# --- auth (V2, Salman's lane) ---
+# bcrypt directly, NOT passlib: passlib 1.7.4 is unmaintained and breaks against bcrypt 5.x —
+# it reads a removed __about__ attribute and its wrap-bug probe hashes a 73-byte string, which
+# modern bcrypt refuses outright. TDD-V2 §4.3 says passlib; see DECISIONS for why it can't be.
+bcrypt==5.0.0
+
 # --- tests / http ---
 # httpx is both the test client and the transport the LLMClient adapter can use directly,
 # so a provider with no Python SDK needs no new dependency.
