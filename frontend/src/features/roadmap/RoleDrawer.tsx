@@ -24,9 +24,11 @@ export function RoleDrawer({ role, fit, skillsById, onToggleSkill, onClose, clas
 
   // Focus the drawer whenever a different role opens (anchor-design §8) — since
   // RoleDrawer stays mounted for the drawer's lifetime, a role change is a prop swap,
-  // not a mount, so this can't rely on a mount-only effect.
+  // not a mount, so this can't rely on a mount-only effect. preventScroll: the drawer
+  // sits at the top of a sticky column, so an unguarded focus() yanks the whole page
+  // back up to bring it into view every time a card is clicked further down the list.
   useEffect(() => {
-    titleRef.current?.focus();
+    titleRef.current?.focus({ preventScroll: true });
   }, [role.id]);
 
   const bySkillId = (id: string) => skillsById.get(id);

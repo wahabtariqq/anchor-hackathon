@@ -9,7 +9,7 @@ import { WhatMoved } from "./WhatMoved";
 
 // Fixed role-card height, gap included (anchor-design §4). Card content must never
 // grow past this — RoleCard truncates its own text; we clip the rest defensively.
-const CARD_H = 132;
+const CARD_H = 148;
 const CARD_GAP = 12;
 
 // AnalysisProvider now wraps the whole authenticated route group (app/router.tsx), lifted out
@@ -118,6 +118,7 @@ export function RoadmapPage() {
                     role={role}
                     fit={roleFit.get(role.id) ?? 0}
                     skillsById={skillsById}
+                    selected={role.slug === openRoleSlug}
                     className="h-full overflow-hidden"
                     onClick={() => openRole(role)}
                   />
@@ -139,6 +140,7 @@ export function RoadmapPage() {
                     role={role}
                     fit={roleFit.get(role.id) ?? 0}
                     skillsById={skillsById}
+                    selected={role.slug === openRoleSlug}
                     onClick={() => openRole(role)}
                   />
                 ))}
