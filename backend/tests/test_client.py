@@ -14,6 +14,7 @@ import httpx
 import pytest
 from pydantic import BaseModel
 
+import app.analysis.client as client_module
 from app.analysis.client import (
     AnalysisFailed,
     GeminiClient,
@@ -205,6 +206,53 @@ def test_two_provider_errors_raise() -> None:
     with pytest.raises(AnalysisFailed) as caught:
         complete_validated(Tiny, "p", client=fake)
     assert "503 b" in str(caught.value), "the LAST error should be reported"
+
+
+def test_a_provider_error_waits_before_retrying(monkeypatch: pytest.MonkeyPatch) -> None:
+    """503 means the provider is shedding load. Retrying in the same instant re-enters the
+    window that just refused us -- measured live: an immediate retry failed 2 of 4 review
+    calls, and the same key succeeded first try once a wait was introduced."""
+    slept: list[float] = []
+    monkeypatch.setattr(client_module, "PROVIDER_RETRY_BACKOFF_SECONDS", 5.0)
+    monkeypatch.setattr(client_module.time, "sleep", lambda s: slept.append(s))
+
+    fake = FakeClient(ProviderError("503 high demand"), GOOD)
+    parsed, _ = complete_validated(Tiny, "p", client=fake)
+
+    assert parsed.value == 1 and fake.calls == 2
+    assert slept == [5.0], "exactly one pause, between the two attempts"
+
+
+def test_only_a_provider_error_waits(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Truncation and validation are deterministic faults of the prompt. Waiting on those
+    would add latency to a call the student is watching, and fix nothing."""
+    slept: list[float] = []
+    monkeypatch.setattr(client_module, "PROVIDER_RETRY_BACKOFF_SECONDS", 5.0)
+    monkeypatch.setattr(client_module.time, "sleep", lambda s: slept.append(s))
+
+    truncated = FakeClient(("{a", "max_tokens"), GOOD)
+    complete_validated(Tiny, "p", client=truncated, max_tokens=16000, retry_max_tokens=24000)
+    assert slept == [], "a truncation retry must not pause"
+
+    invalid = FakeClient(('{"value": "not-an-int"}', "stop"), GOOD)
+    complete_validated(Tiny, "p", client=invalid)
+    assert slept == [], "a validation retry must not pause"
+
+
+def test_the_second_provider_error_does_not_wait_for_nothing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """There is no third attempt, so pausing after the last one would delay the 502 the
+    student is already waiting on."""
+    slept: list[float] = []
+    monkeypatch.setattr(client_module, "PROVIDER_RETRY_BACKOFF_SECONDS", 5.0)
+    monkeypatch.setattr(client_module.time, "sleep", lambda s: slept.append(s))
+
+    fake = FakeClient(ProviderError("503 a"), ProviderError("503 b"))
+    with pytest.raises(AnalysisFailed):
+        complete_validated(Tiny, "p", client=fake)
+
+    assert slept == [5.0], "one pause total, not one per failure"
 
 
 def test_cross_check_rejection_triggers_the_retry() -> None:

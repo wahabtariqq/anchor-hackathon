@@ -93,6 +93,19 @@ def persist_demo_analysis(session: Session, student_id: str) -> None:
     persist_analysis(session, student_id, make_analysis(), json.dumps({"stub": True}), list(courses))
 
 
+@pytest.fixture(autouse=True)
+def _no_provider_backoff(monkeypatch: Any) -> None:
+    """Zero the 503 retry pause for every test, the same way BCRYPT_ROUNDS drops to 4 above.
+
+    The 5 s wait is the production behaviour that makes a congested provider survivable; paying
+    it in a suite that provokes ProviderError deliberately would add ~15 s for no signal.
+    test_client.py's backoff test sets its own value and asserts on it.
+    """
+    import app.analysis.client as client_module
+
+    monkeypatch.setattr(client_module, "PROVIDER_RETRY_BACKOFF_SECONDS", 0.0)
+
+
 @pytest.fixture
 def engine() -> Iterator[Any]:
     eng = create_engine(
