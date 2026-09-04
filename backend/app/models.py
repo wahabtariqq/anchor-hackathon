@@ -23,8 +23,44 @@ def now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+class User(SQLModel, table=True):
+    """A real account (V2). V1's anonymous Student rows keep working and get adopted by one
+    of these via claim-on-signup (TDD-V2 §5.1)."""
+
+    id: str = Field(default_factory=new_id, primary_key=True)
+    email: str = Field(unique=True, index=True)     # always stored lowercased
+    password_hash: str                              # bcrypt; the password itself is never stored
+    name: str
+    created_at: datetime = Field(default_factory=now)
+    # Bumped only on login, never per-request: it is the dashboard delta's baseline and must
+    # stay fixed for the whole session rather than creeping forward (TDD-V2 §4.4).
+    last_seen_at: datetime = Field(default_factory=now)
+
+
+class Session(SQLModel, table=True):
+    """An issued bearer token. Only its SHA-256 hash is stored, so a database leak does not
+    hand over live sessions."""
+
+    id: str = Field(default_factory=new_id, primary_key=True)
+    user_id: str = Field(foreign_key="user.id", index=True)
+    token_hash: str = Field(unique=True, index=True)
+    created_at: datetime = Field(default_factory=now)
+    expires_at: datetime
+
+
+class LoginFailure(SQLModel, table=True):
+    """One row per failed login, for the naive rate limit (TDD-V2 §4.3). No Redis."""
+
+    id: str = Field(default_factory=new_id, primary_key=True)
+    email: str = Field(index=True)
+    created_at: datetime = Field(default_factory=now, index=True)
+
+
 class Student(SQLModel, table=True):
     id: str = Field(default_factory=new_id, primary_key=True)
+    # Nullable: POST /api/students still creates the row, and it is adopted either by
+    # onboarding under an account or by claim-on-signup. V1 rows keep user_id = None.
+    user_id: str | None = Field(default=None, foreign_key="user.id", index=True)
     name: str
     semester: int
     interests: list[str] = Field(sa_column=Column(JSON))

@@ -8,12 +8,15 @@ hand each thread its own empty database.
 
 import json
 import os
+import uuid
 from collections.abc import Iterator
 from types import SimpleNamespace
 from typing import Any
 
 os.environ.setdefault("DATABASE_URL", "sqlite://")
 os.environ.setdefault("ANTHROPIC_API_KEY", "")
+# bcrypt at 12 rounds is ~300ms a hash by design; the suite creates dozens of accounts.
+os.environ.setdefault("BCRYPT_ROUNDS", "4")
 
 import pytest                                                     # noqa: E402
 from fastapi.testclient import TestClient                         # noqa: E402
@@ -38,11 +41,43 @@ DEMO_STUDENT: dict[str, Any] = {
 }
 
 
+# V2: every request carries a bearer token, so a test student needs an account behind it.
+# create_student() records the token it used; auth_headers() hands it back, which keeps each
+# test reading as "this student's request" rather than plumbing tokens through every call.
+_TOKENS: dict[str, str] = {}
+
+
+def create_account(
+    client: TestClient,
+    email: str | None = None,
+    password: str = "hunter2-strong",
+    name: str = "Ayesha",
+) -> tuple[str, dict[str, str]]:
+    """Signs up and logs in. Returns (token, headers) — signup alone issues no session."""
+    email = email or f"user-{uuid.uuid4().hex[:12]}@example.com"
+    created = client.post(
+        "/api/auth/signup", json={"email": email, "password": password, "name": name}
+    )
+    assert created.status_code == 200, created.text
+    logged_in = client.post("/api/auth/login", json={"email": email, "password": password})
+    assert logged_in.status_code == 200, logged_in.text
+    token = logged_in.json()["token"]
+    return token, {"Authorization": f"Bearer {token}"}
+
+
+def auth_headers(student_id: str) -> dict[str, str]:
+    """The Authorization header for the account that owns this student."""
+    return {"Authorization": f"Bearer {_TOKENS[student_id]}"}
+
+
 def create_student(client: TestClient, **overrides: Any) -> str:
-    """POST the demo student, returning their id."""
-    res = client.post("/api/students", json={**DEMO_STUDENT, **overrides})
+    """Create an account, onboard the demo student under it, return the student id."""
+    token, headers = create_account(client)
+    res = client.post("/api/students", json={**DEMO_STUDENT, **overrides}, headers=headers)
     assert res.status_code == 201, res.text
-    return res.json()["student_id"]
+    student_id = res.json()["student_id"]
+    _TOKENS[student_id] = token
+    return student_id
 
 
 def persist_demo_analysis(session: Session, student_id: str) -> None:

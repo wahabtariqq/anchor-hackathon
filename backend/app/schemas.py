@@ -4,9 +4,11 @@ Shared file. Its siblings are frontend/src/lib/types.ts and app/analysis/schema.
 to any shape here is a `contract:` PR that updates all of them at once.
 """
 
+import re
+from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 # ---- enumerations (CONTRACT.md §5) ----
 
@@ -26,6 +28,77 @@ Interest = Literal[
 ]
 
 MIN_CUSTOM_CURRICULUM_CHARS = 50
+
+MIN_PASSWORD_CHARS = 8
+# bcrypt's hard limit. The library raises rather than truncating, so this is a 422 with a clear
+# message instead of a 500 — and never a hash that silently covers only part of the password.
+MAX_PASSWORD_BYTES = 72
+# Deliberately permissive: enough to catch a typo, not an RFC 5322 parser, and no new dependency
+# (pydantic's EmailStr needs email-validator).
+_EMAIL = re.compile(r"^[^@\s]+@[^@\s.]+(\.[^@\s.]+)+$")
+
+
+# ---- POST /api/auth/* (docs/TDD-V2.md §6) ----
+
+
+class UserOut(BaseModel):
+    id: str
+    email: str
+    name: str
+    created_at: datetime
+
+
+class SignupRequest(BaseModel):
+    email: str
+    password: str
+    name: str = Field(min_length=1, max_length=120)
+    # A V1 anonymous student id, adopted by this account if it is still unclaimed.
+    claim_student_id: str | None = None
+
+    @field_validator("email")
+    @classmethod
+    def valid_email(cls, v: str) -> str:
+        v = v.strip().lower()
+        if not _EMAIL.match(v):
+            raise ValueError("that doesn't look like an email address")
+        return v
+
+    @field_validator("password")
+    @classmethod
+    def strong_enough(cls, v: str) -> str:
+        if len(v) < MIN_PASSWORD_CHARS:
+            raise ValueError(f"password must be at least {MIN_PASSWORD_CHARS} characters")
+        if len(v.encode("utf-8")) > MAX_PASSWORD_BYTES:
+            raise ValueError(f"password must be at most {MAX_PASSWORD_BYTES} bytes")
+        return v
+
+    @field_validator("name")
+    @classmethod
+    def trimmed(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("name is required")
+        return v.strip()
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+    @field_validator("email")
+    @classmethod
+    def normalise(cls, v: str) -> str:
+        return v.strip().lower()
+
+
+class SignupResponse(BaseModel):
+    """No token: signup creates the account, a login establishes the session (DECISIONS #78)."""
+
+    user: UserOut
+
+
+class AuthResponse(BaseModel):
+    token: str
+    user: UserOut
 
 # ---- GET /api/courses ----
 
