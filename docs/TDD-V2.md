@@ -4,12 +4,13 @@
 **Stack:** unchanged — FastAPI + SQLModel + Postgres/SQLite · React + Vite + Tailwind + shadcn/ui. No new AI stack; `backend/app/analysis/` is frozen (PRD-V2 §2 non-goals).
 **Audience:** the same three engineers who built V1 — Salman, Umer, Wahab
 **Status:** Design proposed, not yet locked. Mirrors `docs/TDD.md`'s section shape so the two documents read side by side.
-**Frontend lane status (2026-09-04):** Wahab's side of §12's build order is done — all five new
-screens, the shell, the token pass, and the roadmap re-skin — built **frontend-only,
-fixture-backed** ahead of the backend lane, per §7.5 below. Salman's and Umer's backend lanes
-(`user`/`session`/`event`/`fit_snapshot`, `/api/auth/*`, `/api/dashboard`, `/api/skills`,
-`/api/projects`) have not started; §7.5 documents the frontend-only interim and its integration
-seam.
+**Lane status (2026-09-04): all three lanes are done.** Wahab's frontend shipped first,
+fixture-backed (§7.5). Salman's auth lane followed (`user`/`session`/`login_failure`,
+`/api/auth/*`, the `current_student` swap). Umer's events/aggregation lane landed last —
+`event`/`fit_snapshot`, `app/events.py`, the `/progress` and `/submit` transactional writes, and
+`/api/dashboard`, `/api/skills`, `/api/projects` — and the frontend was cut over to it: the
+fixture shim for those three endpoints and `lib/eventLog.ts` are **deleted**, exactly as §7.5
+said they would be. `VITE_USE_FIXTURE` survives as an offline/demo convenience only.
 
 *V2 adds: real accounts (`user`, `session`), an append-only `event` log, `fit_snapshot` history,
 ~~four~~ three new screens (Dashboard, Skills, Projects — a fourth, Profile, was built then removed,
