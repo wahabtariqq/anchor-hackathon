@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
 import { createStudent, getCourses } from "@/lib/api";
 import { getUser } from "@/lib/auth";
 import { setStudentId, setStudentName } from "@/lib/identity";
@@ -18,6 +16,7 @@ import type {
 import { CourseDetailModal } from "./CourseDetailModal";
 import { CourseTile } from "./CourseTile";
 import { CUSTOM_OUTLINE, DEFAULT_OUTLINE, type CourseSelection } from "./courseSelection";
+import { CustomCourseModal, type CustomCourseDraft } from "./CustomCourseModal";
 import { InterestChips } from "./InterestChips";
 
 const MIN_COURSES = 3;
@@ -28,6 +27,10 @@ const MIN_CUSTOM_CHARS = 50; // mirrors MIN_CUSTOM_CURRICULUM_CHARS in backend/a
 interface CustomCourse {
   key: number;
   name: string;
+  /** A student-assigned course number ("CS499"), display-only — the backend's StudentCourseInput
+   *  has no field for it (only custom_name/semester_tag/curriculum_text), so it never leaves the
+   *  browser. It exists so a custom-course tile shows something other than a bare "Custom" badge. */
+  code: string;
   semester_tag: SemesterTag;
   curriculum_text: string;
 }
@@ -63,6 +66,9 @@ export function SetupPage({ step, onContinue, onBack, onComplete }: SetupPagePro
   /** Which catalog course's detail dialog is open — null when closed. Picking, editing outline/
    *  semester, and removing a catalog course all happen in CourseDetailModal now, not inline. */
   const [openCourseId, setOpenCourseId] = useState<string | null>(null);
+  /** Which custom course's dialog is open — a key edits that one, "new" creates one, null closes.
+   *  Same popup style and the same tile-grid placement as catalog courses (direct feedback). */
+  const [customModalTarget, setCustomModalTarget] = useState<number | "new" | null>(null);
 
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -86,10 +92,11 @@ export function SetupPage({ step, onContinue, onBack, onComplete }: SetupPagePro
   const atLimit = courseCount >= MAX_COURSES;
 
   const semesterNumber = Number(semester);
-  const semesterValid = Number.isInteger(semesterNumber) && semesterNumber >= 1 && semesterNumber <= 12;
+  const semesterValid = Number.isInteger(semesterNumber) && semesterNumber >= 1 && semesterNumber <= 8;
 
   const customErrors = customCourses.map((course) => {
     if (!course.name.trim()) return "Give the course a name.";
+    if (!course.code.trim()) return "Give the course a number.";
     if (course.curriculum_text.trim().length < MIN_CUSTOM_CHARS) {
       return `Paste at least ${MIN_CUSTOM_CHARS} characters of outline (${course.curriculum_text.trim().length} so far).`;
     }
@@ -107,12 +114,12 @@ export function SetupPage({ step, onContinue, onBack, onComplete }: SetupPagePro
     .filter((m): m is string => Boolean(m));
 
   const problems = {
-    semester: semesterValid ? null : "Semester must be a number between 1 and 12.",
+    semester: semesterValid ? null : "Semester must be a number between 1 and 8.",
     courses:
       courseCount < MIN_COURSES
         ? `Pick at least ${MIN_COURSES} courses (${courseCount} so far).`
         : null,
-    custom: customErrors.some(Boolean) ? "Finish the courses you added below." : null,
+    custom: customErrors.some(Boolean) ? "One of your added courses is missing an outline — reopen it to finish." : null,
     outline: outlineErrors.length > 0 ? outlineErrors[0] : null,
     interests:
       interests.length < MIN_INTERESTS
@@ -121,19 +128,6 @@ export function SetupPage({ step, onContinue, onBack, onComplete }: SetupPagePro
   };
   const coursesReady = !problems.semester && !problems.courses && !problems.custom && !problems.outline;
   const ready = coursesReady && !problems.interests;
-
-  const grouped = useMemo(() => {
-    const label = (tag: SemesterTag) => {
-      const catalogCodes = (catalog ?? [])
-        .filter((c) => selections[c.id]?.semester_tag === tag)
-        .map((c) => c.code);
-      const customNames = customCourses
-        .filter((c) => c.semester_tag === tag)
-        .map((c) => c.name.trim() || "Untitled");
-      return [...catalogCodes, ...customNames];
-    };
-    return { past: label("past"), current: label("current") };
-  }, [catalog, selections, customCourses]);
 
   function saveCourseSelection(courseId: string, selection: CourseSelection) {
     setSelections((prev) => ({ ...prev, [courseId]: selection }));
@@ -168,8 +162,37 @@ export function SetupPage({ step, onContinue, onBack, onComplete }: SetupPagePro
     );
   }
 
-  function patchCustom(key: number, patch: Partial<CustomCourse>) {
-    setCustomCourses((prev) => prev.map((c) => (c.key === key ? { ...c, ...patch } : c)));
+  const editingCustomCourse =
+    typeof customModalTarget === "number"
+      ? (customCourses.find((c) => c.key === customModalTarget) ?? null)
+      : null;
+
+  // Every course title that already exists — the *whole* catalog (picked or not: a custom course
+  // must never recreate a real catalog course just because it isn't ticked yet) plus every other
+  // custom course, minus whichever one is currently being edited. CustomCourseModal blocks saving
+  // a name that collides with one of these, case-insensitively.
+  const pickedTitles = useMemo(() => {
+    const catalogNames = (catalog ?? []).map((c) => c.name.trim().toLowerCase());
+    const customNames = customCourses
+      .filter((c) => c.key !== customModalTarget)
+      .map((c) => c.name.trim().toLowerCase());
+    return new Set([...catalogNames, ...customNames]);
+  }, [catalog, customCourses, customModalTarget]);
+
+  function saveCustomCourse(draft: CustomCourseDraft) {
+    if (typeof customModalTarget === "number") {
+      setCustomCourses((prev) => prev.map((c) => (c.key === customModalTarget ? { ...c, ...draft } : c)));
+    } else {
+      setCustomCourses((prev) => [...prev, { key: Date.now() + prev.length, ...draft }]);
+    }
+    setCustomModalTarget(null);
+  }
+
+  function removeCustomCourse() {
+    if (typeof customModalTarget === "number") {
+      setCustomCourses((prev) => prev.filter((c) => c.key !== customModalTarget));
+    }
+    setCustomModalTarget(null);
   }
 
   function handleContinue() {
@@ -271,8 +294,14 @@ export function SetupPage({ step, onContinue, onBack, onComplete }: SetupPagePro
         <Input
           id="semester"
           inputMode="numeric"
+          maxLength={1}
           value={semester}
-          onChange={(event) => setSemester(event.target.value)}
+          // Reject anything that isn't empty (mid-edit) or a single digit 1-8 — the box can
+          // never hold an out-of-range value in the first place, not just fail validation later.
+          onChange={(event) => {
+            const next = event.target.value;
+            if (next === "" || /^[1-8]$/.test(next)) setSemester(next);
+          }}
         />
         {showErrors && problems.semester && (
           <p className="text-xs text-anchor-critical">{problems.semester}</p>
@@ -286,18 +315,10 @@ export function SetupPage({ step, onContinue, onBack, onComplete }: SetupPagePro
           <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
             Your courses
           </h2>
-          <span className="text-xs text-muted-foreground">
-            {courseCount} of {MAX_COURSES} · pick {MIN_COURSES}–{MAX_COURSES}
-          </span>
+          <Button variant="outline" size="sm" disabled={atLimit} onClick={() => setCustomModalTarget("new")}>
+            + Add a course not listed
+          </Button>
         </div>
-
-        {(grouped.past.length > 0 || grouped.current.length > 0) && (
-          <p className="text-xs text-muted-foreground">
-            {grouped.past.length > 0 && <>Previous semesters: {grouped.past.join(", ")}</>}
-            {grouped.past.length > 0 && grouped.current.length > 0 && " · "}
-            {grouped.current.length > 0 && <>Current semester: {grouped.current.join(", ")}</>}
-          </p>
-        )}
 
         {loadError && (
           <div className="space-y-2 rounded-md border p-4">
@@ -316,20 +337,35 @@ export function SetupPage({ step, onContinue, onBack, onComplete }: SetupPagePro
           </div>
         )}
 
-        {/* A fixed-size grid of tiles — clicking one opens CourseDetailModal, where picking,
-            outline/semester, and removing all happen. Nothing in this grid ever grows or
-            reflows: a tile's own size never depends on whether it's selected, only its border
-            and the one-line summary shown once it's configured. */}
+        {/* A fixed-size grid of tiles — catalog and added-by-hand courses alike. Clicking one
+            opens a detail dialog (CourseDetailModal for catalog courses, CustomCourseModal for
+            added ones), where picking, outline/semester, and removing all happen. Nothing in
+            this grid ever grows or reflows: a tile's own size never depends on whether it's
+            selected, only its border and the one-line summary shown once it's configured. */}
         {catalog && (
           <div className="grid grid-cols-3 gap-2.5">
             {catalog.map((course) => (
               <CourseTile
                 key={course.id}
-                course={course}
+                title={course.name}
+                code={course.code}
+                blurb={course.curriculum_text}
                 selected={Boolean(selections[course.id])}
                 summary={summaryFor(course)}
                 disabled={atLimit && !selections[course.id]}
                 onOpen={() => setOpenCourseId(course.id)}
+              />
+            ))}
+            {customCourses.map((course) => (
+              <CourseTile
+                key={`custom-${course.key}`}
+                title={course.name.trim() || "Untitled course"}
+                code={course.code.trim() || "Custom"}
+                blurb={course.curriculum_text}
+                selected
+                summary={`${course.semester_tag === "past" ? "Previous semester" : "Current semester"} · Custom outline`}
+                disabled={false}
+                onOpen={() => setCustomModalTarget(course.key)}
               />
             ))}
           </div>
@@ -343,72 +379,14 @@ export function SetupPage({ step, onContinue, onBack, onComplete }: SetupPagePro
           onRemove={() => openCourseId && removeCourseSelection(openCourseId)}
         />
 
-        {customCourses.length > 0 && (
-          <div className="space-y-3 pt-1">
-            {customCourses.map((course, index) => (
-              <Card key={course.key}>
-                <CardContent className="space-y-2 p-4">
-                  <div className="flex items-center gap-2">
-                    <Input
-                      value={course.name}
-                      placeholder="Course name, e.g. Human-Computer Interaction"
-                      onChange={(event) => patchCustom(course.key, { name: event.target.value })}
-                    />
-                    <div className="flex shrink-0 gap-1">
-                      {(["past", "current"] as const).map((tag) => (
-                        <button
-                          key={tag}
-                          type="button"
-                          onClick={() => patchCustom(course.key, { semester_tag: tag })}
-                          className={
-                            course.semester_tag === tag
-                              ? "rounded-md border border-foreground/40 px-2 py-1 text-xs font-medium"
-                              : "rounded-md border border-transparent px-2 py-1 text-xs font-medium text-muted-foreground hover:text-foreground"
-                          }
-                        >
-                          {tag === "past" ? "Previous" : "Current"}
-                        </button>
-                      ))}
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() =>
-                        setCustomCourses((prev) => prev.filter((c) => c.key !== course.key))
-                      }
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                  <Textarea
-                    rows={4}
-                    value={course.curriculum_text}
-                    placeholder="Paste the course outline — topics, projects, anything the syllabus lists…"
-                    onChange={(event) => patchCustom(course.key, { curriculum_text: event.target.value })}
-                  />
-                  {customErrors[index] &&
-                    (showErrors || Boolean(course.name.trim() || course.curriculum_text.trim())) && (
-                      <p className="text-xs text-anchor-critical">{customErrors[index]}</p>
-                    )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={atLimit}
-          onClick={() =>
-            setCustomCourses((prev) => [
-              ...prev,
-              { key: Date.now() + prev.length, name: "", semester_tag: "current", curriculum_text: "" },
-            ])
-          }
-        >
-          + Add a course not listed
-        </Button>
+        <CustomCourseModal
+          open={customModalTarget !== null}
+          existing={editingCustomCourse}
+          existingTitles={pickedTitles}
+          onClose={() => setCustomModalTarget(null)}
+          onSave={saveCustomCourse}
+          onRemove={removeCustomCourse}
+        />
 
         {showErrors && problems.courses && (
           <p className="text-xs text-anchor-critical">{problems.courses}</p>
