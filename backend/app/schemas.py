@@ -276,3 +276,89 @@ class RoadmapResponse(BaseModel):
     skills: list[RoadmapSkillOut]
     roles: list[RoadmapRoleOut]
     courses: list[RoadmapCourseOut]
+
+
+# ---- V2: GET /api/dashboard (docs/TDD-V2.md §6) ----
+
+
+class SnapshotPoint(BaseModel):
+    fit: int
+    at: datetime
+
+
+class NextAction(BaseModel):
+    role_id: str
+    label: str
+    kind: Literal["tick", "project"]
+
+
+class ActivityEvent(BaseModel):
+    text: str                          # humanised server-side by joining ids back to names
+    at: datetime
+
+
+class DashboardTopRole(BaseModel):
+    id: str
+    title: str
+    fit_percent: int
+
+
+class DashboardResponse(BaseModel):
+    top_role: DashboardTopRole | None          # null only before the first analysis
+    skills_verified: int
+    skills_checked: int
+    verified_delta: int                        # since user.last_seen_at, not since ever
+    checked_delta: int
+    snapshots: dict[str, list[SnapshotPoint]]  # role id → its fit history, oldest first
+    next_actions: list[NextAction]
+    recent_events: list[ActivityEvent]
+
+
+# ---- V2: GET /api/skills ----
+
+
+class SkillRoleRef(BaseModel):
+    id: str
+    title: str
+
+
+class SkillInventoryRow(BaseModel):
+    """The roadmap's skill row plus every role that wants it. The status pill is derived on
+    the client from the same three fields the drawer reads (checked/verified/coverage_depth) —
+    there is deliberately no server-side status enum for the two screens to disagree over."""
+
+    id: str
+    slug: str
+    name: str
+    real_world: str
+    coverage_depth: Depth | None
+    checked: bool
+    verified: bool
+    roles: list[SkillRoleRef]
+
+
+class SkillsResponse(BaseModel):
+    skills: list[SkillInventoryRow]
+
+
+# ---- V2: GET /api/projects (plural — every role at once, with history) ----
+
+
+class SubmissionOut(BaseModel):
+    id: str
+    repo_url: str
+    total: int
+    max_total: int
+    passed: bool
+    created_at: datetime
+    criteria_scores: list[CriterionScore]
+    feedback: str
+
+
+class ProjectWithHistory(BaseModel):
+    project: ProjectResponse
+    submissions: list[SubmissionOut]           # newest first
+
+
+class ProjectsResponse(BaseModel):
+    projects: list[ProjectWithHistory]

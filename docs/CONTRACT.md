@@ -299,8 +299,83 @@ row (DECISIONS #8) and the newest one is the live one.
 `GET /project`, `POST /submit` — same request and response shapes as §3, only the auth header
 differs. The roadmap payload is byte-for-byte what V1 returned.
 
-### Not yet implemented
+---
 
-`GET /api/dashboard`, `GET /api/skills`, `GET /api/projects` (plural) and the
-`event` / `fit_snapshot` writes are specified in `docs/TDD-V2.md` §4.5-§4.8 and owned by the
-events/aggregation lane. The frontend serves all three from `contracts/fixtures/` today.
+## 7. V2 addendum — events, snapshots, and the three aggregation reads
+
+Mirrors: `backend/app/schemas.py`, `frontend/src/lib/types.ts`. Design: `docs/TDD-V2.md`
+§4.5-§4.8. All three require `Authorization: Bearer`, and all three answer `404 {"detail": "No
+student profile yet — complete onboarding"}` for an authenticated account that has not onboarded
+(§6's table) — which is a different answer from `401`.
+
+### Write side: `POST /api/progress` and `POST /api/submit` — changed
+
+Request and response shapes are **unchanged**. Both now additionally write, inside their own
+existing transaction:
+
+- one `event` row per action — `tick` / `untick` for progress; `submission` plus, when it
+  passed, `pass` for submit;
+- one `fit_snapshot` row per role whose `fit_percent` **actually changed**. A tick on a skill a
+  course already covers in full moves nothing (`fit_percent` takes a `max`, §2), so it writes an
+  event and no snapshot. A rejected request writes neither.
+
+Events are keyed to the **account**, not the student, so a re-onboarding student keeps their
+activity feed. Snapshots reference the analysis's role ids, so a re-analysis starts a fresh
+chart rather than splicing two different role sets into one line.
+
+### `GET /api/dashboard` → 200
+
+```json
+{
+  "top_role": { "id": "ro_b2", "title": "Data Engineer", "fit_percent": 71 },
+  "skills_verified": 6, "skills_checked": 11,
+  "verified_delta": 2, "checked_delta": 9,
+  "snapshots": { "ro_b2": [ { "fit": 48, "at": "2026-08-20T…" }, { "fit": 71, "at": "…" } ] },
+  "next_actions": [ { "role_id": "ro_b2", "label": "Learn Airflow Basics", "kind": "tick" } ],
+  "recent_events": [ { "text": "Verified skills for Data Engineer via repo review", "at": "…" } ]
+}
+```
+
+- `snapshots` and `next_actions` cover the **top three core roles**, in the same order, so a
+  client can walk either one and stay aligned with the other. Adjacent roles are never charted.
+- Snapshot points are oldest-first. A key with `[]` means "no movement recorded yet" — there is
+  no backfill, history starts at V2 deploy.
+- `kind` is `"project"` when the role has a generated project with no passing submission
+  (`"Finish {title} — verifies {n} skills"`), else `"tick"` (`"Learn {skill}"`, the
+  highest-weight unresolved skill). A role with nothing unresolved and nothing to prove falls
+  back to `"Review {role}"`, still `kind: "tick"`.
+- Deltas count events since `user.last_seen_at`, which only a **login** moves. `recent_events`
+  is the last 10, newest first, and its `text` is joined to skill/role names at read time — a
+  later rename never leaves a stale sentence behind.
+
+### `GET /api/skills` → 200
+
+```json
+{ "skills": [ { "id": "sk_a1", "slug": "sql-query-optimization",
+               "name": "SQL Query Optimization", "real_world": "…",
+               "coverage_depth": "full", "checked": false, "verified": true,
+               "roles": [ { "id": "ro_b2", "title": "Data Engineer" } ] } ] }
+```
+
+Every skill in the student's analysis, in `GET /roadmap`'s own `(name, slug)` order, each with
+every role that wants it (best-fit role first). The four state fields are the same values
+`/roadmap` reports for that skill — **there is deliberately no server-side status enum**; the
+Verified/Learned/Covered/Partial/Missing pill is derived on the client from these, so the
+Skills screen and the roadmap drawer cannot disagree.
+
+### `GET /api/projects` → 200
+
+```json
+{ "projects": [ { "project": { "id": "pr_9d", "role_id": "ro_b2", "title": "…", "spec": "…",
+                              "criteria": ["…"], "verifies": ["sk_a1"] },
+                 "submissions": [ { "id": "sb_1", "repo_url": "…", "total": 5, "max_total": 6,
+                                   "passed": true, "created_at": "…",
+                                   "criteria_scores": [ { "criterion": "…", "score": 2,
+                                                         "note": "…" } ],
+                                   "feedback": "…" } ] } ] }
+```
+
+Every project the student has generated, newest first, each with its full submission history
+newest-first. `project` is byte-identical to what `GET /api/project?role_id=` returns for that
+role — the plural view never reshapes it. `{"projects": []}` before Prove It is ever opened.
+Submissions are append-only: a failed attempt stays in the history after a later pass.
