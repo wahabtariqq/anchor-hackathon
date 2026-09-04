@@ -3,80 +3,73 @@ import { useAnalysis } from "@/features/roadmap/AnalysisContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getDashboard } from "@/lib/api";
 import { getUser } from "@/lib/auth";
-import {
-  getDashboardBaseline,
-  getEventsSince,
-  getRecentEvents,
-  getSnapshotsForRoles,
-  humanize,
-  seedIfEmpty,
-} from "@/lib/eventLog";
+import type { DashboardResponse } from "@/lib/types";
 import { ActivityFeed } from "./ActivityFeed";
 import { FitChart } from "./FitChart";
 import { NextActions } from "./NextActions";
 import { StatCards } from "./StatCards";
 
-// "Where am I and what's next" in five seconds (PRD-V2 §4.3). Current numbers (fit, verified,
-// checked counts) read live off the shared AnalysisContext — the same context /roadmap and
-// /skills use — so they're never stale. History (the chart, deltas, activity feed) reads off
-// lib/eventLog.ts, seeded once from the fixture and grown by real ticks/submissions since.
+// "Where am I and what's next" in five seconds (PRD-V2 §4.3).
+//
+// Two sources, deliberately: current numbers (top-role fit, verified/checked counts) read live
+// off the shared AnalysisContext — the same context /roadmap and /skills use — so a tick made a
+// second ago is already reflected without a refetch. History (the chart, the deltas, the
+// activity feed, the next actions) comes from GET /api/dashboard, because none of it is
+// derivable from the roadmap payload: it lives in the `event` and `fit_snapshot` tables
+// (docs/TDD-V2.md §4.6).
+const EMPTY: DashboardResponse = {
+  top_role: null,
+  skills_verified: 0,
+  skills_checked: 0,
+  verified_delta: 0,
+  checked_delta: 0,
+  snapshots: {},
+  next_actions: [],
+  recent_events: [],
+};
+
 export function DashboardPage() {
   const { data, loading, roleFit, checkedIds, verifiedIds } = useAnalysis();
-  const [seeded, setSeeded] = useState(false);
+  const [dash, setDash] = useState<DashboardResponse | null>(null);
   const user = getUser();
 
   useEffect(() => {
     let cancelled = false;
-    getDashboard().then((res) => {
-      if (!cancelled) {
-        seedIfEmpty(res);
-        setSeeded(true);
-      }
-    });
+    getDashboard()
+      .then((res) => {
+        if (!cancelled) setDash(res);
+      })
+      // History failing must not blank the page — the live numbers above still stand on their
+      // own, so fall back to an empty history rather than an error screen.
+      .catch(() => {
+        if (!cancelled) setDash(EMPTY);
+      });
     return () => {
       cancelled = true;
     };
   }, []);
 
-  const coreRoles = useMemo(() => (data ? data.roles.filter((r) => r.proximity === "core") : []), [data]);
-  const top3 = useMemo(
-    () => [...coreRoles].sort((a, b) => (roleFit.get(b.id) ?? 0) - (roleFit.get(a.id) ?? 0)).slice(0, 3),
-    [coreRoles, roleFit],
-  );
-  const skillsById = useMemo(() => new Map((data?.skills ?? []).map((s) => [s.id, s])), [data]);
+  const roleById = useMemo(() => new Map((data?.roles ?? []).map((r) => [r.id, r])), [data]);
 
-  const baseline = getDashboardBaseline();
-  const recentSimEvents = seeded ? getEventsSince(baseline) : [];
-  const verifiedDelta = recentSimEvents.filter((e) => e.type === "pass").length;
-  const checkedDelta =
-    recentSimEvents.filter((e) => e.type === "tick").length -
-    recentSimEvents.filter((e) => e.type === "untick").length;
+  // next_actions and snapshots are both built server-side from the same top-3 list, in the same
+  // order, so walking next_actions keeps FitChart's COLORS[i] and NextActions' COLORS[i] on the
+  // same role — which is exactly what DECISIONS #90 ties together.
+  const charted = (dash ?? EMPTY).next_actions.filter((a) => roleById.has(a.role_id));
 
-  const snapshots = seeded ? getSnapshotsForRoles(top3.map((r) => r.id)) : {};
-  const series = top3.map((r) => ({ roleId: r.id, title: r.title, points: snapshots[r.id] ?? [] }));
+  const series = charted.map((a) => ({
+    roleId: a.role_id,
+    title: roleById.get(a.role_id)!.title,
+    points: (dash ?? EMPTY).snapshots[a.role_id] ?? [],
+  }));
 
-  const activity = seeded ? getRecentEvents(10).map((e) => ({ text: humanize(e), at: e.at })) : [];
+  const nextActions = charted.map((a) => ({
+    roleId: a.role_id,
+    slug: roleById.get(a.role_id)!.slug,
+    roleTitle: roleById.get(a.role_id)!.title,
+    label: a.label,
+  }));
 
-  const nextActions = top3.map((role) => {
-    const unresolved = [...role.skills]
-      .sort((a, b) => (a.weight === b.weight ? 0 : a.weight === "core" ? -1 : 1))
-      .find((rs) => {
-        const skill = skillsById.get(rs.skill_id);
-        if (!skill) return false;
-        const covered =
-          checkedIds.has(rs.skill_id) || verifiedIds.has(rs.skill_id) || skill.coverage_depth != null;
-        return !covered;
-      });
-    const skillName = unresolved ? skillsById.get(unresolved.skill_id)?.name : null;
-    return {
-      roleId: role.id,
-      slug: role.slug,
-      roleTitle: role.title,
-      label: skillName ? `Learn ${skillName}` : `Review ${role.title}`,
-    };
-  });
-
-  if (loading || !data) {
+  if (loading || !data || !dash) {
     return (
       <div className="mx-auto max-w-6xl space-y-6 p-8">
         <Skeleton className="h-8 w-64" />
@@ -90,7 +83,12 @@ export function DashboardPage() {
     );
   }
 
-  const topRole = top3[0] ? { title: top3[0].title, fit: roleFit.get(top3[0].id) ?? 0 } : null;
+  // Live ordering, not the payload's: if a tick just changed which role leads, the greeting's
+  // headline number has to agree with what /roadmap would show right now.
+  const best = [...data.roles]
+    .filter((r) => r.proximity === "core")
+    .sort((a, b) => (roleFit.get(b.id) ?? 0) - (roleFit.get(a.id) ?? 0))[0];
+  const topRole = best ? { title: best.title, fit: roleFit.get(best.id) ?? 0 } : null;
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 p-8">
@@ -102,9 +100,9 @@ export function DashboardPage() {
       <StatCards
         topRole={topRole}
         skillsVerified={verifiedIds.size}
-        verifiedDelta={verifiedDelta}
+        verifiedDelta={dash.verified_delta}
         skillsChecked={checkedIds.size}
-        checkedDelta={checkedDelta}
+        checkedDelta={dash.checked_delta}
       />
 
       <section className="space-y-3">
@@ -114,7 +112,7 @@ export function DashboardPage() {
 
       <NextActions actions={nextActions} />
 
-      <ActivityFeed events={activity} />
+      <ActivityFeed events={dash.recent_events} />
     </div>
   );
 }

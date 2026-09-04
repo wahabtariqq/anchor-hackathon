@@ -1,5 +1,4 @@
 import { getToken, clearToken, setOnboarded } from "./auth";
-import { getLiveSubmissionsForRole } from "./eventLog";
 import type {
   CoursesResponse,
   StudentCreateRequest,
@@ -14,7 +13,6 @@ import type {
   DashboardResponse,
   SkillsResponse,
   ProjectsResponse,
-  SubmissionOut,
 } from "./types";
 
 import fixtureCourses from "@fixtures/courses.json";
@@ -44,17 +42,11 @@ export class ApiError extends Error {
 }
 
 // VITE_USE_FIXTURE serves contracts/fixtures/*.json instead of hitting a real API — the same
-// dev mode V1 used to build the Roadmap screen (anchor-frontend skill), now also covering V2's
-// dashboard/skills/projects endpoints, none of which exist on a real backend yet (docs/PRD-V2.md
-// §0's audit). Delete this branch and the three V2 fixture imports above once the real
-// endpoints land — every function below keeps the same signature either way.
+// dev mode V1 used to build the Roadmap screen (anchor-frontend skill), extended to V2's
+// dashboard/skills/projects. Every V2 endpoint is now real (docs/TDD-V2.md §4.5-§4.8), so this
+// is a demo/offline convenience only: nothing depends on it to work any more.
 const USE_FIXTURE = import.meta.env.VITE_USE_FIXTURE === "true";
 
-// The events/aggregation lane (docs/TDD-V2.md §4.5-§4.8) hasn't landed, so these three have no
-// real endpoint to call yet. They keep serving fixtures even with VITE_USE_FIXTURE=false, which
-// is what lets the rest of the app run against the real API today instead of waiting.
-// Delete this list — and the three fixture imports above — the day they ship.
-const PENDING_ENDPOINTS = ["/api/dashboard", "/api/skills", "/api/projects"];
 const FIXTURE_DELAY_MS = 250;
 
 function delay(ms: number): Promise<void> {
@@ -87,31 +79,7 @@ async function fixtureResponse<T>(path: string, method: string, body: string | n
   if (method === "GET" && path === "/api/roadmap") return fixtureRoadmap as unknown as T;
   if (method === "GET" && path === "/api/dashboard") return fixtureDashboard as unknown as T;
   if (method === "GET" && path === "/api/skills") return fixtureSkills as unknown as T;
-  if (method === "GET" && path === "/api/projects") {
-    // Merge in any submissions made live this session (recorded by AnalysisContext.submitRepo
-    // via eventLog.recordSubmission) so a resubmit shows up here on refetch, not just on the
-    // Dashboard — same "make it actually react" reasoning as the Dashboard's seed+live design.
-    const base = fixtureProjects as unknown as ProjectsResponse;
-    const roadmap = fixtureRoadmap as unknown as RoadmapResponse;
-    const merged: ProjectsResponse = {
-      projects: base.projects.map((pwh) => {
-        const roleTitle = roadmap.roles.find((r) => r.id === pwh.project.role_id)?.title ?? "";
-        const seed = pwh.submissions[0];
-        const live: SubmissionOut[] = getLiveSubmissionsForRole(roleTitle).map((e, i) => ({
-          id: `live_${pwh.project.id}_${i}`,
-          repo_url: e.repoUrl ?? "",
-          total: e.total ?? seed.total,
-          max_total: e.maxTotal ?? seed.max_total,
-          passed: seed.passed,
-          created_at: e.at,
-          criteria_scores: seed.criteria_scores,
-          feedback: seed.feedback,
-        }));
-        return { project: pwh.project, submissions: [...live, ...pwh.submissions] };
-      }),
-    };
-    return merged as unknown as T;
-  }
+  if (method === "GET" && path === "/api/projects") return fixtureProjects as unknown as T;
   if (method === "POST" && path === "/api/students") return { student_id: "fixture-student" } as unknown as T;
   if (method === "POST" && path === "/api/analyze") return { ok: true } as unknown as T;
   if (method === "POST" && path === "/api/progress") return { ok: true } as unknown as T;
@@ -163,7 +131,7 @@ async function fixtureResponse<T>(path: string, method: string, body: string | n
 async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const method = init.method ?? "GET";
 
-  if (USE_FIXTURE || (method === "GET" && PENDING_ENDPOINTS.includes(path))) {
+  if (USE_FIXTURE) {
     return fixtureResponse<T>(path, method, typeof init.body === "string" ? init.body : null);
   }
 
@@ -232,7 +200,7 @@ export function submitRepo(body: SubmitRequest): Promise<SubmitResponse> {
   });
 }
 
-// ---- V2 (docs/TDD-V2.md §6) — real endpoints don't exist yet; see USE_FIXTURE above ----
+// ---- V2 (docs/TDD-V2.md §6) ----
 
 export function getDashboard(): Promise<DashboardResponse> {
   return api<DashboardResponse>("/api/dashboard");
