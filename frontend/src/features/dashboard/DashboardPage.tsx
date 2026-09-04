@@ -71,6 +71,7 @@ export function DashboardPage() {
     return {
       roleId: role.id,
       slug: role.slug,
+      roleTitle: role.title,
       label: skillName ? `Learn ${skillName}` : `Review ${role.title}`,
     };
   });
