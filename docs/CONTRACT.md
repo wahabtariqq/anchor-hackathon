@@ -232,3 +232,75 @@ the exact shape of `roadmap_response.json` and the frontend renders it with `VIT
 | `semester_tag` | `past`, `current` |
 | `interests` | `Artificial Intelligence`, `Databases`, `UI/UX Design`, `Web Development`, `Systems & Infrastructure`, `Data Analysis`, `Security`, `Mobile` |
 | catalog `course_id` | `cs201`, `cs202`, `cs301`, `cs302`, `cs303`, `cs401`, `cs402`, `cs403`, `cs404`, `cs405` |
+
+---
+
+## 6. V2 addendum — accounts and sessions
+
+Mirrors: `backend/app/schemas.py`, `frontend/src/lib/types.ts`. Design: `docs/TDD-V2.md` §4.3-§4.4, §6.
+
+**Authentication changed.** V1's `X-Student-Id: <uuid>` header is gone. Every route except
+`GET /api/courses`, `POST /api/auth/signup` and `POST /api/auth/login` requires:
+
+```
+Authorization: Bearer <token>
+```
+
+Two failures, and they mean different things:
+
+| Status | Meaning | Client does |
+|---|---|---|
+| `401` | no token, malformed header, unknown token, or expired session | clear the token → `/login` |
+| `404 {"detail": "No student profile yet — complete onboarding"}` | authenticated, but this account has no `Student` yet | → `/onboarding` |
+
+### `POST /api/auth/signup` → 200
+
+```json
+{ "email": "ayesha@example.com", "password": "at-least-8-chars", "name": "Ayesha",
+  "claim_student_id": "6f1c…" }
+```
+→ `{ "user": { "id": "…", "email": "…", "name": "Ayesha", "created_at": "…" } }`
+
+**No token.** Signup creates the account; a login establishes the session, signup included.
+`claim_student_id` is optional and adopts a V1 anonymous student **only if it is unclaimed** —
+an already-owned or unknown id is ignored silently, not an error.
+Errors: `409` email already registered · `422` password under 8 characters or over 72 **bytes**
+(bcrypt's hard limit), malformed email, blank name.
+
+### `POST /api/auth/login` → 200
+
+```json
+{ "email": "ayesha@example.com", "password": "…" }
+```
+→ `{ "token": "…", "user": { … } }` — the only response that carries a token.
+
+Errors: `401 "Wrong email or password"` — identical for a wrong password and an unknown email,
+deliberately, so this is not an account-enumeration oracle · `429` after
+`LOGIN_RATE_LIMIT` failures for that email within `LOGIN_RATE_WINDOW_MIN` minutes.
+
+### `POST /api/auth/logout` → 200 `{ "ok": true }`
+
+Deletes the calling token's session. Idempotent: a stale, missing or unknown token still
+returns 200, because the caller's goal — no usable session — is already met.
+
+### `POST /api/auth/logout_all` → 200 `{ "ok": true }`
+
+Deletes every session for the caller. Requires a valid token (`401` otherwise).
+
+### `POST /api/students` — changed
+
+Now requires a bearer token and attaches the created `Student` to the caller's account. Request
+and response shapes are unchanged from §3. An account that re-onboards gets a **new** `Student`
+row (DECISIONS #8) and the newest one is the live one.
+
+### Unchanged
+
+`GET /courses` (still public), `POST /analyze`, `GET /roadmap`, `POST /progress`,
+`GET /project`, `POST /submit` — same request and response shapes as §3, only the auth header
+differs. The roadmap payload is byte-for-byte what V1 returned.
+
+### Not yet implemented
+
+`GET /api/dashboard`, `GET /api/skills`, `GET /api/projects` (plural) and the
+`event` / `fit_snapshot` writes are specified in `docs/TDD-V2.md` §4.5-§4.8 and owned by the
+events/aggregation lane. The frontend serves all three from `contracts/fixtures/` today.
