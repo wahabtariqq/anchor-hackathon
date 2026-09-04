@@ -161,3 +161,38 @@ class Submission(SQLModel, table=True):
     # a copy of project.verifies when passed, else [] — frozen at submission time
     verified_skill_ids: list[str] = Field(sa_column=Column(JSON))
     created_at: datetime = Field(default_factory=now)
+
+
+class Event(SQLModel, table=True):
+    """Append-only record of everything a student did (TDD-V2 §4.2). Written inside the same
+    transaction as the action it records, so an event can never describe a write that rolled
+    back. Keyed to `user`, not `student`: re-onboarding mints a new Student (DECISIONS #8) and
+    the activity feed has to survive that.
+
+    `skill_id` / `role_id` / `submission_id` are nullable because each type uses a different
+    pair: a tick has a skill, a submission has a role and a submission, nothing has all three.
+    """
+
+    id: str = Field(default_factory=new_id, primary_key=True)
+    user_id: str = Field(foreign_key="user.id", index=True)
+    type: str                                    # "tick" | "untick" | "submission" | "pass"
+    skill_id: str | None = Field(default=None, foreign_key="skill.id")
+    role_id: str | None = Field(default=None, foreign_key="role.id")
+    submission_id: str | None = Field(default=None, foreign_key="submission.id")
+    created_at: datetime = Field(default_factory=now, index=True)
+
+
+class FitSnapshot(SQLModel, table=True):
+    """One row per (user, role) whenever that role's fit_percent actually changes — never on a
+    tick that moves nothing (TDD-V2 §4.5). No backfill: history starts the day V2 deploys.
+
+    Rows outlive the analysis that produced them. A re-onboarded student's chart simply starts
+    over, because the new analysis mints new role ids and the Dashboard only ever asks for the
+    roles its current roadmap knows about.
+    """
+
+    id: str = Field(default_factory=new_id, primary_key=True)
+    user_id: str = Field(foreign_key="user.id", index=True)
+    role_id: str = Field(foreign_key="role.id")
+    fit_percent: int
+    created_at: datetime = Field(default_factory=now, index=True)

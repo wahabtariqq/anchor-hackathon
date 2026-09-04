@@ -3,9 +3,11 @@
 **"From a form to a product" · 3 people · 2 days, after V1's core is frozen**
 **Baseline:** V1 complete (analysis → roadmap → ticks → Prove It), dark mode, single-flow UI, three screens only.
 **Status:** Proposed. This is the planned continuation of `docs/PRD.md` §16 ("v2 — README only, do not build [yet]"); it is not yet team-ratified the way `docs/PRD.md` is Locked.
-**Frontend status (2026-09-04):** all five screens plus the shell and design pass (§3, §4, §8) are
-built, frontend-only against fixtures ahead of the backend lane — see `docs/TDD-V2.md` §7.5 for
-what that means and its integration seam. Backend (§5-§7, §11's Backend list) has not started.
+**Build status (2026-09-04):** V2 is **complete end to end.** The frontend (§3, §4, §8) was
+built first against fixtures; the auth lane (§5) landed next; the events/aggregation lane
+(§6-§7 — `event`, `fit_snapshot`, `/api/dashboard`, `/api/skills`, `/api/projects`) landed last
+and the frontend was cut over to it, deleting the fixture shim and the simulated event log that
+stood in for it. Every item in §11's gap checklist is built. See `docs/TDD-V2.md` §7.5.
 
 *Why V2: V1 proves the engine, but it reads as a one-shot form — you fill it in, you see a result, you leave. Nothing invites you back. V2's single job is to make ANCHOR a place a student returns to: an account they log into, a dashboard that shows what changed since last time, and screens that feel like an application, not a wizard. No new AI work. The engine is done; V2 is identity, memory, and skin.*
 

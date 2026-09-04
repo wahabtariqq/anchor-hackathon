@@ -1,5 +1,4 @@
 import { clearStudentId, getStudentId } from "./identity";
-import { rotateLastSeen } from "./eventLog";
 import type { AuthResponse, LoginRequest, SignupRequest, UserOut } from "./types";
 
 // Parallels identity.ts's single-responsibility pattern (docs/TDD-V2.md §7.1) — this is the
@@ -156,7 +155,6 @@ function issueSession(user: UserOut): AuthResponse {
   const token = randomId("tok");
   setToken(token);
   setUser(user);
-  rotateLastSeen();
   return { token, user };
 }
 
@@ -212,7 +210,8 @@ export async function login(body: LoginRequest): Promise<AuthResponse> {
     const auth = await postAuth<AuthResponse>("/api/auth/login", { email, password: body.password });
     setToken(auth.token);
     setUser(auth.user);
-    rotateLastSeen();
+    // The server bumps user.last_seen_at on login; that timestamp is the dashboard delta's
+    // baseline (docs/TDD-V2.md §4.4), so the client keeps no copy of it any more.
     await probeOnboarded(auth.token, auth.user.id);
     return auth;
   }

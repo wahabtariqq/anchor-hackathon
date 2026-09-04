@@ -17,8 +17,9 @@ from sqlmodel import Session, select
 from app.config import settings
 from app.db import get_session
 from app.github import RepoError, fetch_repo
-from app.auth import current_student
-from app.models import Project, Skill, Student, Submission
+from app.auth import current_student, current_user
+from app.events import fit_by_role, record_submission, snapshot_changed_roles
+from app.models import Project, Skill, Student, Submission, User
 from app.persistence import verified_skill_ids
 from app.schemas import ReviewResponse, SubmitRequest, SubmitResponse
 
@@ -78,6 +79,7 @@ def _is_demo_submission(student: Student, repo_url: str) -> bool:
 @router.post("/api/submit", response_model=SubmitResponse)
 def submit(
     body: SubmitRequest,
+    user: User = Depends(current_user),
     student: Student = Depends(current_student),
     session: Session = Depends(get_session),
 ) -> SubmitResponse:
@@ -108,19 +110,28 @@ def submit(
 
     stored = review.model_dump() if hasattr(review, "model_dump") else dict(review)
 
-    session.add(
-        Submission(
-            student_id=student.id,
-            role_id=project.role_id,
-            project_id=project.id,
-            repo_url=body.repo_url,
-            review=stored,
-            total=total,
-            max_total=max_total,
-            passed=passed,
-            # frozen at submit time: a later edit to the project must not retro-verify skills
-            verified_skill_ids=list(project.verifies) if passed else [],
-        )
+    # V2 (docs/TDD-V2.md §5.3): same shape as the tick path — only the project's own skills can
+    # move, so only their roles are scored. Read before the insert, again after it (autoflush
+    # makes the pending Submission visible to verified_skill_ids), one commit for all of it.
+    before = fit_by_role(session, student, list(project.verifies or []))
+
+    submission = Submission(
+        student_id=student.id,
+        role_id=project.role_id,
+        project_id=project.id,
+        repo_url=body.repo_url,
+        review=stored,
+        total=total,
+        max_total=max_total,
+        passed=passed,
+        # frozen at submit time: a later edit to the project must not retro-verify skills
+        verified_skill_ids=list(project.verifies) if passed else [],
+    )
+    session.add(submission)
+
+    record_submission(session, user.id, project.role_id, submission.id, passed)
+    snapshot_changed_roles(
+        session, user.id, before, fit_by_role(session, student, list(project.verifies or []))
     )
     session.commit()
 
