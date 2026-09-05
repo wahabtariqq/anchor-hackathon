@@ -39,10 +39,15 @@ export function RoleCard({ role, fit, skillsById, selected = false, onClick, cla
         if (e.key === "Enter" || e.key === " ") onClick?.();
       }}
       className={cn(
-        "cursor-pointer transition-all duration-150 hover:border-foreground/20",
-        role.proximity === "adjacent" && "border-dashed border-anchor-adjacent bg-anchor-adjacent/[0.06]",
-        selected &&
-          "border-primary/60 bg-primary/[0.05] shadow-md ring-1 ring-primary/30 hover:border-primary/60",
+        "cursor-pointer border-solid transition-all duration-150 hover:border-foreground/20",
+        // Unselected: dashed border only — a neutral structural cue that this role is
+        // adjacent, not core. No background tint here, because --anchor-adjacent and
+        // --primary are the same blue in dark mode; tinting every tile that color left
+        // the "selected" state below invisible among its own siblings.
+        role.proximity === "adjacent" && !selected && "border-dashed border-muted-foreground/30",
+        // Selected: a distinct, solid treatment (heavier ring, opaque fill, solid border
+        // even for an adjacent card) so it reads as "chosen" regardless of proximity.
+        selected && "border-primary bg-primary/10 shadow-md ring-2 ring-primary/40 hover:border-primary",
         className,
       )}
     >

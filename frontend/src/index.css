@@ -79,6 +79,12 @@
   * {
     @apply border-border;
   }
+  html {
+    /* Reserve the scrollbar's width whether or not it's needed, so a filter/tick that
+       changes page height (e.g. Skills' status tabs) doesn't toggle the scrollbar on and
+       off and shove every centered `mx-auto` container sideways when it does. */
+    scrollbar-gutter: stable;
+  }
   body {
     @apply bg-background text-foreground;
   }
